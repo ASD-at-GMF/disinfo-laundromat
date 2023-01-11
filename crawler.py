@@ -117,6 +117,8 @@ def parse_meta_tags(url, soup):
         content = meta_tag.get("content")
         if name and "verification" in name:
             tag_indicators.append(add_verification_tags(url, name, content))
+        if name and name in ["twitter:site", "fb:pages" ]:
+            tag_indicators.append(add_meta_social_tags(url, name, content))
         else:
             print(meta_tag)
     return tag_indicators
@@ -219,7 +221,47 @@ def add_verification_tags(url, name, content):
     # Print the name and content attributes
     return {
         "indicator_type": "verification_id",
-        "indicator_content": name + "|" + content,
+        "indicator_content": name + "|" + content,  
+        "domain_name": get_domain_name(url),
+    }
+
+def add_meta_social_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "meta_social",
+        "indicator_content": name + "|" + content,  
+        "domain_name": get_domain_name(url),
+    }
+
+def parse_body(url, text):
+    tag_indicators = []
+    tag_indicators.extend(find_uuids(url,text))
+    tag_indicators.extend(find_wallets(url,text))
+
+    return tag_indicators
+
+def find_with_regex(regex, text, url, indicator_type):
+    tag_indicators = []
+    matches = re.findall(regex,text)
+    for match in matches:
+        tag_indicators.append(add_indicator(url, indicator_type, match))
+    return tag_indicators
+
+def find_uuids(url, text):
+    uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    return find_with_regex(uuid_pattern,text, url, 'uuid')
+
+def find_uuids(url, text):
+    crypto_wallet_pattern = "(0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})"
+    return find_with_regex(crypto_wallet_pattern, text, url, 'uuid')
+
+
+def add_indicator(url, indicator_type, indicator_content):
+    # Print the name and content attributes
+    return {
+        "indicator_type":indicator_type ,
+        "indicator_content": indicator_content,  
         "domain_name": get_domain_name(url),
     }
 
@@ -242,6 +284,7 @@ def crawl(url, visited_urls):
     indicators.extend(
         add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
     )
+    indicators.extend(parse_body(url, soup))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file

@@ -209,6 +209,7 @@ def get_tech_identifiers(domain, api_key, save_matches=False):
     finally:
         return []
 
+
 def add_verification_tags(url, name, content):
 
     # Print the name and content attributes
@@ -235,7 +236,6 @@ def parse_body(url, text):
     return tag_indicators
 
 def find_with_regex(regex, text, url, indicator_type):
-    print(regex, text, url, indicator_type)
     tag_indicators = []
     matches = set(re.findall(regex,text))
     for match in matches:
@@ -269,7 +269,6 @@ def add_associated_domains_from_cert(url):
     for san in sans:
         tag_indicators.append(add_indicator(url, 'cert-domain', san))
     return tag_indicators
-
 
 def find_google_analytics_id(url, text):
     ga_id_pattern = "(UA-\d{6,8}|UA-\d{6,8}-\d{1})"
@@ -306,7 +305,7 @@ def crawl(url, visited_urls):
     indicators.extend(
         add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
     )
-
+    indicators.extend(parse_domain_name(url))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file

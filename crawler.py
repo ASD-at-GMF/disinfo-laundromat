@@ -7,6 +7,12 @@ import time
 import pandas as pd
 import re
 import sys
+import ssl
+from OpenSSL import crypto
+import traceback
+import yaml
+import json
+import tldextract
 
 visited = set()
 
@@ -25,23 +31,6 @@ def valid_url(url):
 
     return url
 
-
-def get_uuids(soup):
-    regex = (
-        r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-    )
-
-    # If the URL does not match the regular expression
-    if not re.match(regex, url):
-        url = url.strip("/")
-        # Add the 'http://' prefix to the URL
-        url = "http://" + url
-    if url == "http://":
-        return ""
-
-    return url
-
-
 def get_domain_name(url):
     # Parse the URL using urlparse
     parsed_url = urlparse(url)
@@ -55,6 +44,14 @@ def get_domain_name(url):
 
     return domain_name
 
+
+def add_indicator(url, indicator_type, indicator_content):
+    # Print the name and content attributes
+    return {
+        "indicator_type":indicator_type ,
+        "indicator_content": indicator_content,  
+        "domain_name": get_domain_name(url),
+    }
 
 def add_ip_address(domain_name):
     ip_indicators = []
@@ -121,6 +118,97 @@ def parse_meta_tags(url, soup):
     return tag_indicators
 
 
+def add_builtwith_indicators(domain, save_matches=False):
+    api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
+    builtwith_key = api_keys.get("BUILT_WITH")
+    if not builtwith_key:
+        print("No Builtwith API key provided. Skipping.")
+        pass
+    techstack_indicators = get_techstack_indicators(
+        domain=domain, api_key=builtwith_key
+    )
+    techidentifier_indicators = get_tech_identifiers(
+        domain=domain, api_key=builtwith_key, save_matches=save_matches
+    )
+    return techstack_indicators + techidentifier_indicators
+
+
+def get_techstack_indicators(domain, api_key):
+    tech_stack_query = (
+        f"https://api.builtwith.com/v20/api.json?KEY={api_key}&LOOKUP={domain}"
+    )
+    try:
+        api_result = requests.get(tech_stack_query)
+        data = json.loads(api_result.content)
+        # API supports querying multiple sites at a time, hence the embedded structure
+        result = data["Results"][0]["Result"]
+        tech_stack = []
+        for path in result["Paths"]:
+            technologies = [
+                {
+                    "indicator_type": "techstack",
+                    "indicator_content": {
+                        "name": tech.get("Name"),
+                        "link": tech.get("Link"),
+                        "tag": tech.get("Tag"),
+                        "subdomain": path["SubDomain"],
+                    },
+                    "domain_name": domain,
+                }
+                for tech in path["Technologies"]
+            ]
+            tech_stack.extend(technologies)
+        return tech_stack
+    except IndexError as e:
+        print(
+            "Error hit iterating through results. Have you hit your Builtwith API limit?"
+        )
+        traceback.print_exc()
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return []
+
+
+def get_tech_identifiers(domain, api_key, save_matches=False):
+    tech_relation_query = (
+        f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain}"
+    )
+    api_result = requests.get(tech_relation_query)
+
+    try:
+        data = json.loads(api_result.content)
+        relations = data["Relationships"][0]["Identifiers"]
+        matches_df = (
+            pd.DataFrame(relations).explode("Matches").rename(columns=str.lower)
+        )
+        if save_matches:
+            matches_df.to_csv(f"{domain}_identifier_matches.csv")
+        identifiers = (
+            matches_df.groupby(["type", "value"])["matches"]
+            .count()
+            .to_frame("num_matches")
+            .reset_index()
+        )
+        # applying indicator structure
+        return [
+            {
+                "indicator_type": "tech_identifier",
+                "indicator_content": identifier,
+                "domain_name": domain,
+            }
+            for identifier in identifiers.to_dict(orient="records")
+        ]
+    except IndexError as e:
+        print(
+            "Error hit iterating through results. Have you hit your Builtwith API limit?"
+        )
+        traceback.print_exc()
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return []
+
 def add_verification_tags(url, name, content):
 
     # Print the name and content attributes
@@ -139,58 +227,63 @@ def add_meta_social_tags(url, name, content):
         "domain_name": get_domain_name(url),
     }
 
-def find_uuids(url, soup):
+def parse_body(url, text):
     tag_indicators = []
-    uuids = re.findall("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",soup.prettify())
-    for uuid in uuids:
-        tag_indicators.append(add_uuid(url, uuid))
+    tag_indicators.extend(find_uuids(url,text))
+    tag_indicators.extend(find_wallets(url,text))
+
+    return tag_indicators
+
+def find_with_regex(regex, text, url, indicator_type):
+    print(regex, text, url, indicator_type)
+    tag_indicators = []
+    matches = set(re.findall(regex,text))
+    for match in matches:
+        tag_indicators.append(add_indicator(url, indicator_type, match))
+    return tag_indicators
+
+def find_uuids(url, text):
+    uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    return find_with_regex(uuid_pattern,text, url, 'uuid')
+
+def find_wallets(url, text):
+    crypto_wallet_pattern = "(0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})"
+    return find_with_regex(crypto_wallet_pattern, text, url, 'crypto-wallet')
+
+def add_associated_domains_from_cert(url):
+    print(url)
+    port = 443    
+
+    cert = ssl.get_server_certificate((get_domain_name(url), port))
+    x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
+
+    sans = []
+    for i in range(x509.get_extension_count()):
+        ext = x509.get_extension(i)
+        if ext.get_short_name() == b'subjectAltName':
+            ext_val = ext.__str__()
+            sans = ext_val.replace('DNS:','').split(',')
+
+    tag_indicators = []
+    tag_indicators.append(add_indicator(url, 'certificate', cert))
+    for san in sans:
+        tag_indicators.append(add_indicator(url, 'cert-domain', san))
     return tag_indicators
 
 
-def add_uuid(url, uuid):
-    # Print the name and content attributes
-    return {
-        "indicator_type": "uuid",
-        "indicator_content": uuid,  
-        "domain_name": get_domain_name(url),
-    }
+def find_google_analytics_id(url, text):
+    ga_id_pattern = "(UA-\d{6,8}|UA-\d{6,8}-\d{1})"
+    return find_with_regex(ga_id_pattern, text, url, 'ga_id')
 
-def add_domain_suffix(url, domain_suffix):
-    return {
-        "indicator_type": "domain_suffix",
-        "indicator_content": domain_suffix,  
-        "domain_name": get_domain_name(url),
-    }
+def find_google_tag_id(url, text):
+    ga_id_pattern = "G-([A-Za-z0-9]+)"
+    return find_with_regex(ga_id_pattern,text, url, 'ga_tag_id')
 
-# getting domain and suffix, eg -  "google.com"
-def find_domain_suffix(url):
-    tag_indicators=[]
-    ext = tldextract.extract(url)
-    domain_suffix = ext[1]+'.'+ext[2] 
-    tag_indicators.append(add_domain_suffix(url, domain_suffix))
-    return tag_indicators # joins the strings
-
-def add_second_level_domain(url, domain):
-   return {
-        "indicator_type": "domain",
-        "indicator_content": domain,  
-        "domain_name": get_domain_name(url),
-    } 
-
-def find_second_level_domain(url):
+def parse_google_ids(url, text):
     tag_indicators = []
-    ext = tldextract.extract(url)
-    domain= ext[1]
-    tag_indicators.append(add_second_level_domain(url, domain))
+    tag_indicators.extend(find_google_analytics_id(url, text))
+    tag_indicators.extend(find_google_tag_id(url, text))
     return tag_indicators
-
-def parse_domain_name(url):
-    tag_indicators = []
-    tag_indicators.extend(find_domain_suffix(url))
-    tag_indicators.extend(find_second_level_domain(url))
-    
-    return tag_indicators    
-
 
 def crawl(url, visited_urls):
     indicators = []
@@ -207,9 +300,12 @@ def crawl(url, visited_urls):
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
-    indicators.extend(parse_body(url, soup))
-    #indicators.extend(parse_google_ids(url, response.text))
-    indicators.extend(parse_domain_name(url)) 
+    indicators.extend(parse_body(url, response.text))
+    indicators.extend(parse_google_ids(url, response.text))
+    indicators.extend(add_associated_domains_from_cert(url))
+    indicators.extend(
+        add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
+    )
 
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
@@ -236,7 +332,6 @@ def crawl(url, visited_urls):
 
     return indicators
 
-
 if __name__ == "__main__":
     visited_urls = set()
     # Start the crawler at a specific URL
@@ -249,6 +344,6 @@ if __name__ == "__main__":
         print(f"Assuming second arg {sys.argv[1]} is a filename")
         try:
             with open(sys.argv[1], "w") as f:
-                attribution_table.to_csv(f)
+                attribution_table.to_csv(f, index=False)
         except Exception:
             print("oops!")

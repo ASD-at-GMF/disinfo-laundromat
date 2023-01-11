@@ -139,11 +139,6 @@ def add_meta_social_tags(url, name, content):
         "domain_name": get_domain_name(url),
     }
 
-def parse_body(url, soup):
-    tag_indicators = []
-    tag_indicators.extend(find_uuids(url,soup))
-    return tag_indicators
-
 def find_uuids(url, soup):
     tag_indicators = []
     uuids = re.findall("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",soup.prettify())
@@ -159,6 +154,42 @@ def add_uuid(url, uuid):
         "indicator_content": uuid,  
         "domain_name": get_domain_name(url),
     }
+
+def add_domain_suffix(url, domain_suffix):
+    return {
+        "indicator_type": "domain_suffix",
+        "indicator_content": domain_suffix,  
+        "domain_name": get_domain_name(url),
+    }
+
+# getting domain and suffix, eg -  "google.com"
+def find_domain_suffix(url):
+    tag_indicators=[]
+    ext = tldextract.extract(url)
+    domain_suffix = ext[1]+'.'+ext[2] 
+    tag_indicators.append(add_domain_suffix(url, domain_suffix))
+    return tag_indicators # joins the strings
+
+def add_second_level_domain(url, domain):
+   return {
+        "indicator_type": "domain",
+        "indicator_content": domain,  
+        "domain_name": get_domain_name(url),
+    } 
+
+def find_second_level_domain(url):
+    tag_indicators = []
+    ext = tldextract.extract(url)
+    domain= ext[1]
+    tag_indicators.append(add_second_level_domain(url, domain))
+    return tag_indicators
+
+def parse_domain_name(url):
+    tag_indicators = []
+    tag_indicators.extend(find_domain_suffix(url))
+    tag_indicators.extend(find_second_level_domain(url))
+    
+    return tag_indicators    
 
 
 def crawl(url, visited_urls):
@@ -177,6 +208,8 @@ def crawl(url, visited_urls):
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_body(url, soup))
+    #indicators.extend(parse_google_ids(url, response.text))
+    indicators.extend(parse_domain_name(url)) 
 
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:

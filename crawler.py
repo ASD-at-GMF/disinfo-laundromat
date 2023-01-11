@@ -7,6 +7,9 @@ import time
 import pandas as pd
 import re
 import sys
+import traceback
+import yaml
+import json
 
 visited = set()
 
@@ -119,6 +122,98 @@ def parse_meta_tags(url, soup):
     return tag_indicators
 
 
+def add_builtwith_indicators(domain, save_matches=False):
+    api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
+    builtwith_key = api_keys.get("BUILT_WITH")
+    if not builtwith_key:
+        print("No Builtwith API key provided. Skipping.")
+        pass
+    techstack_indicators = get_techstack_indicators(
+        domain=domain, api_key=builtwith_key
+    )
+    techidentifier_indicators = get_tech_identifiers(
+        domain=domain, api_key=builtwith_key, save_matches=save_matches
+    )
+    return techstack_indicators + techidentifier_indicators
+
+
+def get_techstack_indicators(domain, api_key):
+    tech_stack_query = (
+        f"https://api.builtwith.com/v20/api.json?KEY={api_key}&LOOKUP={domain}"
+    )
+    try:
+        api_result = requests.get(tech_stack_query)
+        data = json.loads(api_result.content)
+        # API supports querying multiple sites at a time, hence the embedded structure
+        result = data["Results"][0]["Result"]
+        tech_stack = []
+        for path in result["Paths"]:
+            technologies = [
+                {
+                    "indicator_type": "techstack",
+                    "indicator_content": {
+                        "name": tech.get("Name"),
+                        "link": tech.get("Link"),
+                        "tag": tech.get("Tag"),
+                        "subdomain": path["SubDomain"],
+                    },
+                    "domain_name": domain,
+                }
+                for tech in path["Technologies"]
+            ]
+            tech_stack.extend(technologies)
+        return tech_stack
+    except IndexError as e:
+        print(
+            "Error hit iterating through results. Have you hit your Builtwith API limit?"
+        )
+        traceback.print_exc()
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return []
+
+
+def get_tech_identifiers(domain, api_key, save_matches=False):
+    tech_relation_query = (
+        f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain}"
+    )
+    api_result = requests.get(tech_relation_query)
+
+    try:
+        data = json.loads(api_result.content)
+        relations = data["Relationships"][0]["Identifiers"]
+        matches_df = (
+            pd.DataFrame(relations).explode("Matches").rename(columns=str.lower)
+        )
+        if save_matches:
+            matches_df.to_csv(f"{domain}_identifier_matches.csv")
+        identifiers = (
+            matches_df.groupby(["type", "value"])["matches"]
+            .count()
+            .to_frame("num_matches")
+            .reset_index()
+        )
+        # applying indicator structure
+        return [
+            {
+                "indicator_type": "tech_identifier",
+                "indicator_content": identifier,
+                "domain_name": domain,
+            }
+            for identifier in identifiers.to_dict(orient="records")
+        ]
+    except IndexError as e:
+        print(
+            "Error hit iterating through results. Have you hit your Builtwith API limit?"
+        )
+        traceback.print_exc()
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return []
+
+
 def add_verification_tags(url, name, content):
 
     # Print the name and content attributes
@@ -144,6 +239,9 @@ def crawl(url, visited_urls):
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
+    indicators.extend(
+        add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
+    )
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file
@@ -182,6 +280,6 @@ if __name__ == "__main__":
         print(f"Assuming second arg {sys.argv[1]} is a filename")
         try:
             with open(sys.argv[1], "w") as f:
-                attribution_table.to_csv(f)
+                attribution_table.to_csv(f, index=False)
         except Exception:
             print("oops!")

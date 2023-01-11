@@ -13,6 +13,7 @@ from OpenSSL import crypto
 import traceback
 import yaml
 import json
+import tldextract
 
 visited = set()
 
@@ -31,6 +32,7 @@ def valid_url(url):
 
     return url
 
+
 def get_domain_name(url):
     # Parse the URL using urlparse
     parsed_url = urlparse(url)
@@ -48,10 +50,11 @@ def get_domain_name(url):
 def add_indicator(url, indicator_type, indicator_content):
     # Print the name and content attributes
     return {
-        "indicator_type":indicator_type ,
-        "indicator_content": indicator_content,  
+        "indicator_type": indicator_type,
+        "indicator_content": indicator_content,
         "domain_name": get_domain_name(url),
     }
+
 
 def add_ip_address(domain_name):
     ip_indicators = []
@@ -111,7 +114,7 @@ def parse_meta_tags(url, soup):
         content = meta_tag.get("content")
         if name and "verification" in name:
             tag_indicators.append(add_verification_tags(url, name, content))
-        if name and name in ["twitter:site", "fb:pages" ]:
+        if name and name in ["twitter:site", "fb:pages"]:
             tag_indicators.append(add_meta_social_tags(url, name, content))
         else:
             print(meta_tag)
@@ -215,44 +218,50 @@ def add_verification_tags(url, name, content):
     # Print the name and content attributes
     return {
         "indicator_type": "verification_id",
-        "indicator_content": name + "|" + content,  
+        "indicator_content": name + "|" + content,
         "domain_name": get_domain_name(url),
     }
+
 
 def add_meta_social_tags(url, name, content):
 
     # Print the name and content attributes
     return {
         "indicator_type": "meta_social",
-        "indicator_content": name + "|" + content,  
+        "indicator_content": name + "|" + content,
         "domain_name": get_domain_name(url),
     }
 
+
 def parse_body(url, text):
     tag_indicators = []
-    tag_indicators.extend(find_uuids(url,text))
-    tag_indicators.extend(find_wallets(url,text))
+    tag_indicators.extend(find_uuids(url, text))
+    tag_indicators.extend(find_wallets(url, text))
 
     return tag_indicators
 
+
 def find_with_regex(regex, text, url, indicator_type):
     tag_indicators = []
-    matches = re.findall(regex,text)
+    matches = set(re.findall(regex, text))
     for match in matches:
         tag_indicators.append(add_indicator(url, indicator_type, match))
     return tag_indicators
 
+
 def find_uuids(url, text):
     uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-    return find_with_regex(uuid_pattern,text, url, 'uuid')
+    return find_with_regex(uuid_pattern, text, url, "uuid")
+
 
 def find_wallets(url, text):
     crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
     return find_with_regex(crypto_wallet_pattern, text, url, 'crypto-wallet')
+    
 
 def add_associated_domains_from_cert(url):
     print(url)
-    port = 443    
+    port = 443
 
     cert = ssl.get_server_certificate((get_domain_name(url), port))
     x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
@@ -260,14 +269,31 @@ def add_associated_domains_from_cert(url):
     sans = []
     for i in range(x509.get_extension_count()):
         ext = x509.get_extension(i)
-        if ext.get_short_name() == b'subjectAltName':
+        if ext.get_short_name() == b"subjectAltName":
             ext_val = ext.__str__()
-            sans = ext_val.replace('DNS:','').split(',')
+            sans = ext_val.replace("DNS:", "").split(",")
 
     tag_indicators = []
-    tag_indicators.append(add_indicator(url, 'certificate', cert))
+    tag_indicators.append(add_indicator(url, "certificate", cert))
     for san in sans:
-        tag_indicators.append(add_indicator(url, 'cert-domain', san))
+        tag_indicators.append(add_indicator(url, "cert-domain", san))
+    return tag_indicators
+
+
+def find_google_analytics_id(url, text):
+    ga_id_pattern = "(UA-\d{6,8}|UA-\d{6,8}-\d{1})"
+    return find_with_regex(ga_id_pattern, text, url, "ga_id")
+
+
+def find_google_tag_id(url, text):
+    ga_id_pattern = "G-([A-Za-z0-9]+)"
+    return find_with_regex(ga_id_pattern, text, url, "ga_tag_id")
+
+
+def parse_google_ids(url, text):
+    tag_indicators = []
+    tag_indicators.extend(find_google_analytics_id(url, text))
+    tag_indicators.extend(find_google_tag_id(url, text))
     return tag_indicators
 
 def add_cdn_domains(url, soup):
@@ -282,6 +308,45 @@ def add_cdn_domains(url, soup):
             domains.add(domain)
     for domain in domains:
         tag_indicators.append(add_indicator(url, 'cdn-domain', domain))
+
+
+def add_domain_suffix(url, domain_suffix):
+    return {
+        "indicator_type": "domain_suffix",
+        "indicator_content": domain_suffix,
+        "domain_name": get_domain_name(url),
+    }
+
+
+# getting domain and suffix, eg -  “google.com”
+def find_domain_suffix(url):
+    tag_indicators = []
+    ext = tldextract.extract(url)
+    domain_suffix = ext[1] + "." + ext[2]
+    tag_indicators.append(add_domain_suffix(url, domain_suffix))
+    return tag_indicators  # joins the strings
+
+
+def add_second_level_domain(url, domain):
+    return {
+        "indicator_type": "domain",
+        "indicator_content": domain,
+        "domain_name": get_domain_name(url),
+    }
+
+
+def find_second_level_domain(url):
+    tag_indicators = []
+    ext = tldextract.extract(url)
+    domain = ext[1]
+    tag_indicators.append(add_second_level_domain(url, domain))
+    return tag_indicators
+
+
+def parse_domain_name(url):
+    tag_indicators = []
+    tag_indicators.extend(find_domain_suffix(url))
+    tag_indicators.extend(find_second_level_domain(url))
     return tag_indicators
 
 
@@ -301,13 +366,14 @@ def crawl(url, visited_urls):
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_body(url, response.text))
+    indicators.extend(parse_google_ids(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(add_cdn_domains(url,soup))
 
     indicators.extend(
         add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
     )
-
+    indicators.extend(parse_domain_name(url))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file
@@ -332,6 +398,7 @@ def crawl(url, visited_urls):
                     continue
 
     return indicators
+
 
 if __name__ == "__main__":
     visited_urls = set()

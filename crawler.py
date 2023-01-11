@@ -139,6 +139,26 @@ def add_meta_social_tags(url, name, content):
         "domain_name": get_domain_name(url),
     }
 
+def parse_body(url, soup):
+    tag_indicators = []
+    tag_indicators.extend(find_uuids(url,soup))
+    return tag_indicators
+
+def find_uuids(url, soup):
+    tag_indicators = []
+    uuids = re.findall("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",soup.prettify())
+    for uuid in uuids:
+        tag_indicators.append(add_uuid(url, uuid))
+    return tag_indicators
+
+
+def add_uuid(url, uuid):
+    # Print the name and content attributes
+    return {
+        "indicator_type": "uuid",
+        "indicator_content": uuid,  
+        "domain_name": get_domain_name(url),
+    }
 
 
 def crawl(url, visited_urls):
@@ -156,6 +176,8 @@ def crawl(url, visited_urls):
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
+    indicators.extend(parse_body(url, soup))
+
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file

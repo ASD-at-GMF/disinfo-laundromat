@@ -7,6 +7,8 @@ import time
 import pandas as pd
 import re
 import sys
+import ssl
+from OpenSSL import crypto
 
 visited = set()
 
@@ -25,23 +27,6 @@ def valid_url(url):
 
     return url
 
-
-def get_uuids(soup):
-    regex = (
-        r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
-    )
-
-    # If the URL does not match the regular expression
-    if not re.match(regex, url):
-        url = url.strip("/")
-        # Add the 'http://' prefix to the URL
-        url = "http://" + url
-    if url == "http://":
-        return ""
-
-    return url
-
-
 def get_domain_name(url):
     # Parse the URL using urlparse
     parsed_url = urlparse(url)
@@ -55,6 +40,14 @@ def get_domain_name(url):
 
     return domain_name
 
+
+def add_indicator(url, indicator_type, indicator_content):
+    # Print the name and content attributes
+    return {
+        "indicator_type":indicator_type ,
+        "indicator_content": indicator_content,  
+        "domain_name": get_domain_name(url),
+    }
 
 def add_ip_address(domain_name):
     ip_indicators = []
@@ -157,19 +150,31 @@ def find_uuids(url, text):
     uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     return find_with_regex(uuid_pattern,text, url, 'uuid')
 
-def find_uuids(url, text):
+def find_wallets(url, text):
     crypto_wallet_pattern = "(0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})"
-    return find_with_regex(crypto_wallet_pattern, text, url, 'uuid')
+    return find_with_regex(crypto_wallet_pattern, text, url, 'crypto-wallet')
 
 
-def add_indicator(url, indicator_type, indicator_content):
-    # Print the name and content attributes
-    return {
-        "indicator_type":indicator_type ,
-        "indicator_content": indicator_content,  
-        "domain_name": get_domain_name(url),
-    }
 
+def add_associated_domains_from_cert(url):
+    print(url)
+    port = 443    
+
+    cert = ssl.get_server_certificate((get_domain_name(url), port))
+    x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
+
+    sans = []
+    for i in range(x509.get_extension_count()):
+        ext = x509.get_extension(i)
+        if ext.get_short_name() == b'subjectAltName':
+            ext_val = ext.__str__()
+            sans = ext_val.replace('DNS:','').split(',')
+
+    tag_indicators = []
+    tag_indicators.append(add_indicator(url, 'certificate', cert))
+    for san in sans:
+        tag_indicators.append(add_indicator(url, 'cert-domain', san))
+    return tag_indicators
 
 def crawl(url, visited_urls):
     indicators = []
@@ -186,7 +191,9 @@ def crawl(url, visited_urls):
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
-    indicators.extend(parse_body(url, soup))
+    indicators.extend(parse_body(url, response.text))
+    indicators.extend(add_associated_domains_from_cert(url))
+    
 
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
@@ -212,7 +219,6 @@ def crawl(url, visited_urls):
                     continue
 
     return indicators
-
 
 if __name__ == "__main__":
     visited_urls = set()

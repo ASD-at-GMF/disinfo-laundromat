@@ -2,6 +2,7 @@ import requests
 import whois
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
+from urllib.parse import urlsplit
 import socket
 import time
 import pandas as pd
@@ -246,10 +247,8 @@ def find_uuids(url, text):
     return find_with_regex(uuid_pattern,text, url, 'uuid')
 
 def find_wallets(url, text):
-    crypto_wallet_pattern = "(0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})"
+    crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
     return find_with_regex(crypto_wallet_pattern, text, url, 'crypto-wallet')
-
-
 
 def add_associated_domains_from_cert(url):
     print(url)
@@ -271,10 +270,25 @@ def add_associated_domains_from_cert(url):
         tag_indicators.append(add_indicator(url, 'cert-domain', san))
     return tag_indicators
 
+def add_cdn_domains(url, soup):
+    tag_indicators = []
+
+    img_tags = soup.find_all('img')
+    domains = set()
+    for img_tag in img_tags:
+        src = img_tag.get('src')
+        if src:
+            domain = urlsplit(src).hostname
+            domains.add(domain)
+    for domain in domains:
+        tag_indicators.append(add_indicator(url, 'cdn-domain', domain))
+    return tag_indicators
+
+
 def crawl(url, visited_urls):
     indicators = []
     # Add the URL to the set of visited URLs
-    visited_urls.add(get_domain_name(url))
+    visited_urls.add(get_domain_name(url))  
     # Send a GET request to the specified URL
     response = requests.get(url)
 
@@ -288,10 +302,11 @@ def crawl(url, visited_urls):
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_body(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
+    indicators.extend(add_cdn_domains(url,soup))
+
     indicators.extend(
         add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
     )
-    indicators.extend(parse_body(url, soup))
 
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
@@ -321,6 +336,9 @@ def crawl(url, visited_urls):
 if __name__ == "__main__":
     visited_urls = set()
     # Start the crawler at a specific URL
+    #indicators = crawl("https://waronfakes.com", visited_urls)
+    #indicators = crawl("https://ethplorer.io/", visited_urls)
+
     indicators = crawl("https://www.rt.com", visited_urls)
     attribution_table = pd.DataFrame(
         columns=["indicator_type", "indicator_content", "domain_name"], data=indicators

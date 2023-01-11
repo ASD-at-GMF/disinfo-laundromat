@@ -114,6 +114,8 @@ def parse_meta_tags(url, soup):
         content = meta_tag.get("content")
         if name and "verification" in name:
             tag_indicators.append(add_verification_tags(url, name, content))
+        if name and name in ["twitter:site", "fb:pages" ]:
+            tag_indicators.append(add_meta_social_tags(url, name, content))
         else:
             print(meta_tag)
     return tag_indicators
@@ -124,9 +126,19 @@ def add_verification_tags(url, name, content):
     # Print the name and content attributes
     return {
         "indicator_type": "verification_id",
-        "indicator_content": name + "|" + content,
+        "indicator_content": name + "|" + content,  
         "domain_name": get_domain_name(url),
     }
+
+def add_meta_social_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "meta_social",
+        "indicator_content": name + "|" + content,  
+        "domain_name": get_domain_name(url),
+    }
+
 
 
 def crawl(url, visited_urls):

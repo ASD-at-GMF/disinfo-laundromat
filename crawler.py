@@ -139,24 +139,34 @@ def add_meta_social_tags(url, name, content):
         "domain_name": get_domain_name(url),
     }
 
-def parse_body(url, soup):
+def parse_body(url, text):
     tag_indicators = []
-    tag_indicators.extend(find_uuids(url,soup))
+    tag_indicators.extend(find_uuids(url,text))
+    tag_indicators.extend(find_wallets(url,text))
+
     return tag_indicators
 
-def find_uuids(url, soup):
+def find_with_regex(regex, text, url, indicator_type):
     tag_indicators = []
-    uuids = re.findall("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",soup.prettify())
-    for uuid in uuids:
-        tag_indicators.append(add_uuid(url, uuid))
+    matches = re.findall(regex,text)
+    for match in matches:
+        tag_indicators.append(add_indicator(url, indicator_type, match))
     return tag_indicators
 
+def find_uuids(url, text):
+    uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    return find_with_regex(uuid_pattern,text, url, 'uuid')
 
-def add_uuid(url, uuid):
+def find_uuids(url, text):
+    crypto_wallet_pattern = "(0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})"
+    return find_with_regex(crypto_wallet_pattern, text, url, 'uuid')
+
+
+def add_indicator(url, indicator_type, indicator_content):
     # Print the name and content attributes
     return {
-        "indicator_type": "uuid",
-        "indicator_content": uuid,  
+        "indicator_type":indicator_type ,
+        "indicator_content": indicator_content,  
         "domain_name": get_domain_name(url),
     }
 

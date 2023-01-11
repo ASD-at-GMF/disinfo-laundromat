@@ -4,217 +4,31 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 import socket
 import time
+import pandas as pd
 import re
 
-# sites to ignore =
-ignore_sites = ['43things.com',
-                'academia.edu',
-                'Advogato.org',
-                'ANobii.com',
-                'Asianave.com',
-                'aSmallWorld.net',
-                'Athlinks.com',
-                'Audimated.com',
-                'bebo.com#',
-                'Biip.no',
-                'BlackPlanet.com',
-                'blauk.com',
-                'blogster.com#',
-                'www.bolt.com',
-                'busuu.com',
-                'Buzznet.com',
-                'CafeMom.com',
-                'Care2.com',
-                'caringbridge.org',
-                'Classmates.com',
-                'Cloob.com',
-                'CouchSurfing.org',
-                'CozyCot.com',
-                'cross.tv',
-                'crunchyroll.com',
-                'cyworld.com',
-                'DailyBooth.com',
-                'DailyStrength.org',
-                'delicious.com',
-                'deviantART.com',
-                'joindiaspora.com',
-                'Disaboom.com',
-                'Dol2day.de',
-                'DontStayIn.com',
-                'Draugiem.lv',
-                'douban.com',
-                'dxy.cn',
-                'Elftown.com',
-                'elixio.net#',
-                'englishbaby.com',
-                'Epernicus.com',
-                'Eons.com',
-                'etoro.com#',
-                'ExperienceProject.com',
-                'Exploroo.com',
-                'Facebook.com',
-                'Faceparty.com',
-                'Faces.com',
-                'Fetlife.com',
-                'FilmAffinity.com',
-                'filmow.com',
-                'FledgeWing.com',
-                'Flixster.com',
-                'Flickr.com',
-                'focus.com',
-                'formspring.me',
-                'fotki.com',
-                'Fotolog.com',
-                'Foursquare.com',
-                'friendica.com',
-                'FriendsReunited.co.uk',
-                'Friendster.com',
-                'Fruehstueckstreff.de',
-                'fuelmyblog.com',
-                'fullcircle.net',
-                'GaiaOnline.com',
-                'GamerDNA.com',
-                'gapyear.com',
-                'Gather.com',
-                'Gays.com',
-                'Geni.com',
-                'GetGlue.com',
-                'gogoyoko.com',
-                'Goodreads.com',
-                'goodwizz.com',
-                'govloop.com',
-                'Grono.net',
-                'Habbo.com',
-                'Hi5.com',
-                'HospitalityClub.org',
-                'hotlist.com',
-                'hr.com',
-                'hubculture.com',
-                'Hyves.nl',
-                'Ibibo.com',
-                'indenti.ca',
-                'www.indabamusic.com',
-                'IRC-Galleria.net',
-                'Italki.com',
-                'Itsmy.com',
-                'iWiW.hu',
-                'Jaiku.com',
-                'Jiepang.com',
-                'Kaixin001.com',
-                'Kiwibox.com',
-                'lafango.com',
-                'laibhaari.com',
-                'Last.fm',
-                'LibraryThing.com',
-                'Lifeknot.com',
-                'LinkedIn.com',
-                'linkexpats.com',
-                'Listography.com',
-                'LiveJournal.com',
-                'Livemocha.com',
-                'makeoutclub.com',
-                'MEETin.org',
-                'Meetup.com',
-                'Meettheboss.tv',
-                'mymfb.com',
-                'mixi.jp',
-                'MocoSpace.com',
-                'MOG.com',
-                'MouthShut.com',
-                'mubi.com',
-                'MyHeritage.com',
-                'MyLife.com',
-                'MySpace.com',
-                'Nasza-klasa.pl',
-                'netlog.com',
-                'Netlog.com',
-                'Nexopia.com',
-                'NGOPost.org',
-                'Ning.com',
-                'Odnoklassniki.ru',
-                'OpenDiary.com',
-                'Orkut.com',
-                'OUTeverywhere.com',
-                'patientslikeme.com',
-                'partyflock.nl',
-                'Pingsta.com',
-                'pinterest.com',
-                'Plaxo.com',
-                'playfire.com',
-                'playlist.com',
-                'Plurk.com',
-                'poolwo.com',
-                'Qapacity.com',
-                'quechup.com',
-                'raptr.com',
-                'Ravelry.com',
-                'Renren.com',
-                'ReverbNation.com',
-                'Ryze.com',
-                'sciencestage.com',
-                'ShareTheMusic.com',
-                'Shelfari.com',
-                'weibo.com',
-                'www.skoob.com.br',
-                'SkyRock.com',
-                'SocialVibe.com',
-                'Sonico.com',
-                'soundcloud.com',
-                'spaces.ru#',
-                'Stickam.com',
-                'StudiVZ.net',
-                'studentscircle.net',
-                'StumbleUpon.com',
-                'Tagged.com',
-                'Talkbiznow.com',
-                'Taltopia.com',
-                'Taringa.net',
-                'teachstreet.com',
-                'termwiki.com',
-                'the-sphere.com',
-                'TravBuddy.com',
-                'TravellersPoint.com',
-                'Tribe.net',
-                'Trombi.com',
-                'Tuenti.com',
-                'tumblr.com',
-                'Twitter.com',
-                'Cellufun.com',
-                'vk.com',
-                'VampireFreaks.com',
-                'Viadeo.com',
-                'Virb.com',
-                'Vox.com',
-                'wattpad.com',
-                'WAYN.com',
-                'weeworld.com',
-                'weheartit.com',
-                'wellwer.com',
-                'WeOurFamily.com',
-                'wepolls.com',
-                'wer-kennt-wen.de',
-                'weread.com',
-                'Wiser.org',
-                'Wooxie.com',
-                'writeaprisoner.com',
-                'Xanga.com',
-                'XING.com',
-                'Xt3.com',
-                'Yammer.com',
-                'Yelp.com',
-                'Zoo.gr',
-                'zooppa.com']
-
-for item in ignore_sites:
-    item.lower()
-
 visited = set()
-attribution_tuples = []
+
+attribution_table = pd.DataFrame(["indicator_type","indicator_content","domain_name"])
 
 
 def valid_url(url):
     # Regular expression for matching a URL
     regex = r'^(?:http|ftp)s?://'
+
+    # If the URL does not match the regular expression
+    if not re.match(regex, url):
+        url = url.strip("/")
+        # Add the 'http://' prefix to the URL
+        url = 'http://' + url
+    if url == 'http://':
+        return ""
+
+    return url
+
+
+def get_uuids(soup):
+    regex = r'[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}'
 
     # If the URL does not match the regular expression
     if not re.match(regex, url):
@@ -249,10 +63,10 @@ def add_ip_address(domain_name):
     try:
         # Resolve the domain name to an IP address
         ip_address = socket.gethostbyname(domain_name)
-        attribution_tuples.append(('ip', ip_address, get_domain_name(domain_name)))
+        attribution_table = attribution_table.append({'indicator_type': 'ip', 'indicator_content': ip_address, 'domain_name': get_domain_name(domain_name) }, ignore_index=True)
         last_period_index = ip_address.rfind('.')
         subnet_id = ip_address[:last_period_index]
-        attribution_tuples.append(('subnet', subnet_id, get_domain_name(domain_name)))
+        attribution_table = attribution_table.append({'indicator_type': 'subnet', 'indicator_content': subnet_id, 'domain_name': get_domain_name(domain_name) }, ignore_index=True)
 
         print("The IP address of the domain name {} is {}".format(
             domain_name, ip_address))
@@ -266,7 +80,7 @@ def get_who_is(url):
 
 def add_who_is(url, whois):
     if 'Private' not in whois.name:
-        attribution_tuples.append(('whois', whois, get_domain_name(url)))
+        attribution_table = attribution_table.append({'indicator_type': 'whois', 'indicator_content': whois, 'domain_name': get_domain_name(url) }, ignore_index=True)
 
 
 def parse_meta_tags(url, soup):
@@ -287,9 +101,7 @@ def parse_meta_tags(url, soup):
 def add_verification_tags(url, name, content):
 
     # Print the name and content attributes
-
-    attribution_tuples.append(
-        ('verification-id', name + '|' + content, get_domain_name(url)))
+    attribution_table = attribution_table.append({'indicator_type': 'verification_id', 'indicator_content':  name + '|' + content, 'domain_name': get_domain_name(url) }, ignore_index=True)
 
 
 def crawl(url, visited_urls):
@@ -334,4 +146,4 @@ def crawl(url, visited_urls):
 visited_urls = set()
 # Start the crawler at a specific URL
 crawl('https://www.rt.com', visited_urls)
-print(attribution_tuples)
+print(attribution_table)

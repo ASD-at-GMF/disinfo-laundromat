@@ -7,6 +7,7 @@ import socket
 import time
 import pandas as pd
 import re
+from io import BytesIO
 import sys
 import ssl
 from OpenSSL import crypto
@@ -15,6 +16,8 @@ import yaml
 import json
 import tldextract
 import csv
+import imagehash
+from PIL import Image
 
 visited = set()
 
@@ -107,6 +110,26 @@ def parse_classes(url, soup):
         classes = elem["class"]
         used_classes.update(classes)
     tag_indicators.append(add_indicator(url, 'css-class', used_classes))
+    return tag_indicators
+
+
+def parse_images(url, soup):
+    tag_indicators = []
+    image_links = []
+    for img in soup.find_all('img'):
+        if img.has_attr('src') and img['src'].startswith("/"):
+            image_links.append(url + img['src'])
+        elif img.has_attr('src'):
+            image_links.append(img['src'])
+    for link in image_links:
+        try:
+            response = requests.get(link)
+            img = Image.open(BytesIO(response.content))
+            image_hash = imagehash.phash(img)
+            tag_indicators.append(add_indicator(url, 'image-phash', image_hash))
+        except Exception as ex:
+            continue #print(ex.message)
+
     return tag_indicators
 
 def parse_meta_tags(url, soup):
@@ -379,6 +402,7 @@ def crawl(url, visited_urls):
     # Send a GET request to the specified URL
     response = requests.get(url)
 
+    print(url)
     # Parse the HTML content of the page
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -391,12 +415,12 @@ def crawl(url, visited_urls):
     indicators.extend(parse_google_ids(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(add_cdn_domains(url,soup))
-    indicators.extend(
-        add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
-    )
+    # indicators.extend(
+    #     add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
+    # )
     indicators.extend(parse_domain_name(url))
-    indicators.extend(parse_classes(url,    soup))
-
+    indicators.extend(parse_classes(url, soup))
+    indicators.extend(parse_images(url, soup))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file
@@ -436,6 +460,7 @@ if __name__ == "__main__":
         for row in reader:
             #TODO Make column configurable
             indicators.extend(crawl(row[1], visited_urls))
+            
 
     attribution_table = pd.DataFrame(
         columns=["indicator_type", "indicator_content", "domain_name"], data=indicators

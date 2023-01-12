@@ -62,6 +62,22 @@ Once the code is downloaded and you've navigated to the project, install the nec
 pip install -r requirements.txt
 ```
 ## Comparing to existing indicator corpus
+To check matches within the existing corpus (e.g. with {a.com, b.com, and c.com}, comparisons will be conducted between a.com and b.com, b.com and c.com, and a.com and c.com), use the following command:
+```
+py match.py
+```
+
+To check a given url against the corpus, run the following command: 
+```
+py match.py -domain <domain-to-be-searched>
+```
+
+## Generating a new indicator corpus
+To generate a new indicator corpus, (a list of indicators assocaited with each site), run the following command:
+```
+py crawler.py <input-filename>.csv  <output-filename>.csv
+```
+by default, input-filename.csv must contain at least one column of urls with the header 'domain_name' but may contain any number of other columns. Entries in the 'domain_name' column must be formatted as 'https://subdomain.domain.TLD with no trailing slashes. The subdomain field is optional, and each uniques subdomain will be treated as a new site. The TLD may be any widely supported tld, (e.g. .com, .co.uk, .social, etc.)
 
 # Fixes and Features Roadmap
 - Update requirements.txt to reflect all required libraries

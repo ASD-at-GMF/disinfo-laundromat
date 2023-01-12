@@ -42,3 +42,22 @@ These indicators can be circumstantial correlations and should be substantiated 
   - Libraries
   - Hosting
 - Any Universal Unique Identifier (UUID)
+
+#How to use
+## Comparing to existing indicator corpus
+Included with this tool is a small database of indicators for known sites. For more on creating your own corpus see 'Creating your own corpus' below. 
+
+This tool requires Python 3 and PIP to run and can be obtained by downloading this repository or cloning it using git:
+```
+git clone https://github.com/pbenzoni/disinfo-laundromat.git 
+```
+### Installing requirements 
+
+Once the code is downloaded and you've navigated to the project, install the necessary packages
+```
+pip install -r requirements.txt
+```
+#Fixes and Features Roadmap
+- Update requirements.txt
+
+

@@ -28,8 +28,8 @@ These indicators detemine with a high level of probability that a collection of 
 ## Tier 2: Associative
 These indicators point towards a reasonable likelihood that a collection of sites is owned by the same entity. 
 
-- Shared subnet, e.g 121.100.55._22_ and 121.100.55._45_
-- Any matching meta tags (done)
+- Shared subnet, e.g 121.100.55.*22* and 121.100.55.*45*
+- Any matching meta tags
 
 ## Tier 3: Tertiary 
 These indicators can be circumstantial correlations and should be substantiated with indicators of higher certainty. 

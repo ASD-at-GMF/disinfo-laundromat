@@ -14,6 +14,7 @@ import traceback
 import yaml
 import json
 import tldextract
+import csv
 
 visited = set()
 
@@ -81,9 +82,6 @@ def add_ip_address(domain_name):
             }
         )
 
-        print(
-            "The IP address of the domain name {} is {}".format(domain_name, ip_address)
-        )
     except socket.gaierror:
         print("Could not resolve the domain name {}".format(domain_name))
     finally:
@@ -102,6 +100,14 @@ def add_who_is(url):
         "domain_name": get_domain_name(url),
     }
 
+def parse_classes(url, soup):
+    tag_indicators = []
+    used_classes = set()
+    for elem in soup.select("[class]"):
+        classes = elem["class"]
+        used_classes.update(classes)
+    tag_indicators.append(add_indicator(url, 'css-class', used_classes))
+    return tag_indicators
 
 def parse_meta_tags(url, soup):
 
@@ -112,14 +118,13 @@ def parse_meta_tags(url, soup):
         # Get the name and content attributes of the meta tags
         name = meta_tag.get("name")
         content = meta_tag.get("content")
-        if name and "verification" in name:
+        if name and "verif" in name.lower():
             tag_indicators.append(add_verification_tags(url, name, content))
         if name and name in ["twitter:site", "fb:pages"]:
             tag_indicators.append(add_meta_social_tags(url, name, content))
         else:
             print(meta_tag)
     return tag_indicators
-
 
 def add_builtwith_indicators(domain, save_matches=False):
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
@@ -260,7 +265,6 @@ def find_wallets(url, text):
     
 
 def add_associated_domains_from_cert(url):
-    print(url)
     port = 443
 
     cert = ssl.get_server_certificate((get_domain_name(url), port))
@@ -290,10 +294,16 @@ def find_google_tag_id(url, text):
     return find_with_regex(ga_id_pattern, text, url, "ga_tag_id")
 
 
+def find_yandex_track_id(url, text):
+    ga_id_pattern = "ym\(\d{8}"
+    return find_with_regex(ga_id_pattern, text, url, "yandex_tag_id")
+
+
 def parse_google_ids(url, text):
     tag_indicators = []
     tag_indicators.extend(find_google_analytics_id(url, text))
     tag_indicators.extend(find_google_tag_id(url, text))
+    tag_indicators.extend(find_yandex_track_id(url, text))
     return tag_indicators
 
 def add_cdn_domains(url, soup):
@@ -308,6 +318,7 @@ def add_cdn_domains(url, soup):
             domains.add(domain)
     for domain in domains:
         tag_indicators.append(add_indicator(url, 'cdn-domain', domain))
+    return tag_indicators
 
 
 def add_domain_suffix(url, domain_suffix):
@@ -361,7 +372,7 @@ def crawl(url, visited_urls):
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Print the DOM
-    print(url)
+    #print(soup.prettify())
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
@@ -369,11 +380,12 @@ def crawl(url, visited_urls):
     indicators.extend(parse_google_ids(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(add_cdn_domains(url,soup))
-
     indicators.extend(
         add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
     )
     indicators.extend(parse_domain_name(url))
+    indicators.extend(parse_classes(url,    soup))
+
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file
@@ -393,7 +405,8 @@ def crawl(url, visited_urls):
                 # Follow the link
                 # time.sleep(1)
                 try:
-                    print(href)
+                    #print(href)
+                    continue
                 except Exception:
                     continue
 
@@ -402,19 +415,33 @@ def crawl(url, visited_urls):
 
 if __name__ == "__main__":
     visited_urls = set()
-    # Start the crawler at a specific URL
-    #indicators = crawl("https://waronfakes.com", visited_urls)
-    #indicators = crawl("https://ethplorer.io/", visited_urls)
 
-    indicators = crawl("https://www.rt.com", visited_urls)
+    indicators = []
+    #TODO Add configurable csv name
+    #indicators.extend(crawl('https://inforos.ru', visited_urls))
+    with open('C:\\Users\\PeterBenzoni\\repo\\disinfo-laundromat\\sites_of_concern.csv', 'r') as file:
+        reader = csv.reader(file)
+        next(reader) #skip headers
+        for row in reader:
+            #TODO Make column configurable
+            indicators.extend(crawl(row[1], visited_urls))
+
     attribution_table = pd.DataFrame(
         columns=["indicator_type", "indicator_content", "domain_name"], data=indicators
     )
+
     print(attribution_table)
-    if len(sys.argv) > 1:
-        print(f"Assuming second arg {sys.argv[1]} is a filename")
-        try:
-            with open(sys.argv[1], "w") as f:
-                attribution_table.to_csv(f, index=False)
-        except Exception:
-            print("oops!")
+    #TODO Add configurable csv name
+    with open("indicators.csv", "w", encoding='utf-8') as f:
+        attribution_table.to_csv(f, index=False)
+
+    
+    
+    # if len(sys.argv) > 1:
+    #     print(f"Assuming second arg {sys.argv[1]} is a filename")
+    #     try:
+    #         with open(sys.argv[1], "w") as f:
+    #             attribution_table.to_csv(f, index=False)
+    #     except Exception:
+    #         print("oops!")
+

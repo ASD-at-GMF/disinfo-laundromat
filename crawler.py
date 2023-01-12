@@ -63,11 +63,13 @@ def add_indicator(url, indicator_type, indicator_content):
 def add_ip_address(domain_name):
     ip_indicators = []
     if domain_name.startswith("https://"):
-        domain_name = domain_name[8:]
+        host_name = domain_name[8:]
+    else:
+        host_name = domain_name
 
     try:
         # Resolve the domain name to an IP address
-        ip_address = socket.gethostbyname(domain_name)
+        ip_address = socket.gethostbyname(host_name)
         ip_indicators.append(
             {
                 "indicator_type": "ip",
@@ -141,6 +143,25 @@ def parse_images(url, soup):
             continue #print(ex.message)
 
     return tag_indicators
+
+def add_verification_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "verification_id",
+        "indicator_content": name + "|" + content,
+        "domain_name": get_domain_name(url),
+    }
+
+
+def add_meta_social_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "meta_social",
+        "indicator_content": name + "|" + content,
+        "domain_name": get_domain_name(url),
+    }
 
 def parse_meta_tags(url, soup):
 
@@ -253,26 +274,6 @@ def get_tech_identifiers(domain, api_key, save_matches=False):
         return []
 
 
-def add_verification_tags(url, name, content):
-
-    # Print the name and content attributes
-    return {
-        "indicator_type": "verification_id",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
-
-def add_meta_social_tags(url, name, content):
-
-    # Print the name and content attributes
-    return {
-        "indicator_type": "meta_social",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
-
 def add_meta_generic_tags(url, name, content):
 
     # Print the name and content attributes
@@ -281,6 +282,7 @@ def add_meta_generic_tags(url, name, content):
         "indicator_content": name + "|" + content,
         "domain_name": get_domain_name(url),
     }
+    
 
 def parse_body(url, text):
     tag_indicators = []
@@ -305,8 +307,8 @@ def find_uuids(url, text):
 
 def find_wallets(url, text):
     crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
-    return find_with_regex(crypto_wallet_pattern, text, url, 'crypto-wallet')
-    
+    return find_with_regex(crypto_wallet_pattern, text, url, "crypto-wallet")
+
 
 def add_associated_domains_from_cert(url):
     port = 443
@@ -350,18 +352,19 @@ def parse_google_ids(url, text):
     tag_indicators.extend(find_yandex_track_id(url, text))
     return tag_indicators
 
+
 def add_cdn_domains(url, soup):
     tag_indicators = []
 
-    img_tags = soup.find_all('img')
+    img_tags = soup.find_all("img")
     domains = set()
     for img_tag in img_tags:
-        src = img_tag.get('src')
+        src = img_tag.get("src")
         if src:
             domain = urlsplit(src).hostname
             domains.add(domain)
     for domain in domains:
-        tag_indicators.append(add_indicator(url, 'cdn-domain', domain))
+        tag_indicators.append(add_indicator(url, "cdn-domain", domain))
     return tag_indicators
 
 
@@ -405,10 +408,62 @@ def parse_domain_name(url):
     return tag_indicators
 
 
+def start_urlscan(url):
+    api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
+    urlscan_key = api_keys.get("URLSCAN")
+    if not urlscan_key:
+        print("No urlscan API key provided. Passing...")
+        return None
+    headers = {"API-Key": urlscan_key, "Content-Type": "application/json"}
+    data = {"url": url, "visibility": "private"}
+    response = requests.post(
+        "https://urlscan.io/api/v1/scan/", headers=headers, data=json.dumps(data)
+    )
+    submission_response = response.json()
+    return submission_response["api"]
+
+
+def add_urlscan_indicators(urlscan_result_url):
+    try:
+        result = requests.get(urlscan_result_url)
+        if result.status_code == 404:
+            print("sleeping to give urlscan time to complete")
+            time.sleep(10)
+            result = requests.get(urlscan_result_url)
+        data = result.json()
+        domain = data["page"]["domain"]
+        urlscan_indicators = []
+        urlscan_indicators.extend(
+            [
+                {
+                    "indicator_type": "global_variable",
+                    "indicator_content": variable,
+                    "domain_name": domain,
+                }
+                for variable in data["data"]["globals"]
+            ]
+        )
+        certs = data["lists"]["certificates"]
+        urlscan_indicators.extend(
+            [
+                {
+                    "indicator_type": "urlscan_certificate",
+                    "indicator_content": certificate,
+                    "domain_name": domain,
+                }
+                for certificate in certs
+            ]
+        )
+        return urlscan_indicators
+    except Exception as e:
+        traceback.print_exc()
+        return []
+
+
 def crawl(url, visited_urls):
     indicators = []
     # Add the URL to the set of visited URLs
-    visited_urls.add(get_domain_name(url))  
+    visited_urls.add(get_domain_name(url))
     # Send a GET request to the specified URL
     response = requests.get(url)
 
@@ -416,6 +471,9 @@ def crawl(url, visited_urls):
     # Parse the HTML content of the page
     soup = BeautifulSoup(response.text, "html.parser")
     
+
+    # kick off the urlscan, to return to at the end
+    urlscan_response = start_urlscan(url)
 
     # Print the DOM
     #print(soup.prettify())
@@ -433,7 +491,7 @@ def crawl(url, visited_urls):
     indicators.extend(parse_classes(url, soup))
     indicators.extend(parse_images(url, soup))
     indicators.extend(parse_dom_tree(url, soup))
-
+    indicators.extend(add_urlscan_indicators(urlscan_response))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file
@@ -483,14 +541,3 @@ if __name__ == "__main__":
     #TODO Add configurable csv name
     with open("indicators.csv", "w", encoding='utf-8') as f:
         attribution_table.to_csv(f, index=False)
-
-    
-    
-    # if len(sys.argv) > 1:
-    #     print(f"Assuming second arg {sys.argv[1]} is a filename")
-    #     try:
-    #         with open(sys.argv[1], "w") as f:
-    #             attribution_table.to_csv(f, index=False)
-    #     except Exception:
-    #         print("oops!")
-

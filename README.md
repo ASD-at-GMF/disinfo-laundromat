@@ -22,12 +22,12 @@ These indicators detemine with a high level of probability that a collection of 
 - Shared social media sites in meta 
 - (When not associated with a privacy guard) Matching whois information 
 - (When not associated with a privacy guard) Shared IP address 
-- Shared Content Delivery Network (CDN) 
 - Shared Domain name but different TLD 
 
 ## Tier 2: Associative
 These indicators point towards a reasonable likelihood that a collection of sites is owned by the same entity. 
 
+- Shared Content Delivery Network (CDN) 
 - Shared subnet, e.g 121.100.55.*22* and 121.100.55.*45*
 - Any matching meta tags
 

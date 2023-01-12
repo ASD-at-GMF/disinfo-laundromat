@@ -93,7 +93,8 @@ def add_ip_address(domain_name):
 
 
 def get_who_is(url):
-    return whois.whois(url)
+    result = whois.whois(url)
+    return json.loads(str(result))
 
 
 def add_who_is(url):

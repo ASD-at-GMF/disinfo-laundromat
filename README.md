@@ -30,6 +30,7 @@ These indicators point towards a reasonable likelihood that a collection of site
 - Shared Content Delivery Network (CDN) 
 - Shared subnet, e.g 121.100.55.*22* and 121.100.55.*45*
 - Any matching meta tags
+- Highly similar DOM tree
 
 ## Tier 3: Tertiary 
 These indicators can be circumstantial correlations and should be substantiated with indicators of higher certainty. 
@@ -42,11 +43,14 @@ These indicators can be circumstantial correlations and should be substantiated 
   - Libraries
   - Hosting
 - Any Universal Unique Identifier (UUID)
+- Highly similar images (as determined by pHash difference)
+- Many shared CSS classes 
 
-#How to use
-## Comparing to existing indicator corpus
+# How to use
+
 Included with this tool is a small database of indicators for known sites. For more on creating your own corpus see 'Creating your own corpus' below. 
 
+## Installation 
 This tool requires Python 3 and PIP to run and can be obtained by downloading this repository or cloning it using git:
 ```
 git clone https://github.com/pbenzoni/disinfo-laundromat.git 
@@ -57,7 +61,17 @@ Once the code is downloaded and you've navigated to the project, install the nec
 ```
 pip install -r requirements.txt
 ```
-#Fixes and Features Roadmap
-- Update requirements.txt
+## Comparing to existing indicator corpus
 
+# Fixes and Features Roadmap
+- Update requirements.txt to reflect all required libraries
+- Add aditionnal Indicators:
+  - Shared usernames
+  - Similar Privacy Policies
+  - Shared contact informaiton
+  - Similar sitemaps
+  - Similar content
+  - Similar external endpoint calls
+- Parsing internal pages for additional textual indicators
+- Intergration with a search api to find mirror site and other leads from across the web
 

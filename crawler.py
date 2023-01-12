@@ -59,11 +59,13 @@ def add_indicator(url, indicator_type, indicator_content):
 def add_ip_address(domain_name):
     ip_indicators = []
     if domain_name.startswith("https://"):
-        domain_name = domain_name[8:]
+        host_name = domain_name[8:]
+    else:
+        host_name = domain_name
 
     try:
         # Resolve the domain name to an IP address
-        ip_address = socket.gethostbyname(domain_name)
+        ip_address = socket.gethostbyname(host_name)
         ip_indicators.append(
             {
                 "indicator_type": "ip",

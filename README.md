@@ -2,13 +2,9 @@
 
 The Disinformation Laundromat uses a set of indicators extracted from a webapge to make claims about who owns a collection of websites. 
 
-## Tier 0: Open Admission
-These indicators  overtly demonstrate shared ownership across examined sites: 
-
-- Shared domain name
-
 ## Tier 1: Conclusive
 These indicators detemine with a high level of probability that a collection of sites is owned by the same entity. 
+- Shared domain name
 - IDs
   - Google Adsense IDs 
   - Google Analytics IDs 

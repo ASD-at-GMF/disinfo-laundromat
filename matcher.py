@@ -88,7 +88,9 @@ def find_all_matches(indicators, result_dir=None) -> pd.DataFrame:
 if __name__ == "__main__":
 
     if len(sys.argv) < 2:
-        print("Error! We need an input file and a result directory")
+        print(
+            "Error! We need arguments. Script use: python3/matcher.py <input_file> <optional result_diirectory>"
+        )
     else:
         indicator_file = sys.argv[1]
         if len(sys.argv) > 2:

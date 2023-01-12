@@ -256,8 +256,8 @@ def find_uuids(url, text):
 
 def find_wallets(url, text):
     crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
-    return find_with_regex(crypto_wallet_pattern, text, url, 'crypto-wallet')
-    
+    return find_with_regex(crypto_wallet_pattern, text, url, "crypto-wallet")
+
 
 def add_associated_domains_from_cert(url):
     print(url)
@@ -296,18 +296,20 @@ def parse_google_ids(url, text):
     tag_indicators.extend(find_google_tag_id(url, text))
     return tag_indicators
 
+
 def add_cdn_domains(url, soup):
     tag_indicators = []
 
-    img_tags = soup.find_all('img')
+    img_tags = soup.find_all("img")
     domains = set()
     for img_tag in img_tags:
-        src = img_tag.get('src')
+        src = img_tag.get("src")
         if src:
             domain = urlsplit(src).hostname
             domains.add(domain)
     for domain in domains:
-        tag_indicators.append(add_indicator(url, 'cdn-domain', domain))
+        tag_indicators.append(add_indicator(url, "cdn-domain", domain))
+    return tag_indicators
 
 
 def add_domain_suffix(url, domain_suffix):
@@ -350,15 +352,70 @@ def parse_domain_name(url):
     return tag_indicators
 
 
+def start_urlscan(url):
+    api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
+    urlscan_key = api_keys.get("URLSCAN")
+    if not urlscan_key:
+        print("No urlscan API key provided. Passing...")
+        return None
+    headers = {"API-Key": urlscan_key, "Content-Type": "application/json"}
+    data = {"url": url, "visibility": "private"}
+    response = requests.post(
+        "https://urlscan.io/api/v1/scan/", headers=headers, data=json.dumps(data)
+    )
+    submission_response = response.json()
+    return submission_response["api"]
+
+
+def add_urlscan_indicators(urlscan_result_url):
+    try:
+        result = requests.get(urlscan_result_url)
+        if result.status_code == 404:
+            print("sleeping to give urlscan time to complete")
+            time.sleep(10)
+            result = requests.get(urlscan_result_url)
+        data = result.json()
+        domain = data["page"]["domain"]
+        urlscan_indicators = []
+        urlscan_indicators.extend(
+            [
+                {
+                    "indicator_type": "global_variable",
+                    "indicator_content": variable,
+                    "domain_name": domain,
+                }
+                for variable in data["data"]["globals"]
+            ]
+        )
+        certs = data["lists"]["certificates"]
+        urlscan_indicators.extend(
+            [
+                {
+                    "indicator_type": "global_variable",
+                    "indicator_content": certificate,
+                    "domain_name": domain,
+                }
+                for certificate in certs
+            ]
+        )
+        return urlscan_indicators
+    except Exception as e:
+        traceback.print_exc()
+        return []
+
+
 def crawl(url, visited_urls):
     indicators = []
     # Add the URL to the set of visited URLs
-    visited_urls.add(get_domain_name(url))  
+    visited_urls.add(get_domain_name(url))
     # Send a GET request to the specified URL
     response = requests.get(url)
 
     # Parse the HTML content of the page
     soup = BeautifulSoup(response.text, "html.parser")
+
+    # kick off the urlscan, to return to at the end
+    urlscan_response = start_urlscan(url)
 
     # Print the DOM
     print(url)
@@ -368,12 +425,13 @@ def crawl(url, visited_urls):
     indicators.extend(parse_body(url, response.text))
     indicators.extend(parse_google_ids(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
-    indicators.extend(add_cdn_domains(url,soup))
+    indicators.extend(add_cdn_domains(url, soup))
 
     indicators.extend(
         add_builtwith_indicators(domain=get_domain_name(url), save_matches=False)
     )
     indicators.extend(parse_domain_name(url))
+    indicators.extend(add_urlscan_indicators(urlscan_response))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file
@@ -403,8 +461,8 @@ def crawl(url, visited_urls):
 if __name__ == "__main__":
     visited_urls = set()
     # Start the crawler at a specific URL
-    #indicators = crawl("https://waronfakes.com", visited_urls)
-    #indicators = crawl("https://ethplorer.io/", visited_urls)
+    # indicators = crawl("https://waronfakes.com", visited_urls)
+    # indicators = crawl("https://ethplorer.io/", visited_urls)
 
     indicators = crawl("https://www.rt.com", visited_urls)
     attribution_table = pd.DataFrame(

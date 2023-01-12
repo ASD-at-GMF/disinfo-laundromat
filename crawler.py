@@ -113,6 +113,16 @@ def parse_classes(url, soup):
     return tag_indicators
 
 
+def parse_dom_tree(url, soup):
+    tag_indicators = []
+    for text in soup.find_all(text=True):
+        text.replace_with("")
+    for tag in soup.find_all():
+        tag.attrs = {}
+    #print(soup.prettify())
+    tag_indicators.append(add_indicator(url, 'dom-tree', soup.prettify()))
+    return tag_indicators
+
 def parse_images(url, soup):
     tag_indicators = []
     image_links = []
@@ -135,7 +145,7 @@ def parse_images(url, soup):
 def parse_meta_tags(url, soup):
 
     meta_tags = soup.find_all("meta")
-    tag_indicators = []
+    tag_indicators = []  
     # Iterate over the meta tags
     for meta_tag in meta_tags:
         # Get the name and content attributes of the meta tags
@@ -405,6 +415,7 @@ def crawl(url, visited_urls):
     print(url)
     # Parse the HTML content of the page
     soup = BeautifulSoup(response.text, "html.parser")
+    
 
     # Print the DOM
     #print(soup.prettify())
@@ -421,6 +432,8 @@ def crawl(url, visited_urls):
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))
     indicators.extend(parse_images(url, soup))
+    indicators.extend(parse_dom_tree(url, soup))
+
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
         # Write the prettified HTML content to the file

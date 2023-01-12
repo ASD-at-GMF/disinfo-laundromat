@@ -391,7 +391,7 @@ def add_urlscan_indicators(urlscan_result_url):
         urlscan_indicators.extend(
             [
                 {
-                    "indicator_type": "global_variable",
+                    "indicator_type": "urlscan_certificate",
                     "indicator_content": certificate,
                     "domain_name": domain,
                 }

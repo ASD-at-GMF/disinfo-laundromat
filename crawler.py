@@ -117,13 +117,15 @@ def parse_meta_tags(url, soup):
     for meta_tag in meta_tags:
         # Get the name and content attributes of the meta tags
         name = meta_tag.get("name")
+        prop = meta_tag.get("property")
         content = meta_tag.get("content")
         if name and "verif" in name.lower():
             tag_indicators.append(add_verification_tags(url, name, content))
-        if name and name in ["twitter:site", "fb:pages"]:
+        elif name and name in ["twitter:site", "fb:pages"]:
             tag_indicators.append(add_meta_social_tags(url, name, content))
-        else:
-            print(meta_tag)
+        elif (name or prop) and content:
+            name = name or prop
+            tag_indicators.append(add_meta_generic_tags(url, name, content))
     return tag_indicators
 
 def add_builtwith_indicators(domain, save_matches=False):
@@ -237,6 +239,15 @@ def add_meta_social_tags(url, name, content):
         "domain_name": get_domain_name(url),
     }
 
+
+def add_meta_generic_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "meta_generic",
+        "indicator_content": name + "|" + content,
+        "domain_name": get_domain_name(url),
+    }
 
 def parse_body(url, text):
     tag_indicators = []

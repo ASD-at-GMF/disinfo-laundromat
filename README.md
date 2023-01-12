@@ -77,6 +77,8 @@ by default, input-filename.csv must contain at least one column of urls with the
 
 # Fixes and Features Roadmap
 - Update requirements.txt to reflect all required libraries
+- Supporting similarity matching for existing indicators
+- Adding support for adding new matching functions via a data dictionary
 - Add aditionnal Indicators:
   - Shared usernames
   - Similar Privacy Policies

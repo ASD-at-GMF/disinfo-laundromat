@@ -104,6 +104,24 @@ def add_who_is(url):
         "domain_name": get_domain_name(url),
     }
 
+def add_verification_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "verification_id",
+        "indicator_content": name + "|" + content,
+        "domain_name": get_domain_name(url),
+    }
+
+
+def add_meta_social_tags(url, name, content):
+
+    # Print the name and content attributes
+    return {
+        "indicator_type": "meta_social",
+        "indicator_content": name + "|" + content,
+        "domain_name": get_domain_name(url),
+    }
 
 def parse_meta_tags(url, soup):
 
@@ -213,26 +231,6 @@ def get_tech_identifiers(domain, api_key, save_matches=False):
         traceback.print_exc()
     finally:
         return []
-
-
-def add_verification_tags(url, name, content):
-
-    # Print the name and content attributes
-    return {
-        "indicator_type": "verification_id",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
-
-def add_meta_social_tags(url, name, content):
-
-    # Print the name and content attributes
-    return {
-        "indicator_type": "meta_social",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
 
 
 def parse_body(url, text):

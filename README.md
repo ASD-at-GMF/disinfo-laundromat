@@ -17,11 +17,11 @@ These indicators detemine with a high level of probability that a collection of 
     - Facebook-domain-verification
     - Yandex-verification
     - Pocket-site-verification
-- Crypto wallet id 
+- Crypto wallet ID 
 - Multi-domain certificate 
 - Shared social media sites in meta 
 - (When not associated with a privacy guard) Matching whois information 
-- (When not associated with a privacy guard) Shared IP 
+- (When not associated with a privacy guard) Shared IP address 
 - Shared Content Delivery Network (CDN) 
 - Shared Domain name but different TLD 
 

@@ -14,37 +14,6 @@ DOMAIN = "domain_name"
 INDICATOR_TYPE = "indicator_type"
 INDICATOR = "indicator_content"
 
-methods = {
-    "direct_match": 1,
-    "dict_direct_match": 1,
-    "intersection": 1,
-    "iou": 1,
-    "abs_difference_vs_threshold": 1,
-}
-
-DIRECT_MATCHING_FEATURES = [
-    "ip",
-    "domain",
-    "cert-domain",
-    "cdn-domain",
-    "domain_suffix",
-    "domain",
-    "uuid",
-    "ga_id",
-    "crypto-wallet",
-    "ga_tag_id",
-    "meta_social",
-    "subnet",
-    "verification_id",
-    "yandex_tag_id",
-    "global_variable",  # compare this directly as a string
-    "techstack",
-]
-
-WHOIS_FEATURES = ["registrar", "whois_server", "org", "city", "state", "country"]
-
-URLSCAN_CERT_FEATURES = ["certificate-subjectName", "certificate-issuer"]
-
 
 def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
     df = df[["domain_name", feature]]
@@ -63,16 +32,17 @@ def convert_whois(data):
 
 
 def whois_preprocess(df: pd.DataFrame, whois_feature: str) -> pd.DataFrame:
-    whois_df = df.loc[df["indicator_type"] == whois_feature, :].reset_index()
-    whois_df["indicator_content"] = whois_df["indicator_content"].map(convert_whois)
-    whois_df = pd.concat(
-        [whois_df, pd.json_normalize(whois_df["indicator_content"])], axis=1
+    whois_df = df.loc[df[INDICATOR_TYPE] == whois_feature, :].reset_index()
+    whois_df[INDICATOR] = (
+        whois_df[INDICATOR].map(convert_whois).map(partial(prefix_keys, prefix="whois"))
     )
+    whois_df = pd.concat([whois_df, pd.json_normalize(whois_df[INDICATOR])], axis=1)
+
     return whois_df
 
 
 def feature_df_preprocess(feature_df: pd.DataFrame, feature: str) -> pd.DataFrame:
-    whois_feature_df = feature_df[["domain_name", feature]].set_index("domain_name")
+    whois_feature_df = feature_df[[DOMAIN, feature]].set_index(DOMAIN)
     whois_feature_df = whois_feature_df[feature].explode().reset_index()
     whois_feature_df = (
         whois_feature_df.replace("REDACTED FOR PRIVACY", np.nan)
@@ -91,20 +61,16 @@ def prefix_keys(data_dict: Dict[str, Any], prefix: str) -> Dict[str, Any]:
 
 
 def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:
-    cert_df = df.loc[df["indicator_type"] == cert_feature, :].reset_index()
+    cert_df = df.loc[df[INDICATOR_TYPE] == cert_feature, :].reset_index()
     try:
-        cert_df["indicator_content"] = cert_df["indicator_content"].map(json.loads)
+        cert_df[INDICATOR] = cert_df[INDICATOR].map(json.loads)
     except json.JSONDecodeError:
         # this is bad and should be fixed by the change in crawler line 462
-        cert_df["indicator_content"] = cert_df["indicator_content"].map(
-            ast.literal_eval
-        )
-    cert_df["indicator_content"] = cert_df["indicator_content"].map(
+        cert_df[INDICATOR] = cert_df[INDICATOR].map(ast.literal_eval)
+    cert_df[INDICATOR] = cert_df[INDICATOR].map(
         partial(prefix_keys, prefix="certificate")
     )
-    cert_df = pd.concat(
-        [cert_df, pd.json_normalize(cert_df["indicator_content"])], axis=1
-    )
+    cert_df = pd.concat([cert_df, pd.json_normalize(cert_df[INDICATOR])], axis=1)
     return cert_df
 
 
@@ -115,47 +81,94 @@ def find_direct_matches(
     feature_df: pd.DataFrame,
     feature: str,
     comparison_df: Optional[pd.DataFrame] = None,
-    id_content="indicator_content",
+    indicator=INDICATOR,
 ) -> pd.DataFrame:
     # filter out invalid data
-    feature_df = basic_preprocess(feature_df, id_content)
+    feature_df = basic_preprocess(feature_df, indicator)
     if comparison_df is not None:
-        comparison_df = basic_preprocess(comparison_df, id_content)
+        comparison_df = basic_preprocess(comparison_df, indicator)
     else:
         comparison_df = feature_df
-    test_matches = pd.merge(feature_df, comparison_df, how="inner", on=id_content)
+    test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
     matches = test_matches[test_matches.domain_name_x != test_matches.domain_name_y]
     # deduplicating
     matches = matches[matches.domain_name_x < matches.domain_name_y]
     matches["match_type"] = feature
-    matches = matches.rename(columns={id_content: "match_value"})
+    matches = matches.rename(columns={indicator: "match_value"})
     return matches
+
+
+def find_iou_matches(
+    feature_df: pd.DataFrame,
+    feature: str,
+    comparison_df: Optional[pd.DataFrame] = None,
+    threshold: float = 0.9,
+) -> pd.DataFrame:
+    # the better way to do this is to map the unique features to integers, e.g. with pandas indexing
+    # and do this work in numpy/scipy
+    def iou(set1, set2):
+        return len(set1.intersection(set2)) / len(set1.union(set2))
+
+    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(set)
+    if comparison_df is not None:
+        comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(set)
+        f_index = feature_sets.index.values
+        c_index = comparison_sets.index.values
+        iou_data = [
+            {
+                "domain_name_x": f_domain,
+                "domain_name_y": c_domain,
+                "match_value": round(
+                    iou(feature_sets.loc[f_domain], comparison_sets.loc[c_domain]), 3
+                ),
+            }
+            for f_domain in f_index
+            for c_domain in c_index
+        ]
+    else:
+        domain_index = feature_sets.index.values
+        iou_data = []
+        for indx1, domain1 in enumerate(domain_index[:-1]):
+            for indx2, domain2 in enumerate(domain_index[indx1 + 1 :]):
+                iou_data.append(
+                    {
+                        "domain_name_x": domain1,
+                        "domain_name_y": domain2,
+                        "match_value": round(
+                            iou(feature_sets.loc[domain1], feature_sets.loc[domain2]), 3
+                        ),
+                    }
+                )
+    result = pd.DataFrame(iou_data)
+    result["match_type"] = feature
+    result = result[result["match_value"] >= threshold]
+    return result
 
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
-    whois_feature="whois",
+    feature="whois",
     comparison_df: Optional[pd.DataFrame] = None,
 ):
-    whois_df = whois_preprocess(feature_df, whois_feature)
+    whois_df = whois_preprocess(feature_df, feature)
     if comparison_df is not None:
-        whois_comparison_df = whois_preprocess(comparison_df, whois_feature)
+        whois_comparison_df = whois_preprocess(comparison_df, feature)
     else:
         whois_comparison_df = None
     feature_matches = []
-    for feature in WHOIS_FEATURES:
-        whois_feature_df = feature_df_preprocess(whois_df, feature)
+    for sub_feature in WHOIS_FEATURES:
+        whois_feature_df = feature_df_preprocess(whois_df, sub_feature)
         if whois_comparison_df is not None:
             whois_feature_comparison_df = feature_df_preprocess(
-                whois_comparison_df, feature
+                whois_comparison_df, sub_feature
             )
         else:
             whois_feature_comparison_df = whois_feature_df
         matches = find_direct_matches(
             whois_feature_df,
-            feature=feature,
+            feature=sub_feature,
             comparison_df=whois_feature_comparison_df,
-            id_content=feature,
+            indicator=sub_feature,
         )
         feature_matches.append(matches)
     whois_matches = pd.concat(feature_matches)
@@ -165,77 +178,104 @@ def parse_whois_matches(
 # this is very similar to whois and can be refactored
 def parse_certificate_matches(
     feature_df: pd.DataFrame,
-    certificate_feature="urlscan_certificate",
+    feature="urlscan_certificate",
     comparison_df: Optional[pd.DataFrame] = None,
 ):
-    cert_df = cert_preprocess(feature_df, certificate_feature)
+    cert_df = cert_preprocess(feature_df, feature)
     if comparison_df is not None:
-        cert_comparison_df = cert_preprocess(comparison_df, certificate_feature)
+        cert_comparison_df = cert_preprocess(comparison_df, feature)
     else:
         cert_comparison_df = None
     feature_matches = []
-    for feature in URLSCAN_CERT_FEATURES:
-        cert_feature_df = feature_df_preprocess(cert_df, feature)
+    for sub_feature in URLSCAN_CERT_FEATURES:
+        cert_feature_df = feature_df_preprocess(cert_df, sub_feature)
         if cert_comparison_df is not None:
             cert_feature_comparison_df = feature_df_preprocess(
-                cert_comparison_df, feature
+                cert_comparison_df, sub_feature
             )
         else:
             cert_feature_comparison_df = cert_feature_df
         matches = find_direct_matches(
             cert_feature_df,
-            feature=feature,
+            feature=sub_feature,
             comparison_df=cert_feature_comparison_df,
-            id_content=feature,
+            indicator=sub_feature,
         )
         feature_matches.append(matches)
     cert_matches = pd.concat(feature_matches)
     return cert_matches
 
 
-def find_indicator_matches(data, corpus, result_dir=None) -> pd.DataFrame:
+## Main program
+FEATURE_MATCHING: Dict[str, str] = {
+    "ip": "direct",
+    "domain": "direct",
+    "cert-domain": "direct",
+    "cdn-domain": "iou",
+    "domain_suffix": "direct",
+    "domain": "direct",
+    "uuid": "direct",
+    "ga_id": "direct",
+    "crypto-wallet": "direct",
+    "ga_tag_id": "direct",
+    "meta_social": "direct",
+    "subnet": "direct",
+    "verification_id": "direct",
+    "yandex_tag_id": "direct",
+    "global_variable": "iou",
+    "techstack": "iou",
+    "whois": "whois",  # dict_direct_match
+    "urlscan_certificate": "certificate",  # dict_direct_match
+}
+
+WHOIS_FEATURES = [
+    "whois-registrar",
+    "whois-whois_server",
+    "whois-org",
+    "whois-city",
+    "whois-state",
+    "whois-country",
+]
+
+URLSCAN_CERT_FEATURES = ["certificate-subjectName"]
+
+DICT_FEATURES = {"whois": WHOIS_FEATURES, "certificate": URLSCAN_CERT_FEATURES}
+
+# to add a new method, write a function with the expected arguments:
+# - feature_df,
+# - feature,
+# - comparison_df (with default value Non)
+# then add the method to this dictionary. to use the method on a feature, set the value
+# of a feature in the FEATURE_MATCHING dictionary above to the label/key you use in this dictionary.
+methods = {
+    "direct": find_direct_matches,
+    "whois": parse_whois_matches,
+    "certificate": parse_certificate_matches,
+    "iou": find_iou_matches,
+    # "dict_direct_match"
+    # "intersection"
+    # "iou"
+    # "abs_difference_vs_threshold"
+}
+
+
+def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     matches_per_feature = []
-    for feature in DIRECT_MATCHING_FEATURES:
-        feature_df = data[data["indicator_type"] == feature]
-        comparison_df = corpus[corpus["indicator_type"] == feature]
+    for feature, method in FEATURE_MATCHING.items():
+        feature_df = data[data[INDICATOR_TYPE] == feature]
         if feature_df.shape[0] > 1:
-            feature_matches = find_direct_matches(
-                feature_df, feature, comparison_df=comparison_df
+            if comparison is not None:
+                comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
+            else:
+                comparison_df = None
+            feature_matches = methods[method](
+                feature_df=feature_df, feature=feature, comparison_df=comparison_df
             )
             matches_per_feature.append(feature_matches)
             if result_dir:
                 feature_matches.to_csv(
                     f"{result_dir}/{feature}_matches.csv", index=False
                 )
-    whois_matches = parse_whois_matches(feature_df=data, comparison_df=corpus)
-    if result_dir:
-        whois_matches.to_csv(f"{result_dir}/whois_matches.csv", index=False)
-    matches_per_feature.append(whois_matches)
-    cert_matches = parse_certificate_matches(data)
-    if result_dir:
-        cert_matches.to_csv(f"{result_dir}/cert_matches.csv", index=False)
-    matches_per_feature.append(cert_matches)
-    all_matches = pd.concat(matches_per_feature)
-    return all_matches
-
-
-def find_pairwise_matches(data, result_dir=None) -> pd.DataFrame:
-    matches_per_feature = []
-
-    for feature in DIRECT_MATCHING_FEATURES:
-        feature_df = data[data["indicator_type"] == feature]
-        feature_matches = find_direct_matches(feature_df, feature)
-        if result_dir:
-            feature_matches.to_csv(f"{result_dir}/{feature}_matches.csv", index=False)
-        matches_per_feature.append(feature_matches)
-    whois_matches = parse_whois_matches(data)
-    if result_dir:
-        whois_matches.to_csv(f"{result_dir}/whois_matches.csv", index=False)
-    matches_per_feature.append(whois_matches)
-    cert_matches = parse_certificate_matches(data)
-    if result_dir:
-        cert_matches.to_csv(f"{result_dir}/cert_matches.csv", index=False)
-    matches_per_feature.append(cert_matches)
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 
@@ -245,7 +285,7 @@ def compare_indicator_files(file1, file2, result_dir=None, result_file=None):
     data2 = pd.read_csv(file2)
     if not result_file:
         result_file = f"{Path(file1).stem}_{Path(file2).stem}_results.csv"
-    matches = find_indicator_matches(data1, data2, result_dir=result_dir)
+    matches = find_matches(data1, data2, result_dir=result_dir)
     print(f"Matches found: {matches.shape[0]}")
     print(
         f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
@@ -257,7 +297,7 @@ def pairwise_comparison(input_file, result_dir=None, result_file=None):
     data = pd.read_csv(input_file)
     if not result_file:
         result_file = Path(input_file).stem + "_results.csv"
-    matches = find_pairwise_matches(data, result_dir=result_dir)
+    matches = find_matches(data, result_dir=result_dir)
     print(f"Matches found: {matches.shape[0]}")
     print(
         f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
@@ -274,6 +314,7 @@ if __name__ == "__main__":
         "-f", "--file", type=str, help="file of indicators to match"
     )
     parent_parser.add_argument(
+        "-r",
         "--result-dir",
         type=str,
         help="directory to save intermediary match results",
@@ -318,7 +359,7 @@ if __name__ == "__main__":
 
     if args.command == "compare":
         compare_indicator_files(
-            file1=args.file1,
+            file1=args.file,
             file2=args.file2,
             result_dir=result_dir,
             result_file=result_file,

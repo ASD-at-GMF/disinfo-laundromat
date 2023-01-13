@@ -9,7 +9,7 @@ Some of the common ways to create your own, if you cannot find one that works fo
 - The Wikipedia pages of the language 
 - Archived literature in that language
 
-You can also just use your own corpus to create a stopword list. 
+You can also use your own corpus to create a stopword list. 
 
 ## Multi-Language Resources
 

@@ -560,8 +560,8 @@ if __name__ == "__main__":
         description="Match indicators across sites.", add_help=False
     )
     parser.add_argument(
-        "-i",
-        "--input",
+        "-f",
+        "--file",
         type=str,
         help="file containing list of domains",
         required=True,

@@ -102,6 +102,7 @@ See matches.csv
   
  ## Content Parsing and Comparison
 - Parsing internal pages using sitemaps for additional textual indicators and content gathering and comparison
+- modifying match.py to allow for similarity based textual comparisons across the network
 - Integration with translation tools to find translated content
 - Intergration with a search api to find mirror site and other leads from across the web
 

@@ -436,50 +436,46 @@ def start_urlscan(url):
 
 
 def add_urlscan_indicators(domain, urlscan_result_url):
-    try:
-        result = requests.get(urlscan_result_url)
-        if result.status_code == 404:
-            print("sleeping for urlscan results")
-            time.sleep(20)
-        data = result.json()
-        urlscan_indicators = []
-        urlscan_indicators.extend(
-            [
-                {
-                    "indicator_type": "global_variable",
-                    "indicator_content": json.dumps(variable),
-                    "domain_name": domain,
-                }
-                for variable in data["data"]["globals"]
-            ]
-        )
-        certs = data["lists"]["certificates"]
-        urlscan_indicators.extend(
-            [
-                {
-                    "indicator_type": "urlscan_certificate",
-                    "indicator_content": json.dumps(certificate),
-                    "domain_name": domain,
-                }
-                for certificate in certs
-            ]
-        )
-        # wappalyzer is used to detect tech used in the website
-        detected_tech = data["meta"]["processors"]["wappa"]["data"]
-        urlscan_indicators.extend(
-            [
-                {
-                    "indicator_type": "techstack",
-                    "indicator_content": tech["app"],
-                    "domain_name": domain,
-                }
-                for tech in detected_tech
-            ]
-        )
-        return urlscan_indicators
-    except Exception as e:
-        traceback.print_exc()
-        return []
+    result = requests.get(urlscan_result_url)
+    if result.status_code == 404:
+        print("sleeping for urlscan results")
+        time.sleep(20)
+    data = result.json()
+    urlscan_indicators = []
+    urlscan_indicators.extend(
+        [
+            {
+                "indicator_type": "global_variable",
+                "indicator_content": json.dumps(variable),
+                "domain_name": domain,
+            }
+            for variable in data["data"]["globals"]
+        ]
+    )
+    certs = data["lists"]["certificates"]
+    urlscan_indicators.extend(
+        [
+            {
+                "indicator_type": "urlscan_certificate",
+                "indicator_content": json.dumps(certificate),
+                "domain_name": domain,
+            }
+            for certificate in certs
+        ]
+    )
+    # wappalyzer is used to detect tech used in the website
+    detected_tech = data["meta"]["processors"]["wappa"]["data"]
+    urlscan_indicators.extend(
+        [
+            {
+                "indicator_type": "techstack",
+                "indicator_content": tech["app"],
+                "domain_name": domain,
+            }
+            for tech in detected_tech
+        ]
+    )
+    return urlscan_indicators
 
 
 def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
@@ -564,8 +560,8 @@ if __name__ == "__main__":
         description="Match indicators across sites.", add_help=False
     )
     parser.add_argument(
-        "-i",
-        "--input",
+        "-f",
+        "--file",
         type=str,
         help="file containing list of domains",
         required=True,
@@ -588,12 +584,7 @@ if __name__ == "__main__":
         output_file = Path(args.input).stem + "_indicators.csv"
     input_data = pd.read_csv(args.input)
     domains = input_data[domain_col]
-    url_scan = True
-    url_scan_submissions = {}
     for domain in domains:
-        print(f"Collecting {domain}")
-        if url_scan:
-            url_scan_submissions[domain] = start_urlscan(domain)
         try:
             indicators = crawl(domain, visited_urls)
             write_indicators(indicators, output_file=output_file)
@@ -606,11 +597,16 @@ if __name__ == "__main__":
     # except Exception as e:
     #     print("Builtwith indicators failed. Continuing on.")
     print("Running urlscans")
+    url_scan_submissions = {}
+    for domain in domains:
+        print(f"Collecting {domain}")
+        url_scan_submissions[domain] = start_urlscan(domain)
+    # this way we can retry pulling if something fails
     with open("urlscan_submissions.json", "w") as f:
-        json.dumps(
-            url_scan_submissions
-        )  # this way we can retry pulling if something fails
-    time.sleep(15)
+        json.dump(url_scan_submissions, f)
+    time.sleep(60)  # this should be replaced with more clever retrying
+    with open("urlscan_submissions.json", "r") as f:
+        url_scan_submissions = json.load(f)
 
     for domain, url_submission in url_scan_submissions.items():
         try:

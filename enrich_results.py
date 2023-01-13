@@ -54,7 +54,7 @@ if __name__ == "__main__":
     fname = sys.argv[1]
     df = pd.read_csv(fname)
     enriched_df = enrich_results(df)
-    outname = Path(fname).stem + "_enriched.csv"
+    outname = Path(fname).parent / (Path(fname).stem + "_enriched.csv")
     enriched_df.to_csv(outname)
     aggregated = to_gephi(enriched_df)
-    aggregated.to_csv(Path(fname).stem + "_gephi.csv")
+    aggregated.to_csv(Path(fname).parent / (Path(fname).stem + "_gephi.csv"))

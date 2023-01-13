@@ -206,71 +206,75 @@ def bulk_builtwith_query(domains: List[str], save_matches: bool = False):
 
 
 def get_techstack_indicators(domains: List[str], api_key: str):
+    domain_list = ",".join(domains)
     tech_stack_query = (
-        f"https://api.builtwith.com/v20/api.json?KEY={api_key}&LOOKUP={domain}"
+        f"https://api.builtwith.com/v20/api.json?KEY={api_key}&LOOKUP={domain_list}"
     )
     try:
         api_result = requests.get(tech_stack_query)
         data = json.loads(api_result.content)
         # API supports querying multiple sites at a time, hence the embedded structure
-        result = data["Results"][0]["Result"]
-        tech_stack = []
-        for path in result["Paths"]:
-            technologies = [
-                {
-                    "indicator_type": "techstack",
-                    "indicator_content": {
-                        "name": tech.get("Name"),
-                        "link": tech.get("Link"),
-                        "tag": tech.get("Tag"),
-                        "subdomain": path["SubDomain"],
-                    },
-                    "domain_name": domain,
-                }
-                for tech in path["Technologies"]
-            ]
-            tech_stack.extend(technologies)
-        return tech_stack
-    except IndexError as e:
+        for result_item in data["Results"]:
+            result = result_item["Result"]
+            tech_stack = []
+            for path in result["Paths"]:
+                technologies = [
+                    {
+                        "indicator_type": "techstack",
+                        "indicator_content": {
+                            "name": tech.get("Name"),
+                            "link": tech.get("Link"),
+                            "tag": tech.get("Tag"),
+                            "subdomain": path["SubDomain"],
+                        },
+                        "domain_name": domain,
+                    }
+                    for tech in path["Technologies"]
+                ]
+                tech_stack.extend(technologies)
+            return tech_stack
+    except IndexError:
         print(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
         traceback.print_exc()
-    except Exception as e:
+    except Exception:
         traceback.print_exc()
     finally:
         return []
 
 
 def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = False):
+    domain_list = ",".join(domains)
     tech_relation_query = (
-        f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain}"
+        f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain_list}"
     )
     api_result = requests.get(tech_relation_query)
 
     try:
         data = json.loads(api_result.content)
-        relations = data["Relationships"][0]["Identifiers"]
-        matches_df = (
-            pd.DataFrame(relations).explode("Matches").rename(columns=str.lower)
-        )
-        if save_matches:
-            matches_df.to_csv(f"{domain}_identifier_matches.csv")
-        identifiers = (
-            matches_df.groupby(["type", "value"])["matches"]
-            .count()
-            .to_frame("num_matches")
-            .reset_index()
-        )
-        # applying indicator structure
-        return [
-            {
-                "indicator_type": "tech_identifier",
-                "indicator_content": identifier,
-                "domain_name": domain,
-            }
-            for identifier in identifiers.to_dict(orient="records")
-        ]
+        for result_item in data["Relationships"]:
+            relations = result_item["Identifiers"]
+            matches_df = (
+                pd.DataFrame(relations).explode("Matches").rename(columns=str.lower)
+            )
+            if save_matches:
+                matches_df.to_csv(f"{domain}_identifier_matches.csv")
+            identifiers = (
+                matches_df.groupby(["type", "value"])["matches"]
+                .count()
+                .to_frame("num_matches")
+                .reset_index()
+            )
+            # applying indicator structure
+            return [
+                {
+                    "indicator_type": "tech_identifier",
+                    "indicator_content": identifier,
+                    "domain_name": domain,
+                }
+                for identifier in identifiers.to_dict(orient="records")
+            ]
     except IndexError as e:
         print(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
@@ -431,19 +435,19 @@ def start_urlscan(url):
     return submission_response["api"]
 
 
-def add_urlscan_indicators(urlscan_result_url):
+def add_urlscan_indicators(domain, urlscan_result_url):
     try:
         result = requests.get(urlscan_result_url)
         if result.status_code == 404:
-            raise HTTPError("results do not exist yet")
+            print("sleeping for urlscan results")
+            time.sleep(20)
         data = result.json()
-        domain = data["page"]["domain"]
         urlscan_indicators = []
         urlscan_indicators.extend(
             [
                 {
                     "indicator_type": "global_variable",
-                    "indicator_content": variable,
+                    "indicator_content": json.dumps(variable),
                     "domain_name": domain,
                 }
                 for variable in data["data"]["globals"]
@@ -454,7 +458,7 @@ def add_urlscan_indicators(urlscan_result_url):
             [
                 {
                     "indicator_type": "urlscan_certificate",
-                    "indicator_content": certificate,
+                    "indicator_content": json.dumps(certificate),
                     "domain_name": domain,
                 }
                 for certificate in certs
@@ -498,12 +502,9 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     indicators.extend(parse_google_ids(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(add_cdn_domains(url, soup))
-    # indicators.extend(
-    #     add_builtwith_indicators(domain=domain, save_matches=False)
-    # )
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))
-    indicators.extend(parse_images(url, soup))
+    # indicators.extend(parse_images(url, soup))
     indicators.extend(parse_dom_tree(url, soup))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:
@@ -584,8 +585,7 @@ if __name__ == "__main__":
     domain_col = args.domain_column
     output_file = args.output
     if output_file is None:
-        output_file = Path(args.input).stem + "_results.csv"
-
+        output_file = Path(args.input).stem + "_indicators.csv"
     input_data = pd.read_csv(args.input)
     domains = input_data[domain_col]
     url_scan = True
@@ -600,18 +600,22 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Failing error on {domain}. See traceback below. Soldiering on...")
             traceback.print_exc()
+    # try:
+    #     builtwith_indicators = bulk_builtwith_query(domains=domains, save_matches=False)
+    #     write_indicators(builtwith_indicators, output_file=output_file)
+    # except Exception as e:
+    #     print("Builtwith indicators failed. Continuing on.")
     print("Running urlscans")
+    with open("urlscan_submissions.json", "w") as f:
+        json.dumps(
+            url_scan_submissions
+        )  # this way we can retry pulling if something fails
+    time.sleep(15)
+
     for domain, url_submission in url_scan_submissions.items():
         try:
-            indicators = add_urlscan_indicators(url_submission)
+            indicators = add_urlscan_indicators(domain, url_submission)
             write_indicators(indicators, output_file=output_file)
-        except HTTPError:
-            print("sleeping for urlscan results")
-            time.sleep(20)
-            try:
-                indicators = add_urlscan_indicators(url_submission)
-                write_indicators(indicators, output_file=output_file)
-            except HTTPError:
-                print("need to write better retry. continuing on.")
-        except Exception:
+        except Exception as e:
             print(f"getting urlscan results for {domain} failed. continuing on.")
+            print(traceback.print_exc())

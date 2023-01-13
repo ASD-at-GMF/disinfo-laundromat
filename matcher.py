@@ -25,9 +25,10 @@ def convert_whois(data):
     try:
         whois_data = json.loads(str(data))
     except json.decoder.JSONDecodeError:
-        whois_data = json.loads(data)
+        whois_data = ast.literal_eval(data)
     # this keeps the property 'domain_name' from conflicting with our column
-    whois_data["whois_domain"] = whois_data.pop("domain_name")
+    if "domain_name" in whois_data:
+        whois_data["whois_domain"] = whois_data.pop("domain_name")
     return whois_data
 
 

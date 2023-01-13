@@ -75,18 +75,38 @@ py crawler.py <input-filename>.csv  <output-filename>.csv
 ```
 by default, input-filename.csv must contain at least one column of urls with the header 'domain_name' but may contain any number of other columns. Entries in the 'domain_name' column must be formatted as 'https://subdomain.domain.TLD with no trailing slashes. The subdomain field is optional, and each uniques subdomain will be treated as a new site. The TLD may be any widely supported tld, (e.g. .com, .co.uk, .social, etc.)
 
+# How matches are determined
+See matches.csv
+
 # Fixes and Features Roadmap
+
+## Administrative
 - Transfer repository ownership to https://github.com/ASD-at-GMF
 - Update requirements.txt to reflect all required libraries
+
+
+## Indicators and Matching
 - Supporting similarity matching for existing indicators
+-- Add text similarity match for headers + site description (meta-text metadata)
+-- Add smarter tag matching
+-- Dom-tree similarity
+-- get CDN-domains grouped again
 - Adding support for adding new matching functions via a data dictionary
 - Add aditionnal Indicators:
   - Shared usernames
   - Similar Privacy Policies
   - Shared contact informaiton
   - Similar sitemaps
-  - Similar content
+  - Similar content 
   - Similar external endpoint calls
-- Parsing internal pages for additional textual indicators
+  
+ ## Content Parsing and Comparison
+- Parsing internal pages using sitemaps for additional textual indicators and content gathering and comparison
+- modifying match.py to allow for similarity based textual comparisons across the network
+- Integration with translation tools to find translated content
 - Intergration with a search api to find mirror site and other leads from across the web
+
+## Financial tracking
+- For crypto wallets, tracking transactions to estimate funds recieved and disbursed
+- Tracking adsense ids
 

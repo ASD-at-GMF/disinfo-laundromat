@@ -81,16 +81,15 @@ See matches.csv
 # Fixes and Features Roadmap
 
 ## Administrative
-- Transfer repository ownership to https://github.com/ASD-at-GMF
 - Update requirements.txt to reflect all required libraries
 
 
 ## Indicators and Matching
 - Supporting similarity matching for existing indicators
--- Add text similarity match for headers + site description (meta-text metadata)
--- Add smarter tag matching
--- Dom-tree similarity
--- get CDN-domains grouped again
+ - Add text similarity match for headers + site description (meta-text metadata)
+ - Add smarter tag matching
+ - Dom-tree similarity
+ - get CDN-domains grouped again
 - Adding support for adding new matching functions via a data dictionary
 - Add aditionnal Indicators:
   - Shared usernames

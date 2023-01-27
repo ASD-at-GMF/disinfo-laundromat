@@ -136,7 +136,6 @@ def add_meta_social_tags(url, name, content):
     return add_indicator(get_domain_name(url), "meta_social", name + "|" + content)
 
 def parse_meta_tags(url, soup):
-
     meta_tags = soup.find_all("meta")
     tag_indicators = []
     # Iterate over the meta tags
@@ -152,6 +151,19 @@ def parse_meta_tags(url, soup):
         elif (name or prop) and content:
             name = name or prop
             tag_indicators.append(add_meta_generic_tags(url, name, content))
+    return tag_indicators
+
+def parse_meta_tags(url, soup):
+
+    meta_tags = soup.find_all("script")
+    tag_indicators = []
+    # Iterate over the meta tags
+    for meta_tag in meta_tags:
+        # Get the name and content attributes of the meta tags
+        source = meta_tag.get("src")
+        if source:
+            tag_indicators.append(add_verification_tags(url, name, content))
+        
     return tag_indicators
 
 

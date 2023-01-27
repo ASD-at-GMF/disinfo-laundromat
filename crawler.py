@@ -72,23 +72,11 @@ def add_ip_address(domain_name):
     try:
         # Resolve the domain name to an IP address
         ip_address = socket.gethostbyname(host_name)
-        ip_indicators.append(
-            {
-                "indicator_type": "ip",
-                "indicator_content": ip_address,
-                "domain_name": get_domain_name(domain_name),
-            }
-        )
+        ip_indicators.append(add_indicator(domain, "ip", ip_address))
+
         last_period_index = ip_address.rfind(".")
         subnet_id = ip_address[:last_period_index]
-        ip_indicators.append(
-            {
-                "indicator_type": "subnet",
-                "indicator_content": subnet_id,
-                "domain_name": get_domain_name(domain_name),
-            }
-        )
-
+        ip_indicators.append(add_indicator(domain, "subnet", subnet_id))
     except socket.gaierror:
         print("Could not resolve the domain name {}".format(domain_name))
     finally:
@@ -99,15 +87,9 @@ def get_who_is(url):
     result = whois.whois(url)
     return str(result)
 
-
 def add_who_is(url):
     whois_content = get_who_is(url)
-    return {
-        "indicator_type": "whois",
-        "indicator_content": whois_content,
-        "domain_name": get_domain_name(url),
-    }
-
+    return add_indicator(get_domain_name(url), "whois", whois_content)
 
 def parse_classes(url, soup):
     tag_indicators = []
@@ -118,17 +100,14 @@ def parse_classes(url, soup):
     tag_indicators.append(add_indicator(url, "css-class", used_classes))
     return tag_indicators
 
-
 def parse_dom_tree(url, soup):
     tag_indicators = []
     for text in soup.find_all(text=True):
         text.replace_with("")
     for tag in soup.find_all():
         tag.attrs = {}
-    # print(soup.prettify())
     tag_indicators.append(add_indicator(url, "dom-tree", soup.prettify()))
     return tag_indicators
-
 
 def parse_images(url, soup):
     tag_indicators = []
@@ -151,24 +130,10 @@ def parse_images(url, soup):
 
 
 def add_verification_tags(url, name, content):
-
-    # Print the name and content attributes
-    return {
-        "indicator_type": "verification_id",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
+    return add_indicator(get_domain_name(url), "verification_id", name + "|" + content)
 
 def add_meta_social_tags(url, name, content):
-
-    # Print the name and content attributes
-    return {
-        "indicator_type": "meta_social",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
+    return add_indicator(get_domain_name(url), "meta_social", name + "|" + content)
 
 def parse_meta_tags(url, soup):
 
@@ -500,7 +465,7 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     indicators.extend(add_cdn_domains(url, soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))
-    # indicators.extend(parse_images(url, soup))
+    indicators.extend(parse_images(url, soup))
     indicators.extend(parse_dom_tree(url, soup))
 
     with open("soup.html", "w", encoding="utf-8", errors="ignore") as file:

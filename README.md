@@ -81,7 +81,6 @@ See matches.csv
 # Fixes and Features Roadmap
 
 ## Administrative
-- Transfer repository ownership to https://github.com/ASD-at-GMF
 - Update requirements.txt to reflect all required libraries
 
 

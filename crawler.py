@@ -20,6 +20,7 @@ import imagehash
 from PIL import Image
 from pathlib import Path
 from typing import List, Dict, Set
+from sitemap_parser import sitemap_parser
 
 visited = set()
 
@@ -100,6 +101,17 @@ def parse_classes(url, soup):
     tag_indicators.append(add_indicator(url, "css-class", used_classes))
     return tag_indicators
 
+def parse_sitemaps(url):
+    tag_indicators = []
+    sitemap_url = get_domain_name(url) + '/sitemap.xml'
+    parsed_sitemap = sitemap_parser.parse(sitemap_url)
+    entries = set()
+    for entry in parsed_sitemap:
+        classes = entry["loc"]
+        entries.update(classes)
+    tag_indicators.append(add_indicator(url, "sitemap_entries", entries))
+    return tag_indicators
+
 def parse_dom_tree(url, soup):
     tag_indicators = []
     for text in soup.find_all(text=True):
@@ -134,6 +146,12 @@ def add_verification_tags(url, name, content):
 
 def add_meta_social_tags(url, name, content):
     return add_indicator(get_domain_name(url), "meta_social", name + "|" + content)
+    
+def add_script_src_tags(url, src_type, content):
+    return add_indicator(get_domain_name(url), "script_src", src_type + "|" +  content)
+    
+def add_link_tags(url, href):
+    return add_indicator(get_domain_name(url), "link_href", href)
 
 def parse_meta_tags(url, soup):
     meta_tags = soup.find_all("meta")
@@ -153,19 +171,37 @@ def parse_meta_tags(url, soup):
             tag_indicators.append(add_meta_generic_tags(url, name, content))
     return tag_indicators
 
-def parse_meta_tags(url, soup):
-
-    meta_tags = soup.find_all("script")
+def parse_script_tags(url, soup):
+    script_tags = soup.find_all("script")
     tag_indicators = []
     # Iterate over the meta tags
-    for meta_tag in meta_tags:
+    for script_tag in script_tags:
         # Get the name and content attributes of the meta tags
-        source = meta_tag.get("src")
+        source = script_tag.get("src")
+        src_type = script_tag.get("type")
+
         if source:
-            tag_indicators.append(add_verification_tags(url, name, content))
-        
+            tag_indicators.append(add_script_src_tags(url, src_type, source))
     return tag_indicators
 
+def parse_link_tags(url, soup):
+    link_tags = soup.find_all("link")
+    tag_indicators = []
+    # Iterate over the meta tags
+    for link_tag in link_tags:
+        # Get the name and content attributes of the meta tags
+        href = link_tag.get("href")
+        if href:
+            tag_indicators.append(add_link_tags(url, href))
+    return tag_indicators
+
+def get_sitemap(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'lxml')
+    for url in soup.find_all('loc'):
+        print(url.text)
+        if 'sitemap' in url.text:
+            get_sitemap(url.text)
 
 def bulk_builtwith_query(domains: List[str], save_matches: bool = False):
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
@@ -471,12 +507,15 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
+    indicators.extend(parse_script_tags(url, soup))
+    indicators.extend(parse_link_tags(url, soup))
     indicators.extend(parse_body(url, response.text))
     indicators.extend(parse_google_ids(url, response.text))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(add_cdn_domains(url, soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))
+    indicators.extend(parse_sitemaps(url, soup))
     indicators.extend(parse_images(url, soup))
     indicators.extend(parse_dom_tree(url, soup))
 

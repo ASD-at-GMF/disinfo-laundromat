@@ -17,6 +17,7 @@ import yaml
 import json
 import tldextract
 import imagehash
+import subprocess
 from PIL import Image
 from pathlib import Path
 from typing import List, Dict, Set
@@ -53,6 +54,17 @@ def get_domain_name(url):
 
     return domain_name
 
+
+def add_response_headers(response, url):
+    header_indicators = []
+    for header,value in response.headers.items():
+        if header.startswith('Server'):
+            header_indicators.append(add_indicator(url, 'header-server', value))
+        if (header.startswith('X-') or header.startswith('x-')) and header.lower() not in ['x-content-type-options', 'x-frame-options', 'x-xss-protection', 'x-request-id', 'x-ua-compatible', 'x-permitted-cross-domain-policies', 'x-dns-prefetch-control', 'x-robots-tag']:
+            header_indicators.append(add_indicator(url, 'header-nonstd', header))
+            header_indicators.append(add_indicator(url, 'header-nonstd-value', header + ':' + value))
+
+    return header_indicators
 
 def add_indicator(url, indicator_type, indicator_content):
     # Print the name and content attributes
@@ -91,6 +103,11 @@ def get_who_is(url):
 def add_who_is(url):
     whois_content = get_who_is(url)
     return add_indicator(get_domain_name(url), "whois", whois_content)
+    
+def get_tracert(ip_address):
+    tracert = subprocess.Popen(['tracert', ip_address], stdout=subprocess.PIPE)
+    output, _ = tracert.communicate()
+    return output.decode().strip().split('\n')
 
 def parse_classes(url, soup):
     tag_indicators = []
@@ -504,6 +521,7 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
 
     # Print the DOM
     # print(soup.prettify())
+    indicators.extend(add_response_headers(url))
     indicators.extend(add_ip_address(url))
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))

@@ -202,6 +202,17 @@ def parse_script_tags(url, soup):
             tag_indicators.append(add_script_src_tags(url, src_type, source))
     return tag_indicators
 
+
+def parse_id_attributes(url, soup):
+    ids = [element['id'] for element in soup.find_all(id=True)]    
+
+    return add_indicator(get_domain_name(url), "id_tags", ids.join(","))
+
+def parse_iframe_ids(url, soup):
+    iframe_ids = [iframe['id'] for iframe in soup.find_all('iframe') if 'id' in iframe.attrs]
+    return add_indicator(get_domain_name(url), "iframe_id_tags", iframe_ids.join(","))
+
+
 def parse_link_tags(url, soup):
     link_tags = soup.find_all("link")
     tag_indicators = []
@@ -556,6 +567,8 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     indicators.append(add_who_is(url))
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_script_tags(url, soup))
+    indicators.extend(parse_iframe_ids(url, soup))
+    indicators.extend(parse_id_attributes(url, soup))
     indicators.extend(parse_link_tags(url, soup))
     indicators.extend(parse_body(url, response.text))
     indicators.extend(parse_google_ids(url, response.text))

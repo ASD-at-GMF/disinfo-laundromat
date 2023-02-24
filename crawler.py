@@ -18,6 +18,7 @@ import json
 import tldextract
 import imagehash
 import subprocess
+import blockcypher
 from PIL import Image
 from pathlib import Path
 from typing import List, Dict, Set
@@ -346,10 +347,39 @@ def find_uuids(url, text):
     uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     return find_with_regex(uuid_pattern, text, url, "uuid")
 
-
 def find_wallets(url, text):
+    tag_indicators = []
     crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
-    return find_with_regex(crypto_wallet_pattern, text, url, "crypto-wallet")
+
+    btc_address_regex = re.compile(r'^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$')
+    btc_matches = set(re.findall(btc_address_regex, text))
+    # Get transaction data for the address from the BlockCypher API
+    for match in btc_matches:
+        tag_indicators.append(find_wallet_transactions(match, 'btc'))
+
+    bch_address_regex = re.compile(r'^[qQ][a-km-zA-HJ-NP-Z1-9]{41}$')
+    bch_matches = set(re.findall(bch_address_regex, text))
+    # Get transaction data for the address from the BlockCypher API
+    for match in bch_matches:
+        tag_indicators.append(find_wallet_transactions(match, 'bch'))
+
+    tag_indicators.append(find_with_regex(crypto_wallet_pattern, text, url, "crypto-wallet"))
+    return tag_indicators
+
+def find_wallet_transactions(url, wallet_type, wallet):
+    tx_data = blockcypher.get_address_full(wallet, coin_symbol=wallet_type)
+    tag_indicators = []
+
+    # Check if transaction data exists for the address
+    if tx_data is not None:
+        # Extract the addresses involved in transactions with the given address
+        addresses = set()
+        for input in tx_data['txs']:
+            for address in input['addresses']:
+                addresses.add(address)
+        for address in addresses:
+            tag_indicators.append(add_indicator(url, 'crypto-transacation', address))
+    return tag_indicators
 
 
 def add_associated_domains_from_cert(url):

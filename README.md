@@ -27,6 +27,7 @@ These indicators point towards a reasonable likelihood that a collection of site
 - Shared subnet, e.g 121.100.55.*22* and 121.100.55.*45*
 - Any matching meta tags
 - Highly similar DOM tree
+- Standard & Custom Response Headers (e.g. Server & X-abcd) 
 
 ## Tier 3: Tertiary 
 These indicators can be circumstantial correlations and should be substantiated with indicators of higher certainty. 
@@ -41,6 +42,10 @@ These indicators can be circumstantial correlations and should be substantiated 
 - Any Universal Unique Identifier (UUID)
 - Highly similar images (as determined by pHash difference)
 - Many shared CSS classes 
+- Many shared HTML ID tags
+- Many shared iFrame ID tags (generally used for ad generation)
+- Highly similar sitemap
+- Transactions to and from the same crypto wallets 
 
 # How to use
 
@@ -95,7 +100,6 @@ See matches.csv
   - Shared usernames
   - Similar Privacy Policies
   - Shared contact informaiton
-  - Similar sitemaps
   - Similar content 
   - Similar external endpoint calls
   
@@ -106,6 +110,5 @@ See matches.csv
 - Intergration with a search api to find mirror site and other leads from across the web
 
 ## Financial tracking
-- For crypto wallets, tracking transactions to estimate funds recieved and disbursed
-- Tracking adsense ids
+- Additional tracking of adsense ids
 

@@ -1,0 +1,14 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h1>Website Crawler</h1>
+        <form method="POST">
+            <div class="form-group">
+                <label for="url">Enter URL:</label>
+                <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+{% endblock %}

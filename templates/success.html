@@ -1,0 +1,11 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h1>Success!</h1>
+        <p>We successfully crawled {{ url }}</p>
+        <h2>Indicators:</h2>
+        {{ table|safe }}  <!-- Display the table -->
+        <a href="{{ url_for('home') }}" class="btn btn-primary">Go Back</a>
+    </div>
+{% endblock %}

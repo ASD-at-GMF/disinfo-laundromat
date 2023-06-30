@@ -9,7 +9,6 @@ import pandas as pd
 import re
 from io import BytesIO
 import argparse
-import sys
 import ssl
 from OpenSSL import crypto
 import traceback
@@ -109,7 +108,6 @@ def add_who_is(url):
             whois_indicators.append(add_indicator(url, "1-whois_org", result.org ))
             whois_indicators.append(add_indicator(url, "1-whois_address", result.address ))
             whois_indicators.append(add_indicator(url, "2-whois_citystatecountry", result.city + ', '+ result.state + ', '+ result.country))
-
     return whois_indicators
     
 def get_tracert(ip_address):
@@ -573,7 +571,10 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     # print(soup.prettify())
     indicators.extend(add_response_headers(response, url))
     indicators.extend(add_ip_address(url))
-    indicators.extend(add_who_is(url))
+    try:
+        indicators.extend(add_who_is(url))
+    except Exception as e:
+        print(e)
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_script_tags(url, soup))
     indicators.extend(parse_iframe_ids(url, soup))
@@ -605,7 +606,7 @@ def write_indicators(indicators, output_file):
     if Path(output_file).exists():
         attribution_table.to_csv(
             output_file,
-            index=False,
+            index=False,    
             mode="a",
             encoding="utf-8",
             header=False,
@@ -647,7 +648,7 @@ if __name__ == "__main__":
     domain_col = 'Domain' #args.domain_column
 
     output_file = "args_indicators.csv"
-    input_data = pd.read_csv('.\sites_of_concern.csv')
+    input_data = pd.read_csv('.\sites_of_concern_fn2.csv')
     domains = input_data[domain_col]
     for domain in domains:
         try:

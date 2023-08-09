@@ -51,8 +51,10 @@ These indicators can be circumstantial correlations and should be substantiated 
 
 Included with this tool is a small database of indicators for known sites. For more on creating your own corpus see 'Creating your own corpus' below. 
 
+## Requirements before installation
+
 ## Installation 
-This tool requires Python 3 and PIP to run and can be obtained by downloading this repository or cloning it using git:
+This tool requires _Python 3_ and _PIP_ to run and can be obtained by downloading this repository or cloning it using git:
 ```
 git clone https://github.com/pbenzoni/disinfo-laundromat.git 
 ```
@@ -62,7 +64,27 @@ Once the code is downloaded and you've navigated to the project, install the nec
 ```
 pip install -r requirements.txt
 ```
-## Comparing to existing indicator corpus
+
+# Choosing a use case
+
+## Quick and simple, with a UI
+The simpler use case, where you're seeking indicators about about a few URLS, not build up a corpus of data is to simply run the code in the included flask app from the main directory. 
+```
+python app.py 
+```
+This should deploy a simple webapp to http://127.0.0.1:5000 or your equivalent location. To make this webapp accessible to external users, I suggest following a tutorial for deploying flask apps like this one: https://pythonbasics.org/deploy-flask-app/
+ 
+## Deeper analysis, analyzing multiple sites against each at once  
+To analyze many URLs and once and to have a suspect URL run against a those URLS, you'll need to generate an list of indicatorsm, then choose your comparison method.
+
+### Generating a new indicator corpus
+To generate a new indicator corpus, (a list of indicators assocaited with each site), run the following command:
+```
+py crawler.py <input-filename>.csv  <output-filename>.csv
+```
+by default, input-filename.csv must contain at least one column of urls with the header 'domain_name' but may contain any number of other columns. Entries in the 'domain_name' column must be formatted as 'https://subdomain.domain.TLD with no trailing slashes. The subdomain field is optional, and each uniques subdomain will be treated as a new site. The TLD may be any widely supported tld, (e.g. .com, .co.uk, .social, etc.)
+
+### Comparing to existing indicator corpus
 To check matches within the existing corpus (e.g. with {a.com, b.com, and c.com}, comparisons will be conducted between a.com and b.com, b.com and c.com, and a.com and c.com), use the following command:
 ```
 py match.py
@@ -73,21 +95,10 @@ To check a given url against the corpus, run the following command:
 py match.py -domain <domain-to-be-searched>
 ```
 
-## Generating a new indicator corpus
-To generate a new indicator corpus, (a list of indicators assocaited with each site), run the following command:
-```
-py crawler.py <input-filename>.csv  <output-filename>.csv
-```
-by default, input-filename.csv must contain at least one column of urls with the header 'domain_name' but may contain any number of other columns. Entries in the 'domain_name' column must be formatted as 'https://subdomain.domain.TLD with no trailing slashes. The subdomain field is optional, and each uniques subdomain will be treated as a new site. The TLD may be any widely supported tld, (e.g. .com, .co.uk, .social, etc.)
-
 # How matches are determined
 See matches.csv
 
 # Fixes and Features Roadmap
-
-## Administrative
-- Update requirements.txt to reflect all required libraries
-
 
 ## Indicators and Matching
 - Supporting similarity matching for existing indicators

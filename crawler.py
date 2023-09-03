@@ -22,6 +22,8 @@ from PIL import Image
 from pathlib import Path
 from typing import List, Dict, Set
 from sitemapparser  import SiteMapParser
+import feedparser
+
 
 visited = set()
 
@@ -497,7 +499,6 @@ def parse_domain_name(url):
     tag_indicators.extend(find_second_level_domain(url))
     return tag_indicators
 
-
 def start_urlscan(url):
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
     urlscan_key = api_keys.get("URLSCAN")
@@ -555,6 +556,75 @@ def add_urlscan_indicators(domain, urlscan_result_url):
     )
     return urlscan_indicators
 
+def get_endpoints(url,endpoints):
+    for endpoint in endpoints:
+        response = requests.get(f"{url}/{endpoint}")
+        if response.status_code == 200:
+            return response.text
+    return None
+
+
+def parse_cms(url):
+    cms_indicators = []
+    cms = None    
+
+    wp_endpoints = ["wp-login.php", "wp-admin/"]
+    joomla_endpoints = ["administrator/"]
+    drupal_endpoints = ["user/login", "core/"]
+    bitrix_endpoints = ["bitrix/admin/"]
+
+    if get_endpoints(url, wp_endpoints) is not None:
+        cms_indicators.extend(parse_wordpress(url))
+        cms = "WordPress"
+    if get_endpoints(url, joomla_endpoints)  is not None:
+        cms = "Joomla"
+    if get_endpoints(url, drupal_endpoints) is not None:
+        cms = "Drupal"
+    if get_endpoints(url, bitrix_endpoints) is not None:
+        cms = "Bitrix"
+    
+    if cms is not None:
+        cms_indicators.append(add_indicator(domain, "3-cms", cms))
+
+    return cms_indicators
+
+def parse_wordpress(url):
+    wp_indicators = []
+    endpoints = {
+        'tags': "/wp-json/wp/v2/tags",
+        'posts': "/wp-json/wp/v2/posts",
+        'pages': "/wp-json/wp/v2/pages",
+        'categories': "/wp-json/wp/v2/categories",
+        'users': "/wp-json/wp/v2/users",
+        'tags': "/wp-json/wp/v2/blocks"
+    }
+    
+    for key, val in endpoints.items():
+        wp_items = get_endpoints(url,[val])
+        wp_items_string = ""
+        for wp_item in wp_items:
+            wp_items_string += wp_item['slug'] + ","
+        wp_indicators.append(add_indicator(url,'3-wp-'+key, wp_items_string ))
+
+    return wp_indicators
+
+def detect_and_parse_feed_content(url):
+    feed_indicators = []
+    feed = None    
+
+    feed_endpoints = ["feed/", "rss/", "rss.xml"]
+    feed = get_endpoints(url, feed_endpoints)
+
+    if feed is not None:
+        feed = feedparser.parse(url)
+        for entry in feed.entries:
+            feed_indicators.append(add_indicator(domain, "4-content-title", entry.title))
+            feed_indicators.append(add_indicator(domain, "4-content-link", entry.link))
+            feed_indicators.append(add_indicator(domain, "4-content-summary", entry.summary))
+            feed_indicators.append(add_indicator(domain, "4-content-published", entry.published))
+
+    return feed_indicators
+
 
 def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     indicators = []
@@ -585,6 +655,8 @@ def crawl(url: str, visited_urls: Set[str]) -> List[Dict[str, str]]:
     indicators.extend(add_cdn_domains(url, soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))
+    indicators.extend(detect_and_parse_feed_content(url))
+    indicators.extend(parse_cms(url))
     #indicators.extend(parse_sitemaps(url))
     #indicators.extend(parse_images(url, soup))
     try:

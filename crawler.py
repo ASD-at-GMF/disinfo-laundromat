@@ -707,27 +707,29 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-f",
-        "--file",
+        "--input-file",
         type=str,
         help="file containing list of domains",
-        required=True,
+        required=False,
+        default=".\sites_of_concern.csv"
     )
     parser.add_argument(
         "-c", "--domain-column", type=str, required=False, default="Domain"
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--output-file",
         type=str,
         help="file to save final list of match results",
         required=False,
+        default=".\indicators_output.csv"
     )
 
-    #args = parser.parse_args(sys.argv[1:])
-    domain_col = 'Domain' #args.domain_column
+    args = parser.parse_args()
+    domain_col = args.domain_column
 
-    output_file = "args_indicators_test.csv"
-    input_data = pd.read_csv('.\sites_of_concern.csv')
+    output_file = args.output_file
+    input_data = pd.read_csv(args.input_file)
     domains = input_data[domain_col]
     for domain in domains:
         try:

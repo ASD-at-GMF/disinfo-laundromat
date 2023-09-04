@@ -21,7 +21,7 @@ import blockcypher
 from PIL import Image
 from pathlib import Path
 from typing import List, Dict, Set
-from sitemapparser  import SiteMapParser
+from usp.tree import sitemap_tree_for_homepage
 import feedparser
 
 
@@ -60,11 +60,13 @@ def get_domain_name(url):
 def add_response_headers(response, url):
     header_indicators = []
     for header,value in response.headers.items():
-        if header.startswith('Server'):
-            header_indicators.append(add_indicator(url, '3-header-server', value))
-        if (header.startswith('X-') or header.startswith('x-')) and header.lower() not in ['x-content-type-options', 'x-frame-options', 'x-xss-protection', 'x-request-id', 'x-ua-compatible', 'x-permitted-cross-domain-policies', 'x-dns-prefetch-control', 'x-robots-tag']:
-            header_indicators.append(add_indicator(url, '3-header-nonstd-value', header + ':' + value))
-
+        try:
+            if header.startswith('Server'):
+                header_indicators.append(add_indicator(url, '3-header-server', value))
+            if (header.startswith('X-') or header.startswith('x-')) and header.lower() not in ['x-content-type-options', 'x-frame-options', 'x-xss-protection', 'x-request-id', 'x-ua-compatible', 'x-permitted-cross-domain-policies', 'x-dns-prefetch-control', 'x-robots-tag']:
+                header_indicators.append(add_indicator(url, '3-header-nonstd-value', header + ':' + value))
+        except Exception as e:
+            print(e.message)
     return header_indicators
 
 def add_indicator(url, indicator_type, indicator_content):
@@ -98,18 +100,21 @@ def add_ip_address(domain_name):
 
 def add_who_is(url):
     whois_indicators = []
-
-    result = whois.whois(url)
-    if result.text != 'Socket not responding: [Errno 11001] getaddrinfo failed':
-        whois_indicators.append(add_indicator(url, "3-whois-registrar", result.registrar ))
-        whois_indicators.append(add_indicator(url, "3-whois_server", result.whois_server ))
-        whois_indicators.append(add_indicator(url, "3-whois_creation_date", result.creation_date ))
-        if 'name' in result and result.name is not None and isinstance(result.name, list) or ('priva' not in result.name.lower() and 'proxy' not in result.name.lower() and 'guard' not in result.name.lower() and 'protect' not in result.name.lower() and 'mask' not in result.name.lower()  and 'secur' not in result.name.lower()):
-            whois_indicators.append(add_indicator(url, "1-whois_emails", result.emails ))
-            whois_indicators.append(add_indicator(url, "1-whois_name", result.name ))
-            whois_indicators.append(add_indicator(url, "1-whois_org", result.org ))
-            whois_indicators.append(add_indicator(url, "1-whois_address", result.address ))
-            whois_indicators.append(add_indicator(url, "2-whois_citystatecountry", result.city + ', '+ result.state + ', '+ result.country))
+    try:
+        result = whois.whois(url)
+        if result.text != 'Socket not responding: [Errno 11001] getaddrinfo failed':
+            whois_indicators.append(add_indicator(url, "3-whois-registrar", result.registrar ))
+            whois_indicators.append(add_indicator(url, "3-whois_server", result.whois_server ))
+            whois_indicators.append(add_indicator(url, "3-whois_creation_date", result.creation_date ))
+            if 'name' in result and result.name is not None and isinstance(result.name, list):
+                if 'priva' not in result.name.lower() and 'proxy' not in result.name.lower() and 'guard' not in result.name.lower() and 'protect' not in result.name.lower() and 'mask' not in result.name.lower()  and 'secur' not in result.name.lower():
+                    whois_indicators.append(add_indicator(url, "1-whois_emails", result.emails ))
+                    whois_indicators.append(add_indicator(url, "1-whois_name", result.name ))
+                    whois_indicators.append(add_indicator(url, "1-whois_org", result.org ))
+                    whois_indicators.append(add_indicator(url, "1-whois_address", result.address ))
+                    whois_indicators.append(add_indicator(url, "2-whois_citystatecountry", result.city + ', '+ result.state + ', '+ result.country))
+    except Exception as e:
+        print(e.message)
     return whois_indicators
     
 def get_tracert(ip_address):
@@ -128,12 +133,11 @@ def parse_classes(url, soup):
 
 def parse_sitemaps(url):
     tag_indicators = []
-    sm = SiteMapParser('https://' + get_domain_name(url))
-    parsed_sitemap = sm.get_urls()
+    tree = sitemap_tree_for_homepage('https://www.nytimes.com/')
+    print(tree)
     entries = set()
-    for entry in parsed_sitemap:
-        classes = entry["loc"]
-        entries.update(classes)
+    for page in tree.all_pages():
+        entries.update(page.url)
     tag_indicators.append(add_indicator(url, "3-sitemap_entries", entries))
     return tag_indicators
 
@@ -596,16 +600,19 @@ def parse_wordpress(url):
         'pages': "/wp-json/wp/v2/pages",
         'categories': "/wp-json/wp/v2/categories",
         'users': "/wp-json/wp/v2/users",
-        'tags': "/wp-json/wp/v2/blocks"
+        'blocks': "/wp-json/wp/v2/blocks"
     }
     
     for key, val in endpoints.items():
-        wp_items = get_endpoints(url,[val])
-        wp_items_string = ""
-        for wp_item in wp_items:
-            wp_items_string += wp_item['slug'] + ","
-        wp_indicators.append(add_indicator(url,'3-wp-'+key, wp_items_string ))
-
+        try:
+            wp_items = json.loads(get_endpoints(url,[val]))
+            wp_items_string = ""
+            for wp_item in wp_items:
+                wp_items_string += wp_item['slug'] + ","
+            wp_indicators.append(add_indicator(url,'3-wp-'+key, wp_items_string ))
+        except Exception as e:
+            print(e.message)
+            continue
     return wp_indicators
 
 def detect_and_parse_feed_content(url):
@@ -719,8 +726,8 @@ if __name__ == "__main__":
     #args = parser.parse_args(sys.argv[1:])
     domain_col = 'Domain' #args.domain_column
 
-    output_file = "args_indicators.csv"
-    input_data = pd.read_csv('.\sites_of_concern_fn2.csv')
+    output_file = "args_indicators_test.csv"
+    input_data = pd.read_csv('.\sites_of_concern.csv')
     domains = input_data[domain_col]
     for domain in domains:
         try:

@@ -209,24 +209,38 @@ def parse_certificate_matches(
 
 ## Main program
 FEATURE_MATCHING: Dict[str, str] = {
-    "ip": "direct",
-    "domain": "direct",
-    "cert-domain": "direct",
-    "cdn-domain": "iou",
-    "domain_suffix": "direct",
-    "domain": "direct",
-    "uuid": "direct",
-    "ga_id": "direct",
-    "crypto-wallet": "direct",
-    "ga_tag_id": "direct",
-    "meta_social": "direct",
-    "subnet": "direct",
-    "verification_id": "direct",
-    "yandex_tag_id": "direct",
-    "global_variable": "iou",
-    "techstack": "iou",
-    "whois": "whois",  # dict_direct_match
-    "urlscan_certificate": "certificate",  # dict_direct_match
+    "1-cert-domain" : "direct",
+"1-crypto-wallet" : "direct",
+"1-domain" : "direct",
+"1-domain_suffix" : "direct",
+"1-ga_id" : "direct",
+"1-ga_tag_id" : "direct",
+"1-ip" : "direct",
+"1-verification_id" : "direct",
+"1-yandex_tag_id" : "direct",
+"2-subnet" : "direct",
+"3-cdn-domain" : "direct",
+"3-cms" : "direct",
+"3-css-classes" : "iou",
+"3-header-nonstd-value" : "direct",
+"3-header-server" : "direct",
+"3-id_tags" : "iou",
+"3-iframe_id_tags" : "iou",
+"3-link_href" : "direct",
+"3-meta_generic" : "direct",
+"3-meta_social" : "direct",
+"3-script_src" : "direct",
+"3-uuid" : "direct",
+"3-whois_creation_date" : "direct",
+"3-whois_server" : "direct",
+"3-whois-registrar" : "direct",
+"3-wp-blocks" : "iou",
+"3-wp-categories" : "iou",
+"3-wp-pages" : "iou",
+"3-wp-posts" : "iou",
+"3-wp-tags" : "iou",
+"3-wp-users" : "iou",
+
 }
 
 WHOIS_FEATURES = [
@@ -258,6 +272,7 @@ methods = {
     # "iou"
     # "abs_difference_vs_threshold"
 }
+# todo add 'any in list" match
 
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
@@ -310,62 +325,61 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Match indicators across sites.", add_help=False
     )
-    parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument(
-        "-f", "--file", type=str, help="file of indicators to match"
+    parser.add_argument(
+        "-f", "--input-file", type=str, help="file of indicators to match",
+        default="./indicators_output.csv"
     )
-    parent_parser.add_argument(
+    parser.add_argument(
         "-r",
         "--result-dir",
         type=str,
         help="directory to save intermediary match results",
         required=False,
+        default="./tmp/"
     )
-    parent_parser.add_argument(
+    parser.add_argument(
         "-o",
-        "--output",
+        "--output-file",
         type=str,
         help="file to save final list of match results",
         required=False,
-    )
-    subparsers = parser.add_subparsers(help="commands", dest="command")
+        default="matching_results.csv"
+    ) 
 
-    pairwise_parser = subparsers.add_parser(
-        "pairwise",
-        help="run to do pairwise matching in a corpus",
-        parents=[parent_parser],
-    )
-
-    file_parser = subparsers.add_parser(
-        "compare",
-        help="run two files of indicators against each other",
-        parents=[parent_parser],
-    )
-    file_parser.add_argument(
-        "-f2",
-        "--file2",
+    parser.add_argument(
+        "-c",
+        "--comparison-type",
+        type=str,
+        help="type of comparison to run, pairwise or one-to-one compare",
+        required=False,
+        default="pairwise"
+    ) 
+    parser.add_argument(
+        "-cf",
+        "--compare-file",
         type=str,
         help="file of indicators to compare against",
-        required=True,
+        required=False,
+        default="./comparison_indicators.csv"
     )
 
-    args = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args()
 
     result_dir = args.result_dir
-    result_file = args.output
+    result_file = args.output_file
 
     if result_dir:
         print(f"we'll save intermediary results to the directory {args.result_dir}")
         Path(result_dir).mkdir(exist_ok=True)
 
-    if args.command == "compare":
+    if args.comparison_type == "compare":
         compare_indicator_files(
-            file1=args.file,
-            file2=args.file2,
+            file1=args.input_file,
+            file2=args.compare_file,
             result_dir=result_dir,
             result_file=result_file,
         )
     else:
         pairwise_comparison(
-            input_file=args.file, result_dir=result_dir, result_file=result_file
+            input_file=args.input_file, result_dir=result_dir, result_file=result_file
         )

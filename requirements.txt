@@ -12,3 +12,4 @@ flask==2.3.2
 flask_bootstrap==3.3.7.1
 blockcypher==1.0.93
 ultimate-sitemap-parser==0.5
+feedparser==6.0.10

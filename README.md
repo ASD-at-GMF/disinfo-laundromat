@@ -1,8 +1,13 @@
 # The Disinformation Laundromat: An OSINT tool to expose mirror and proxy websites
 
-The Disinformation Laundromat uses a set of indicators extracted from a webapge to make claims about who owns a collection of websites. 
+## Content Matching
+This capability, still under development, finds matches for content provided in a form accross the internet, flagging known disinformation sites
 
-## Tier 1: Conclusive
+
+## Domain Fingerprinting
+The Disinformation Laundromat - Domain Fingerprinting uses a set of indicators extracted from a webapge to provide evidence about who administers a website and how the website was made. 
+
+### Tier 1: Conclusive
 These indicators detemine with a high level of probability that a collection of sites is owned by the same entity. 
 - Shared domain name
 - IDs
@@ -20,7 +25,7 @@ These indicators detemine with a high level of probability that a collection of 
 - (When not associated with a privacy guard) Shared IP address 
 - Shared Domain name but different TLD 
 
-## Tier 2: Associative
+### Tier 2: Associative
 These indicators point towards a reasonable likelihood that a collection of sites is owned by the same entity. 
 
 - Shared Content Delivery Network (CDN) 
@@ -29,7 +34,7 @@ These indicators point towards a reasonable likelihood that a collection of site
 - Highly similar DOM tree
 - Standard & Custom Response Headers (e.g. Server & X-abcd) 
 
-## Tier 3: Tertiary 
+### Tier 3: Tertiary 
 These indicators can be circumstantial correlations and should be substantiated with indicators of higher certainty. 
 
 - Shared Architecture 

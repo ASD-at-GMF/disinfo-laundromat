@@ -1,14 +1,120 @@
-{% extends 'bootstrap/base.html' %}
+<!DOCTYPE html>
+<html lang="en">
 
-{% block content %}
-    <div class="container">
-        <h1>Website Crawler</h1>
-        <form method="POST">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disinformation Laundromat</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script>
+        // This function is triggered when the "View Links" button is clicked
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.toggle-links').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const linkList = button.nextElementSibling;
+
+                    // Toggle the display
+                    linkList.style.display = linkList.style.display === 'none' ? 'table' : 'none';
+                });
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container mt-5">
+        <h1>Disinformation Laundromat</h1>
+        <hr />
+        <h2>Content Search</h2>
+        <form method="post" action="/content">
+            <div class="form-group">
+                <label for="titleQuery">Title Query:</label>
+                <input type="text" class="form-control" id="titleQuery" name="titleQuery"
+                    placeholder="Enter title query">
+            </div>
+            <div class="form-group">
+                <label for="contentQuery">Content Query:</label>
+                <input type="text" class="form-control" id="contentQuery" name="contentQuery"
+                    placeholder="Enter content query">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-warning">
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        <hr />
+
+        <h2>Website Fingerprinting</h2>
+        <form method="POST" action="/fingerprint">
             <div class="form-group">
                 <label for="url">Enter URL:</label>
                 <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
+
+
+
+        {% if results %}
+        <h3 class="mt-5">Results</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Known</th>
+                    <th>Domain</th>
+                    <th>Occurrences</th>
+                    <th>Links</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain, data in results.items() %}
+                <tr>
+                    <td> {% if data['concern'] %}
+                        <i class="fas fa-exclamation-triangle text-warning" title="Domain of Concern"></i>
+                    {% endif %}</td>
+                    <td>{{ domain }}</td>
+                    <td>{{ data['count'] }}</td>
+                    <td>
+                        <button class="btn btn-link toggle-links">View Links</button>
+                        <table class="table table-sm link-list" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Link</th>
+                                    <th>Occurrences</th>
+                                    <th>Engines</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link_data in data['links'] %}
+                                <tr>
+                                    <td>{{ link_data['title'] }}</td>
+                                    <td><a href="{{ link_data['link'] }}" target="_blank">{{ link_data['link'] }}</a>
+                                    </td>
+                                    <td>{{ link_data['count'] }}</td>
+                                    <td>{{ link_data['engines']|join(', ') }}</td>
+                                    <!-- Display engines as a comma-separated list -->
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
     </div>
-{% endblock %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+
+</html>

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, flash
 from flask_bootstrap import Bootstrap
 import requests
-from serpapi import GoogleSearch
+
 from urllib.parse import urlparse
 import csv
 
@@ -69,10 +69,10 @@ def fetch_serp_results(title_query, content_query):
     aggregated_results = {}
     for params in paramsList:
         search_engine = params["engine"]
-
-        search = GoogleSearch(params)
-        results = search.get_dict()
-        organic_results = results.get("organic_results", [])
+        base_url = "https://serpapi.com/search"  # base url of the API
+        response = requests.get(base_url, params=params)
+        data = response.json()
+        organic_results = data.get("organic_results", [])
         print( params)
 
         # Aggregate by domain, link, title, and count occurrences

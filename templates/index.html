@@ -74,6 +74,11 @@
 
         {% if results %}
         <h3 class="mt-5">Results</h3>
+        <form method="post" action="/download_csv">
+            <!-- Hidden input containing the CSV data -->
+            <input type="hidden" name="csv_data" value="{{ csv_data|safe }}">
+            <button type="submit" class="btn btn-secondary mb-3">Download Results as CSV</button>
+        </form>
         <table class="table table-striped">
             <thead>
                 <tr>

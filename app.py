@@ -1,12 +1,12 @@
-from flask import Flask, render_template, request, flash
+from flask import Flask, render_template, request, flash, make_response
 from flask_bootstrap import Bootstrap
 import requests
-
+from io import StringIO
 from urllib.parse import urlparse
 import csv
 
 # Paramaterizable Variables
-from config import SERP_API_KEY
+from config import SERP_API_KEY, SITES_OF_CONCERN
 # Import all your functions here
 from crawler import *
 
@@ -45,15 +45,24 @@ def content():
         content_query = request.form.get('contentQuery')
         combineOperator = request.form.get('combineOperator')
 
-        
-        
         if not title_query and not content_query:
             # Error message if neither is provided
             flash("Please provide at least a title or content query.")
         else:
             results = fetch_results(title_query, content_query, combineOperator)
+            # Convert results to CSV
+            csv_data = convert_results_to_csv(results)
 
-    return render_template('index.html', results=results)
+    return render_template('index.html', results=results, csv_data=csv_data)
+
+@app.route('/download_csv', methods=['POST'])
+def download_csv():
+    csv_data = request.form.get('csv_data', '')
+
+    output = make_response(csv_data)
+    output.headers["Content-Disposition"] = "attachment; filename=results.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
 
 # TODO Federate this out 
 def fetch_results(title_query, content_query, combineOperator):
@@ -175,7 +184,28 @@ def customize_params_by_platform(title_query, content_query, combineOperator):
             
     return paramsList
 
-def load_domains_of_concern(filename="sites_of_concern.csv"):
+def convert_results_to_csv(results):
+    csv_list = []
+
+    # Header
+    csv_list.append(','.join(['Domain', 'Occurrences', 'Title', 'Link', 'Link Occurrences', 'Engines']))
+
+    # Data
+    for domain, data in results.items():
+        for link_data in data['links']:
+            row = [
+                domain,
+                str(data['count']),
+                link_data['title'],
+                link_data['link'],
+                str(link_data['count']),
+                ', '.join(link_data['engines'])
+            ]
+            csv_list.append(','.join(row))
+
+    return "\n".join(csv_list)
+
+def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:
         reader = csv.reader(file)
         next(reader)  # skip header

@@ -13,9 +13,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.toggle-links').forEach(function (button) {
                 button.addEventListener('click', function () {
-                    const linkList = button.nextElementSibling;
-
-                    // Toggle the display
+                    const linkList = button.parentElement.parentElement.nextElementSibling.querySelector('.link-list');
                     linkList.style.display = linkList.style.display === 'none' ? 'table' : 'none';
                 });
             });
@@ -25,7 +23,11 @@
 
 <body>
     <div class="container mt-5">
-        <h1>Disinformation Laundromat</h1>
+        <div class="text-center" style="padding-top:10px">
+            <img src="https://i.imgur.com/k3kiUkk.png" style="width:25%" class="rounded" alt="logo">
+        </div>
+        <div class="text-center"><h1>Disinformation Laundromat</h1></div>
+        
         <hr />
         <h2>Content Search</h2>
         <form method="post" action="/content">
@@ -33,6 +35,13 @@
                 <label for="titleQuery">Title Query:</label>
                 <input type="text" class="form-control" id="titleQuery" name="titleQuery"
                     placeholder="Enter title query">
+            </div>
+            <div class="form-group">
+                <label for="combineOperator">AND/OR:</label>
+                <select class="form-control" id="combineOperator" name="combineOperator">
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="contentQuery">Content Query:</label>
@@ -68,7 +77,7 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Known</th>
+                    <th>Associations</th>
                     <th>Domain</th>
                     <th>Occurrences</th>
                     <th>Links</th>
@@ -77,13 +86,22 @@
             <tbody>
                 {% for domain, data in results.items() %}
                 <tr>
-                    <td> {% if data['concern'] %}
-                        <i class="fas fa-exclamation-triangle text-warning" title="Domain of Concern"></i>
-                    {% endif %}</td>
+                    <td> {% if "disinfo" in data['source'] %}
+                        <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                        {% endif %}
+
+                        {% if "statemedia" in data['source'] %}
+                        <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                        {% endif %}
+                    </td>
                     <td>{{ domain }}</td>
                     <td>{{ data['count'] }}</td>
                     <td>
                         <button class="btn btn-link toggle-links">View Links</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
                         <table class="table table-sm link-list" style="display: none;">
                             <thead>
                                 <tr>
@@ -101,7 +119,6 @@
                                     </td>
                                     <td>{{ link_data['count'] }}</td>
                                     <td>{{ link_data['engines']|join(', ') }}</td>
-                                    <!-- Display engines as a comma-separated list -->
                                 </tr>
                                 {% endfor %}
                             </tbody>

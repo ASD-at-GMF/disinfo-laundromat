@@ -43,29 +43,30 @@ def content():
     if request.method == 'POST':
         title_query = request.form.get('titleQuery')
         content_query = request.form.get('contentQuery')
+        combineOperator = request.form.get('combineOperator')
+
+        
         
         if not title_query and not content_query:
             # Error message if neither is provided
             flash("Please provide at least a title or content query.")
         else:
-            results = fetch_results(title_query, content_query)
+            results = fetch_results(title_query, content_query, combineOperator)
 
     return render_template('index.html', results=results)
 
 # TODO Federate this out 
-def fetch_results(title_query, content_query):
-    domains_of_concern = load_domains_of_concern()
+def fetch_results(title_query, content_query, combineOperator):
      # Parameters for SERPAPI Google integration
-    results = fetch_serp_results(title_query, content_query)
-    
-    # Flagging domains of concern
-    for domain, data in results.items():
-        data["concern"] = domain in domains_of_concern
+    results = fetch_serp_results(title_query, content_query, combineOperator)
 
     return results
 
-def fetch_serp_results(title_query, content_query):
-    paramsList = customize_params_by_platform(title_query, content_query)                  
+def fetch_serp_results(title_query, content_query, combineOperator):
+    local_domains = load_domains_of_concern()
+    github_domains = fetch_domains_from_github('https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
+   
+    paramsList = customize_params_by_platform(title_query, content_query, combineOperator)                  
     aggregated_results = {}
     for params in paramsList:
         search_engine = params["engine"]
@@ -93,10 +94,19 @@ def fetch_serp_results(title_query, content_query):
                 aggregated_results[domain]['links'].append(link_data)
 
             aggregated_results[domain]['count'] += 1
+            
+        # Flagging domains of concern and tracking their source
+    for domain, data in aggregated_results.items():
+        data["concern"] = domain in local_domains or domain in github_domains
+        data["source"] = []
+        if domain in local_domains:
+            data["source"].append("disinfo")
+        if domain in github_domains:
+            data["source"].append("statemedia")
 
     return aggregated_results
 
-def customize_params_by_platform(title_query, content_query):
+def customize_params_by_platform(title_query, content_query, combineOperator):
     paramsList = [
         {
         "engine": "google",
@@ -137,7 +147,7 @@ def customize_params_by_platform(title_query, content_query):
 
             if content_query:
                 if base_query:
-                    base_query += " AND "  # Combining title and content queries
+                    base_query += " " + combineOperator +" "  # Combining title and content queries
                 base_query += "intext:\"" + content_query + "\""
             paramsList[idx]['q'] = base_query
         if platform == 'bing':
@@ -146,7 +156,7 @@ def customize_params_by_platform(title_query, content_query):
 
             if content_query:
                 if base_query:
-                    base_query += " AND "  # Combining title and content queries
+                    base_query += " " + combineOperator +" "  # Combining title and content queries
                 base_query += "inbody:\"" + content_query + "\""
             paramsList[idx]['q'] = base_query
             
@@ -156,7 +166,7 @@ def customize_params_by_platform(title_query, content_query):
 
             if content_query:
                 if base_query:
-                    base_query += " AND "  # Combining title and content queries
+                    base_query += " " + combineOperator +" "  # Combining title and content queries
                 base_query += "\"" + content_query + "\""
             if platform == 'yandex':
                 paramsList[idx]['text'] = base_query
@@ -169,7 +179,18 @@ def load_domains_of_concern(filename="sites_of_concern.csv"):
     with open(filename, mode="r", encoding="utf-8") as file:
         reader = csv.reader(file)
         next(reader)  # skip header
-        return [urlparse(row[1].strip()).netloc for row in reader]
+        
+        return [urlparse(row[1]).netloc.strip() for row in reader]# Combine and deduplicate
+
+def fetch_domains_from_github(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    lines = response.text.splitlines()
+    reader = csv.reader(lines)
+    next(reader)  # skip header
+    return   [urlparse(row[4]).netloc.strip() for row in reader]# Assuming the URL column is the second column
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+    

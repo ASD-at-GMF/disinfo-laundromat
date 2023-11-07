@@ -10,6 +10,8 @@ from config import SERP_API_KEY, SITES_OF_CONCERN
 # Import all your functions here
 from crawler import *
 
+
+
 app = Flask(__name__)
 Bootstrap(app)
 
@@ -83,7 +85,7 @@ def fetch_serp_results(title_query, content_query, combineOperator):
         response = requests.get(base_url, params=params)
         data = response.json()
         organic_results = data.get("organic_results", [])
-        print( params)
+        print(params)
 
         # Aggregate by domain, link, title, and count occurrences
         for result in organic_results:
@@ -125,8 +127,22 @@ def customize_params_by_platform(title_query, content_query, combineOperator):
         "google_domain": "google.com",
         "num": 40,
         "api_key": SERP_API_KEY
+        },{ #google news
+        "engine": "google",
+        "location": "United States",
+        "hl": "en",
+        "gl": "us",
+        "google_domain": "google.com",
+        "num": 40,
+        "tbm":"nws"
+        "api_key": SERP_API_KEY
         },{
         "engine": "bing",
+        "mkt": "en-US",
+        "count": 40,
+        "api_key":  SERP_API_KEY
+        },{
+        "engine": "bing_news",
         "mkt": "en-US",
         "count": 40,
         "api_key":  SERP_API_KEY

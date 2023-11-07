@@ -115,6 +115,8 @@ def fetch_serp_results(title_query, content_query, combineOperator):
         if domain in github_domains:
             data["source"].append("statemedia")
 
+    aggregated_results = dict(sorted(aggregated_results.items(), key=lambda item: item[1]['count'], reverse=True))
+
     return aggregated_results
 
 def customize_params_by_platform(title_query, content_query, combineOperator):
@@ -127,14 +129,14 @@ def customize_params_by_platform(title_query, content_query, combineOperator):
         "google_domain": "google.com",
         "num": 40,
         "api_key": SERP_API_KEY
-        },{ #google news
+        },{
         "engine": "google",
         "location": "United States",
         "hl": "en",
         "gl": "us",
         "google_domain": "google.com",
         "num": 40,
-        "tbm":"nws"
+        "tbm":"nws",
         "api_key": SERP_API_KEY
         },{
         "engine": "bing",
@@ -239,4 +241,3 @@ def fetch_domains_from_github(url):
 if __name__ == "__main__":
     app.run(debug=True)
 
-    

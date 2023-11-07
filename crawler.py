@@ -66,7 +66,8 @@ def add_response_headers(url, soup, response):
             if (header.startswith('X-') or header.startswith('x-')) and header.lower() not in ['x-content-type-options', 'x-frame-options', 'x-xss-protection', 'x-request-id', 'x-ua-compatible', 'x-permitted-cross-domain-policies', 'x-dns-prefetch-control', 'x-robots-tag']:
                 header_indicators.append(add_indicator(url, '3-header-nonstd-value', header + ':' + value))
         except Exception as e:
-            print(e.message)
+            print(e)
+            
     return header_indicators
 
 def add_indicator(url, indicator_type, indicator_content):
@@ -114,7 +115,8 @@ def add_who_is(url, soup, response):
                     whois_indicators.append(add_indicator(url, "1-whois_address", result.address ))
                     whois_indicators.append(add_indicator(url, "2-whois_citystatecountry", result.city + ', '+ result.state + ', '+ result.country))
     except Exception as e:
-        print(e.message)
+        traceback.print_exc()
+
     return whois_indicators
     
 def get_tracert(ip_address):
@@ -128,7 +130,7 @@ def parse_classes(url, soup, response):
     for elem in soup.select("[class]"):
         classes = elem["class"]
         used_classes.update(classes)
-    tag_indicators.append(add_indicator(url, "3-css-classes", ",".join(used_classes)))
+    tag_indicators.append(add_indicator(url, "3-css_classes", ",".join(used_classes)))
     return tag_indicators
 
 def parse_sitemaps(url, soup, response):    
@@ -148,7 +150,7 @@ def parse_dom_tree(url, soup, response):
         text.replace_with("")
     for tag in soup.find_all():
         tag.attrs = {}
-    tag_indicators.append(add_indicator(url, "3-dom-tree", soup.prettify()))
+    tag_indicators.append(add_indicator(url, "3-dom_tree", soup.prettify()))
     return tag_indicators
 
 def parse_images(url, soup, response):
@@ -643,7 +645,7 @@ def parse_wordpress(url):
                 wp_items_string += wp_item['slug'] + ","
             wp_indicators.append(add_indicator(url,'3-wp-'+key, wp_items_string ))
         except Exception as e:
-            print(e.message)
+            traceback.print_exc()
             continue
     return wp_indicators
 
@@ -651,10 +653,10 @@ def detect_and_parse_feed_content(url, soup, response):
     feed_indicators = []
     feed = None    
 
-    feed_endpoints = ["feed/", "rss/", "rss.xml"]
+    feed_endpoints = [ "rss.xml","feed/", "rss/"]
     feed = get_endpoints(url, feed_endpoints)
 
-    if feed is not None:
+    if feed is not None and feed != '':
         feed = feedparser.parse(url)
         for entry in feed.entries:
             feed_indicators.append(add_indicator(domain, "4-content-title", entry.title))
@@ -665,7 +667,33 @@ def detect_and_parse_feed_content(url, soup, response):
     return feed_indicators
 
 
-def crawl(url, visited_urls, functions_to_run):
+
+INDICATOR_FUNCTIONS = {
+    'add_response_headers': add_response_headers,
+    'add_ip_address': add_ip_address,
+    'add_who_is': add_who_is,
+    'parse_meta_tags': parse_meta_tags,
+    'parse_script_tags': parse_script_tags,
+    'parse_iframe_ids': parse_iframe_ids,
+    'parse_id_attributes': parse_id_attributes,
+    'parse_link_tags': parse_link_tags,
+    'parse_body': parse_body,
+    'parse_google_ids': parse_tracking_ids,
+    'add_cdn_domains': add_cdn_domains,
+    'parse_domain_name': parse_domain_name,
+    'parse_classes': parse_classes,
+    'detect_and_parse_feed_content': detect_and_parse_feed_content,
+    #'parse_cms': parse_cms,
+    #'parse_sitemaps': parse_sitemaps,
+    'add_associated_domains_from_cert': add_associated_domains_from_cert,
+    # Uncomment the following if needed
+    # 'parse_images': parse_images,
+    # 'parse_dom_tree': parse_dom_tree,
+}
+
+
+
+def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS):
     indicators = []
     # Add the URL to the set of visited URLs
     domain = get_domain_name(url)
@@ -683,11 +711,6 @@ def crawl(url, visited_urls, functions_to_run):
                 indicators.extend(function_to_run(url, soup, response))
         except Exception as e:
             print(f"Exception occurred while running {function_name}: {e}")
-
-    try:
-        indicators.extend(add_associated_domains_from_cert(url))
-    except Exception as e:
-        traceback.print_exc()
     #indicators.extend(parse_dom_tree(url, soup))
 
     return indicators
@@ -716,32 +739,6 @@ def write_indicators(indicators, output_file):
             encoding="utf-8",
             header=True,
         )
-
-
-INDICATOR_FUNCTIONS = {
-    'add_response_headers': add_response_headers,
-    'add_ip_address': add_ip_address,
-    'add_who_is': add_who_is,
-    'parse_meta_tags': parse_meta_tags,
-    'parse_script_tags': parse_script_tags,
-    'parse_iframe_ids': parse_iframe_ids,
-    'parse_id_attributes': parse_id_attributes,
-    'parse_link_tags': parse_link_tags,
-    'parse_body': parse_body,
-    'parse_google_ids': parse_tracking_ids,
-    'add_cdn_domains': add_cdn_domains,
-    'parse_domain_name': parse_domain_name,
-    'parse_classes': parse_classes,
-    'detect_and_parse_feed_content': detect_and_parse_feed_content,
-    'parse_cms': parse_cms,
-    #'parse_sitemaps': parse_sitemaps,
-    'add_associated_domains_from_cert': add_associated_domains_from_cert,
-    # Uncomment the following if needed
-    # 'parse_images': parse_images,
-    # 'parse_dom_tree': parse_dom_tree,
-}
-
-
 
 if __name__ == "__main__":
     visited_urls = set()

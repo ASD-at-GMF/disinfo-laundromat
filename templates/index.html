@@ -1,14 +1,218 @@
-{% extends 'bootstrap/base.html' %}
 
-{% block content %}
-    <div class="container">
-        <h1>Website Crawler</h1>
-        <form method="POST">
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disinformation Laundromat</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script>
+        // This function is triggered when the "View Links" button is clicked
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.toggle-links').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const linkList = button.parentElement.parentElement.nextElementSibling.querySelector('.link-list');
+                    linkList.style.display = linkList.style.display === 'none' ? 'table' : 'none';
+                });
+            });
+        });
+        // This function is triggered when the "Fingerprint" button is clicked
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.submit-fingerprint').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var url = this.getAttribute('data-url'); // Get the URL from the data attribute of the button
+                    var form = document.querySelector('form[action="/fingerprint"]'); // Find the fingerprint form
+                    form.querySelector('#url').value = url; // Set the URL into the input field
+                    form.submit(); // Submit the form
+                });
+            });
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            // Select the forms by class or id or tag, e.g., 'form' to target all forms
+            document.querySelectorAll('form').forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    // Show the loading icon
+                    document.getElementById('loading').style.display = 'block';
+
+                    // Optionally disable the submit button to prevent multiple submissions
+                    this.querySelector('button[type="submit"]').disabled = true;
+                });
+            });
+        });
+        $('form').on('submit', function (e) {
+            e.preventDefault(); // Prevent form from submitting normally if using AJAX
+            $('#loading').show();
+
+            // AJAX request
+            $.ajax({
+                url: this.action,
+                type: this.method,
+                data: $(this).serialize(),
+                success: function (response) {
+                    // Hide the loading icon
+                    $('#loading').hide();
+                },
+                error: function () {
+                    // Hide the loading icon
+                    $('#loading').hide();
+                }
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <div id="loading" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    </div>
+    <div class="container mt-5">
+        <div class="text-center" style="padding-top:10px">
+            <img src="https://i.imgur.com/k3kiUkk.png" style="width:25%" class="rounded" alt="logo">
+        </div>
+        <div class="text-center">
+            <h1>Disinformation Laundromat</h1>
+        </div>
+
+        <hr />
+        <h2>Content Search</h2>
+        <form method="post" action="/content">
+            <div class="form-group">
+                <label for="titleQuery">Title Query:</label>
+                <input type="text" class="form-control" id="titleQuery" name="titleQuery"
+                    placeholder="Enter title query">
+            </div>
+            <div class="form-group">
+                <label for="combineOperator">AND/OR:</label>
+                <select class="form-control" id="combineOperator" name="combineOperator">
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="contentQuery">Content Query:</label>
+                <input type="text" class="form-control" id="contentQuery" name="contentQuery"
+                    placeholder="Enter content query">
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-warning">
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        <hr />
+
+        <h2>Website Fingerprinting</h2>
+        <form method="POST" action="/fingerprint">
             <div class="form-group">
                 <label for="url">Enter URL:</label>
                 <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
+
+
+
+        {% if results %}
+        <h3 class="mt-5">Results</h3>
+        <form method="post" action="/download_csv">
+            <!-- Hidden input containing the CSV data -->
+            <input type="hidden" name="csv_data" value="{{ csv_data|safe }}">
+            <button type="submit" class="btn btn-secondary mb-3">Download Results as CSV</button>
+        </form>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Associations</th>
+                    <th>Domain</th>
+                    <th>Occurrences</th>
+                    <th>Links</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain, data in results.items() %}
+                <tr>
+                    <td> {% if "EuVsDisinfo" in data['source'] %}
+                        <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                        {% endif %}
+                        {% if "statemedia" in data['source'] %}
+                        <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                        {% endif %}
+                        {% if "Pink Slime" in data['source'] %}
+                        <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                        {% endif %}
+                        {% if "Newsguard AI" in data['source'] %}
+                        <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
+                        {% endif %}
+                    </td>
+                    <td>{{ domain }}</td>
+                    <td>{{ data['count'] }}</td>
+                    <td>
+                        <button class="btn btn-link toggle-links">View Links</button>
+                        <button class="btn btn-primary submit-fingerprint"
+                            data-url="https://{{domain}}">Fingerprint</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <table class="table table-sm link-list" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Link</th>
+                                    <th>Occurrences</th>
+                                    <th>Engines</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link_data in data['links'] %}
+                                <tr>
+                                    <td>{{ link_data['title'] }}</td>
+                                    <td><a href="{{ link_data['link'] }}" target="_blank">{{ link_data['link'] }}</a>
+                                    </td>
+                                    <td>{{ link_data['count'] }}</td>
+                                    <td>{{ link_data['engines']|join(', ') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
     </div>
-{% endblock %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+<style>
+    .loading-overlay {
+        position: fixed; /* Use fixed positioning */
+        top: 20%;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(128, 128, 128, 0.5); /* Gray background with opacity */
+        display: flex;
+        justify-content: center; /* Center horizontally */
+        align-items: center; /* Center vertically */
+        z-index: 9999; /* Make sure it's on top of other content */
+    }
+    
+    .loading-spinner {
+        text-align: center;
+    }
+    </style>
+</html>

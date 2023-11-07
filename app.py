@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, request, flash, make_response
 from flask_bootstrap import Bootstrap
 import requests
@@ -240,4 +241,3 @@ def fetch_domains_from_github(url):
 
 if __name__ == "__main__":
     app.run(debug=True)
-

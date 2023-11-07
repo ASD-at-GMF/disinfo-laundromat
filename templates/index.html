@@ -18,16 +18,28 @@
                 });
             });
         });
+        // This function is triggered when the "Fingerprint" button is clicked
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.submit-fingerprint').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var url = this.getAttribute('data-url'); // Get the URL from the data attribute of the button
+                    var form = document.querySelector('form[action="/fingerprint"]'); // Find the fingerprint form
+                    form.querySelector('#url').value = url; // Set the URL into the input field
+                    form.submit(); // Submit the form
+                });
+            });
+        });
     </script>
 </head>
-
 <body>
     <div class="container mt-5">
         <div class="text-center" style="padding-top:10px">
             <img src="https://i.imgur.com/k3kiUkk.png" style="width:25%" class="rounded" alt="logo">
         </div>
-        <div class="text-center"><h1>Disinformation Laundromat</h1></div>
-        
+        <div class="text-center">
+            <h1>Disinformation Laundromat</h1>
+        </div>
+
         <hr />
         <h2>Content Search</h2>
         <form method="post" action="/content">
@@ -103,6 +115,8 @@
                     <td>{{ data['count'] }}</td>
                     <td>
                         <button class="btn btn-link toggle-links">View Links</button>
+                        <button class="btn btn-primary submit-fingerprint"
+                            data-url="https://{{domain}}">Fingerprint</button>
                     </td>
                 </tr>
                 <tr>

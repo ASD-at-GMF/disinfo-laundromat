@@ -103,12 +103,17 @@
             <tbody>
                 {% for domain, data in results.items() %}
                 <tr>
-                    <td> {% if "disinfo" in data['source'] %}
+                    <td> {% if "EuVsDisinfo" in data['source'] %}
                         <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
                         {% endif %}
-
                         {% if "statemedia" in data['source'] %}
                         <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                        {% endif %}
+                        {% if "Pink Slime" in data['source'] %}
+                        <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                        {% endif %}
+                        {% if "Newsguard AI" in data['source'] %}
+                        <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
                         {% endif %}
                     </td>
                     <td>{{ domain }}</td>

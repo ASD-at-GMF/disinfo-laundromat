@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -155,6 +154,9 @@
                         {% if "Newsguard AI" in data['source'] %}
                         <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
                         {% endif %}
+                        {% elif data['source'] %}
+                        <i class="fas fa-bell" title="Other Suspect Domain"></i>
+                        {% endif %}
                     </td>
                     <td>{{ domain }}</td>
                     <td>{{ data['count'] }}</td>
@@ -199,20 +201,27 @@
 </body>
 <style>
     .loading-overlay {
-        position: fixed; /* Use fixed positioning */
-        top: 20%;
+        position: fixed;
+        /* Use fixed positioning */
+        top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(128, 128, 128, 0.5); /* Gray background with opacity */
+        background: rgba(128, 128, 128, 0.5);
+        /* Gray background with opacity */
         display: flex;
-        justify-content: center; /* Center horizontally */
-        align-items: center; /* Center vertically */
-        z-index: 9999; /* Make sure it's on top of other content */
+        justify-content: center;
+        /* Center horizontally */
+        align-items: center;
+        /* Center vertically */
+        z-index: 9999;
+        /* Make sure it's on top of other content */
     }
-    
+
     .loading-spinner {
+        top: 25%;
         text-align: center;
     }
-    </style>
+</style>
+
 </html>

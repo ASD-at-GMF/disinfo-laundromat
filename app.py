@@ -1,24 +1,58 @@
 
-from flask import Flask, render_template, request, flash, make_response
+from flask import Flask, render_template, request, flash, make_response, g
 from flask_bootstrap import Bootstrap
 import requests
 from io import StringIO
 from urllib.parse import urlparse
 import csv
+import sqlite3
 
 # Paramaterizable Variables
 from config import SERP_API_KEY, SITES_OF_CONCERN
+from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE
 # Import all your functions here
 from crawler import *
-
-
 
 app = Flask(__name__)
 Bootstrap(app)
 
+DATABASE = 'database.db'
+
+
+
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect(DATABASE)
+    return db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
+
+def init_db():
+    with app.app_context():
+        db = get_db()
+        with app.open_resource('schema.sql', mode='r') as f:
+            db.cursor().executescript(f.read())
+        db.commit()
+        # Insert local_domains into sites_base
+        insert_sites_of_concern(load_domains_of_concern())
+
+def insert_sites_of_concern(local_domains):
+    db = get_db()
+    # Check if the table is empty
+    if db.execute('SELECT COUNT(*) FROM sites_base').fetchone()[0] == 0:
+        # If empty, insert the local_domains
+        db.executemany('INSERT INTO sites_base (domain, source) VALUES (?, ?)',
+                       [(domain,source) for domain,source in local_domains])
+        db.commit()
+
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
 
 @app.route('/fingerprint', methods=['GET', 'POST'])
@@ -36,7 +70,7 @@ def fingerprint():
         except Exception as e:
             return render_template('error.html', error=e)
 
-    return render_template('index.html')
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
 
 @app.route('/content', methods=['GET', 'POST'])
@@ -47,16 +81,24 @@ def content():
         title_query = request.form.get('titleQuery')
         content_query = request.form.get('contentQuery')
         combineOperator = request.form.get('combineOperator')
+        language = request.form.get('language')
+        country = request.form.get('country')
 
         if not title_query and not content_query:
             # Error message if neither is provided
             flash("Please provide at least a title or content query.")
         else:
-            results = fetch_results(title_query, content_query, combineOperator)
+            results = fetch_results(title_query, content_query, combineOperator, language, country)
             # Convert results to CSV
             csv_data = convert_results_to_csv(results)
+            # Save the query to the database
 
-    return render_template('index.html', results=results, csv_data=csv_data)
+            db = get_db()
+            db.execute('INSERT INTO content_queries (title_query, content_query, combine_operator) VALUES (?, ?, ?)',
+                       (title_query, content_query, combineOperator))
+            db.commit()
+
+    return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
@@ -68,17 +110,17 @@ def download_csv():
     return output
 
 # TODO Federate this out 
-def fetch_results(title_query, content_query, combineOperator):
+def fetch_results(title_query, content_query, combineOperator, language, country):
      # Parameters for SERPAPI Google integration
-    results = fetch_serp_results(title_query, content_query, combineOperator)
+    results = fetch_serp_results(title_query, content_query, combineOperator, language, country)
 
     return results
 
-def fetch_serp_results(title_query, content_query, combineOperator):
+def fetch_serp_results(title_query, content_query, combineOperator, language, country):
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github('https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
    
-    paramsList = customize_params_by_platform(title_query, content_query, combineOperator)                  
+    paramsList = customize_params_by_platform(title_query, content_query, combineOperator, language, country)                  
     aggregated_results = {}
     for params in paramsList:
         search_engine = params["engine"]
@@ -106,62 +148,95 @@ def fetch_serp_results(title_query, content_query, combineOperator):
                 aggregated_results[domain]['links'].append(link_data)
 
             aggregated_results[domain]['count'] += 1
-            
-        # Flagging domains of concern and tracking their source
+    
+    local_domains_dict = {domain: source for domain, source in local_domains}
+    # Flagging domains of concern and tracking their source
     for domain, data in aggregated_results.items():
-        data["concern"] = domain in local_domains or domain in github_domains
+        local_source = local_domains_dict.get(domain)
+        github_source = "statemedia" if domain in github_domains else None
+        
+        # Set concern flag and sources
+        data["concern"] = bool(local_source or github_source)
         data["source"] = []
-        if domain in local_domains:
-            data["source"].append("disinfo")
-        if domain in github_domains:
-            data["source"].append("statemedia")
+
+        if local_source:
+            data["source"].append(local_source)
+        if github_source:
+            data["source"].append(github_source)
 
     aggregated_results = dict(sorted(aggregated_results.items(), key=lambda item: item[1]['count'], reverse=True))
 
     return aggregated_results
 
-def customize_params_by_platform(title_query, content_query, combineOperator):
+def customize_params_by_platform(title_query, content_query, combineOperator, language, country):
+    lang_yandex = language
+    lang_yahoo = language
+    country_yahoo = country
+    country_language = country + "-" + language
+    language_country = language + "-" + country
+    try:
+        location = COUNTRIES[country]
+    except:
+        location = 'United States'
+    try:
+        google_domain = DOMAINS_GOOGLE[location]
+    except:
+        google_domain = DOMAINS_GOOGLE[location]
+
+
+    if language not in LANGUAGES_YANDEX:
+        lang_yandex = 'en'  # Default to English
+    if language not in LANGUAGES_YAHOO:
+        lang_yahoo = 'en'
+    if country not in COUNTRIES_YAHOO:
+        country_yahoo = 'us'
+    if country_language not in COUNTRY_LANGUAGE_DUCKDUCKGO:
+        country_language = 'wt-wt'
+
+
     paramsList = [
         {
         "engine": "google",
-        "location": "United States",
-        "hl": "en",
-        "gl": "us",
-        "google_domain": "google.com",
+        "location": location,
+        "hl": language,
+        "gl": country,
+        "google_domain": google_domain,
         "num": 40,
         "api_key": SERP_API_KEY
         },{
         "engine": "google",
-        "location": "United States",
-        "hl": "en",
-        "gl": "us",
+        "location": location,
+        "hl": language,
+        "gl": country,
         "google_domain": "google.com",
         "num": 40,
         "tbm":"nws",
         "api_key": SERP_API_KEY
         },{
         "engine": "bing",
-        "mkt": "en-US",
+        "location": location,
+        "mkt": language_country,
         "count": 40,
         "api_key":  SERP_API_KEY
         },{
         "engine": "bing_news",
-        "mkt": "en-US",
+        "mkt": language_country,
+        "location": location,
         "count": 40,
         "api_key":  SERP_API_KEY
         },{
         "engine": "duckduckgo",
-        "kl": "us-en",
+        "kl": country_language,
         "api_key":  SERP_API_KEY
         },{
         "engine": "yahoo",
         "api_key":  SERP_API_KEY,
-        "vs":"us",
-        "vl":"en"
+        "vs":country_yahoo,
+        "vl":"lang_" + lang_yahoo,
         },{
         "engine": "yandex",
         "api_key":  SERP_API_KEY,
-        "lang":"en",
+        "lang":lang_yandex,
         "lr": 84
         }
         ]
@@ -228,8 +303,8 @@ def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:
         reader = csv.reader(file)
         next(reader)  # skip header
-        
-        return [urlparse(row[1]).netloc.strip() for row in reader]# Combine and deduplicate
+
+        return [(urlparse(row[1]).netloc.strip(), row[3].strip()) for row in reader]
 
 def fetch_domains_from_github(url):
     response = requests.get(url)
@@ -240,4 +315,5 @@ def fetch_domains_from_github(url):
     return   [urlparse(row[4]).netloc.strip() for row in reader]# Assuming the URL column is the second column
 
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True)

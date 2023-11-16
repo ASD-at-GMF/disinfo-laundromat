@@ -141,85 +141,104 @@
         </form>
 
         {% if results %}
-        <h3 class="mt-5">Results</h3>
+        <h3 class="mt-5">Results</h3><button class="btn btn-primary" type="button" data-toggle="collapse"
+            data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
+            Show/Hide Table
+        </button>
         <form method="post" action="/download_csv">
             <!-- Hidden input containing the CSV data -->
             <input type="hidden" name="csv_data" value="{{ csv_data|safe }}">
             <button type="submit" class="btn btn-secondary mb-3">Download Results as CSV</button>
         </form>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Associations</th>
-                    <th>Domain</th>
-                    <th>Occurrences</th>
-                    <th>Links</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for domain, data in results.items() %}
-                <tr>
-                    <td> {% if "EuVsDisinfo" in data['source'] %}
-                        <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
-                        {% elif "statemedia" in data['source'] %}
-                        <i class="fas fa-globe text-primary" title="State Media Domain"></i>
-                        {% elif "Pink Slime" in data['source'] %}
-                        <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
-                        {% elif "Newsguard AI" in data['source'] %}
-                        <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
-                        {% elif data['source']%}
-                        <i class="fas fa-bell" title="{{data['source']}}"></i>
-                        {% endif %}
-                    </td>
-                    <td>{{ domain }}</td>
-                    <td>{{ data['count'] }}</td>
-                    <td>
-                        <button class="btn btn-primary toggle-links">View Links</button>
-                        <button class="btn btn-link submit-fingerprint"
-                            data-url="https://{{domain}}">Fingerprint</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="4">
-                        <table class="table table-sm link-list" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Link</th>
-                                    <th>Occurrences</th>
-                                    <th>Engines</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for link_data in data['links'] %}
-                                <tr>
-                                    <td>{{ link_data['title'] }}</td>
-                                    <td><a href="{{ link_data['link'] }}" target="_blank">{{ link_data['link'] }}</a>
-                                    </td>
-                                    <td>{{ link_data['count'] }}</td>
-                                    <td>{{ link_data['engines']|join(', ') }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="collapse show" id="collapsibleTable">
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Associations</th>
+                        <th>Domain</th>
+                        <th>Occurrences</th>
+                        <th>Links</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for domain, data in results.items() %}
+                    <tr>
+                        <td> {% if "EuVsDisinfo" in data['source'] %}
+                            <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                            {% elif "statemedia" in data['source'] %}
+                            <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                            {% elif "Pink Slime" in data['source'] %}
+                            <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                            {% elif "Newsguard AI" in data['source'] %}
+                            <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
+                            {% elif data['source']%}
+                            <i class="fas fa-bell" title="{{data['source']}}"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ domain }}</td>
+                        <td>{{ data['count'] }}</td>
+                        <td>
+                            <button class="btn btn-primary toggle-links">View Links</button>
+                            <button class="btn btn-link submit-fingerprint"
+                                data-url="https://{{domain}}">Fingerprint</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="4">
+                            <table class="table table-sm link-list" style="display: none;">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Link</th>
+                                        <th>Occurrences</th>
+                                        <th>Engines</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for link_data in data['links'] %}
+                                    <tr>
+                                        <td>{{ link_data['title'] }}</td>
+                                        <td><a href="{{ link_data['link'] }}" target="_blank">{{ link_data['link']
+                                                }}</a>
+                                        </td>
+                                        <td>{{ link_data['count'] }}</td>
+                                        <td>{{ link_data['engines']|join(', ') }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% endif %}
         <!-- Section for Indicators and Matches Tables -->
         {% if indicators_df %}
-        <div class="col-md-6">
-            <h3>Indicators</h3>
-            {{ indicators_df|safe }}
+        <h3>Indicators</h3> <button class="btn btn-primary" type="button" data-toggle="collapse"
+            data-target="#collapsibleIndicatorTable" aria-expanded="false" aria-controls="collapsibleIndicatorTable">
+            Show/Hide Table
+        </button>
+        <div class="collapse show" id="collapsibleIndicatorTable">
+            <div class="col-md-12">
+
+                {{ indicators_df|safe }}
+            </div>
         </div>
         {% endif %}
-        
+
         {% if matches_df %}
-        <div class="col-md-6">
-            <h3>Matches</h3>
-            {{ matches_df|safe }}
+        <h3>Matches</h3> <button class="btn btn-primary" type="button" data-toggle="collapse"
+            data-target="#collapsibleMatchesTable" aria-expanded="false" aria-controls="collapsibleMatchesTable">
+            Show/Hide Table
+        </button>
+        <div class="collapse show" id="collapsibleMatchesTable">
+
+            <div class="col-md-12">
+                {{ matches_df|safe }}
+            </div>
         </div>
         {% endif %}
 
@@ -245,6 +264,7 @@
         top: 25%;
         text-align: center;
     }
+
     table {
         table-layout: fixed;
         width: 100%;
@@ -253,7 +273,6 @@
     td {
         word-wrap: break-word;
         white-space: normal;
-        max-width: 500px; /* Adjust based on your layout */
     }
 </style>
 

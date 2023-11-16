@@ -8,17 +8,16 @@ import csv
 import sqlite3
 
 # Paramaterizable Variables
-from config import SERP_API_KEY, SITES_OF_CONCERN
+from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS
 from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE
 # Import all your functions here
 from crawler import *
+from matcher import find_matches
 
 app = Flask(__name__)
 Bootstrap(app)
 
 DATABASE = 'database.db'
-
-
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -63,9 +62,16 @@ def fingerprint():
         # Do something with the url using your functions
         try:
             indicators = crawl(url, set())
-            write_indicators(indicators, output_file="indicators2.csv")
-            indicators_df = pd.read_csv("indicators2.csv")  # read the csv file
-            return render_template('success.html', url=url, table=indicators_df.to_html(index=False))  # convert dataframe to html table
+            indicators_df = pd.DataFrame(
+                columns=["indicator_type", "indicator_content", "domain_name"],
+                data=indicators,
+            )
+            comparison_indicators = pd.read_csv(KNOWN_INDICATORS)  # read the csv file
+            #print(indicators_df.head(), comparison_indicators.head())
+            # Find matches
+            matches_df = find_matches(indicators_df, comparison=comparison_indicators)
+
+            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_html(classes='table table-striped'), matches_df=matches_df.to_html(classes='table table-striped'))
  
         except Exception as e:
             return render_template('error.html', error=e)

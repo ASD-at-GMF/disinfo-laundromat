@@ -24,6 +24,9 @@ from pathlib import Path
 from typing import List, Dict, Set
 from usp.tree import sitemap_tree_for_homepage
 import feedparser
+import hashlib
+import datetime
+from config import MYIPMS_API_PATH
 
 
 visited = set()
@@ -337,6 +340,81 @@ def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = 
     finally:
         return []
 
+def get_ipms_indicators(url, soup, response):
+    ipms_indicators = []
+
+    if len(MYIPMS_API_PATH) > 0:
+        api_url = 'https://api.myip.ms'
+        domain = get_domain_name(url)
+        # Generate the current GMT timestamp
+        timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
+
+        # Create the signature
+        ipms_domain_signature_raw = f"{api_url}/{domain}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
+        ipms_domain_signature = hashlib.md5(ipms_domain_signature_raw.encode()).hexdigest()
+        # Construct the URL
+        ipms_domain_url = f"{api_url}/{domain}/{MYIPMS_API_PATH}/signature/{ipms_domain_signature}/timestamp/{timestamp}"
+
+        # Repeat the process for the IP address
+        ip_address = socket.gethostbyname(domain)
+        ipms_ip_signature_raw = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
+        ipms_ip_signature = hashlib.md5(ipms_ip_signature_raw.encode()).hexdigest()
+        ipms_ip_url = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/signature/{ipms_ip_signature}/timestamp/{timestamp}"
+
+        ipms_indicators.extend(get_ipms_domain_indicators(url, ipms_domain_url))
+        ipms_indicators.extend(get_ipms_ip_indicators(url, ipms_ip_url))
+    return ipms_indicators
+
+def get_ipms_domain_indicators(url, ipms_url):
+    ipms_indicators = []
+    api_result = requests.get(ipms_url)
+
+    try:
+        data = json.loads(api_result.content)
+        ipms_indicators.append(add_indicator(url, '3-ipms_domain_iprangeowner_cidr', data["owners"]["owner"]["cidr"]))
+        ipms_indicators.append(add_indicator(url, '3-ipms_domain_iprangeowner_ownerName', data["owners"]["owner"]["ownerName"]))
+        ipms_indicators.append(add_indicator(url, '3-ipms_domain_iprangeowner_address', data["owners"]["owner"]["address"]))
+        for dns in data["dns"]:
+            ipms_indicators.append(add_indicator(url, '3-ipms_domain_nameserver', dns["nameserver"]))
+        unique_ips = {entry["ip_address"] for entry in data["ip_change_history"]}
+        for ip in unique_ips:
+            ipms_indicators.append(add_indicator(url, '3-ipms_domain_otheripused', ip["ip"]))
+        
+        return ipms_indicators
+
+    except IndexError as e:
+        print(
+            "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
+        )
+        traceback.print_exc()
+    except Exception as e:
+        traceback.print_exc()
+
+def get_ipms_ip_indicators(url, ipms_url):
+    ipms_indicators = []
+    api_result = requests.get(ipms_url)
+
+    try:
+        data = json.loads(api_result.content)
+        for site in data["websites_on_ip_now"]:
+            ipms_indicators.append(add_indicator(url, '3-ipms_siteonthisip_now', site["website"]))
+        for site in data["websites_on_ip_before"]:
+            ipms_indicators.append(add_indicator(url, '3-ipms_siteonthisip_before', site["website"]))
+        for site in data["not_working_websites_on_ip"]:
+            ipms_indicators.append(add_indicator(url, '3-ipms_siteonthisip_broken', site["website"]))
+        for useragent in data["useragents_on_ip"]:
+            ipms_indicators.append(add_indicator(url, '3-ipms_useragents', useragent["useragent"]))
+
+        return ipms_indicators
+    except IndexError as e:
+        print(
+            "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
+        )
+        traceback.print_exc()
+    except Exception as e:
+        traceback.print_exc()
+
+    
 
 def add_meta_generic_tags(url, name, content):
 
@@ -356,6 +434,16 @@ def parse_body(url, soup, response):
 
     return tag_indicators
 
+def parse_footer(url, soup, response):
+    tag_indicators = []
+
+    footer = soup.find_all("footer")
+    # Extract text
+    if footer:
+        footer_text = footer.get_text(strip=True)  
+        tag_indicators.append(add_indicator(url, "3-footer-text", footer_text))
+
+    return tag_indicators
 
 def find_with_regex(regex, text, url, indicator_type):
     tag_indicators = []
@@ -678,11 +766,13 @@ INDICATOR_FUNCTIONS = {
     'parse_id_attributes': parse_id_attributes,
     'parse_link_tags': parse_link_tags,
     'parse_body': parse_body,
+    'parse_footer': parse_footer,
     'parse_google_ids': parse_tracking_ids,
     'add_cdn_domains': add_cdn_domains,
     'parse_domain_name': parse_domain_name,
     'parse_classes': parse_classes,
     'detect_and_parse_feed_content': detect_and_parse_feed_content,
+    'get_ipms_indicators': get_ipms_indicators,
     #'parse_cms': parse_cms,
     #'parse_sitemaps': parse_sitemaps,
     'add_associated_domains_from_cert': add_associated_domains_from_cert,

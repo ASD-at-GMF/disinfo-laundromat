@@ -187,7 +187,7 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
     try:
         google_domain = DOMAINS_GOOGLE[location]
     except:
-        google_domain = DOMAINS_GOOGLE[location]
+        google_domain = 'google.com'
 
 
     if language not in LANGUAGES_YANDEX:
@@ -198,7 +198,6 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
         country_yahoo = 'us'
     if country_language not in COUNTRY_LANGUAGE_DUCKDUCKGO:
         country_language = 'wt-wt'
-
 
     paramsList = [
         {
@@ -214,7 +213,7 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
         "location": location,
         "hl": language,
         "gl": country,
-        "google_domain": "google.com",
+        "google_domain": google_domain,
         "num": 40,
         "tbm":"nws",
         "api_key": SERP_API_KEY

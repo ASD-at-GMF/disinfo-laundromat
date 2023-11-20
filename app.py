@@ -115,6 +115,45 @@ def download_csv():
     output.headers["Content-type"] = "text/csv"
     return output
 
+def filter_gdelt_query(query):
+    """
+    Remove words of two letters or fewer and non-alphanumeric characters from the query.
+    """
+    # Remove non-alphanumeric characters
+    alphanumeric_query = re.sub(r'\W+', ' ', query)
+    # Filter out short words
+    return ' '.join(word for word in alphanumeric_query.split() if len(word) > 2)
+
+def fetch_gdelt_results(title_query, content_query, combineOperator, language, country):
+    """
+    Send the query to the GDELT API and return the parsed JSON response.
+    """
+    base_url = "https://api.gdeltproject.org/api/v2/doc/doc"
+    filtered_query = filter_gdelt_query(title_query + " " + content_query)
+
+    params = {
+        "format": "json",
+        "timespan": "FULL",
+        "query": filtered_query,
+        "mode": "artlist",
+        "maxrecords": 75,
+        "sort": "hybridrel"
+    }
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()  # Raise an error for bad status codes
+        results_gdelt = response.json()
+        if results_gdelt:
+            results_gdelt = format_output(results_gdelt)
+        else:
+            print("Failed to fetch  GDELT data")
+        
+        return results_gdelt
+    except requests.RequestException as e:
+        print(f"Error during request: {e}")
+        return None
+
 # TODO Federate this out 
 def fetch_results(title_query, content_query, combineOperator, language, country):
      # Parameters for SERPAPI Google integration
@@ -122,10 +161,27 @@ def fetch_results(title_query, content_query, combineOperator, language, country
 
     return results
 
+
+def format_output(data):
+    output = {}
+    for article in data.get("articles", []):
+        domain = urlparse(article["url"]).netloc
+        if domain not in output:
+            output[domain] = {"count": 0, "links": [], "concern": False, "source": []}
+        output[domain]["count"] += 1
+        output[domain]["links"].append({
+            "link": article["url"],
+            "title": article["title"],
+            "count": 1,  # Assuming each link is unique and counts as 1
+            "engines": ["GDELT"]  # Placeholder, as the engine is not specified in the data
+        })
+    return output
+
 def fetch_serp_results(title_query, content_query, combineOperator, language, country):
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github('https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
-   
+    results_gdelt = fetch_gdelt_results(title_query, content_query, combineOperator, language, country)
+
     paramsList = customize_params_by_platform(title_query, content_query, combineOperator, language, country)                  
     aggregated_results = {}
     for params in paramsList:
@@ -154,15 +210,26 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
                 aggregated_results[domain]['links'].append(link_data)
 
             aggregated_results[domain]['count'] += 1
-    
+
+    for key, value in results_gdelt.items():
+        if key in aggregated_results:
+            # Sum the 'count' for overlapping keys
+            aggregated_results[key]['count'] += value['count']
+            combined_links = aggregated_results[key]['links'] + value['links']
+            aggregated_results[key]['links'] = combined_links
+        else:
+            # If the key is not in the first dictionary, add it
+            aggregated_results[key] = value
+
     local_domains_dict = {domain: source for domain, source in local_domains}
     # Flagging domains of concern and tracking their source
     for domain, data in aggregated_results.items():
         local_source = local_domains_dict.get(domain)
         github_source = "statemedia" if domain in github_domains else None
         
+        print(domain, local_source, github_source)
         # Set concern flag and sources
-        data["concern"] = bool(local_source or github_source)
+        data["concern"] = bool(local_source or github_source )
         data["source"] = []
 
         if local_source:

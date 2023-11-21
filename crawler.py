@@ -378,7 +378,7 @@ def get_ipms_domain_indicators(url, ipms_url):
             ipms_indicators.append(add_indicator(url, '3-ipms_domain_nameserver', dns["nameserver"]))
         unique_ips = {entry["ip_address"] for entry in data["ip_change_history"]}
         for ip in unique_ips:
-            ipms_indicators.append(add_indicator(url, '3-ipms_domain_otheripused', ip["ip"]))
+            ipms_indicators.append(add_indicator(url, '3-ipms_domain_otheripused', ip))
         
         return ipms_indicators
 

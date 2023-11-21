@@ -49,6 +49,15 @@ def insert_sites_of_concern(local_domains):
                        [(domain,source) for domain,source in local_domains])
         db.commit()
 
+def insert_indicators(indicators):
+    db = get_db()   
+
+    # If empty, insert the local_domains
+    db.executemany('INSERT INTO site_fingerprint (domain_name, indicator_type, indicator_content) VALUES (?, ?, ?)',
+                    [(indicator['domain_name'], indicator['indicator_type'], str(indicator['indicator_content'])) for indicator in indicators])
+    db.commit()
+
+
 @app.route('/', methods=['GET'])
 def index():
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
@@ -66,6 +75,9 @@ def fingerprint():
                 columns=["indicator_type", "indicator_content", "domain_name"],
                 data=indicators,
             )
+            
+            insert_indicators(indicators)
+
             comparison_indicators = pd.read_csv(KNOWN_INDICATORS)  # read the csv file
             #print(indicators_df.head(), comparison_indicators.head())
             # Find matches
@@ -100,8 +112,33 @@ def content():
             # Save the query to the database
 
             db = get_db()
-            db.execute('INSERT INTO content_queries (title_query, content_query, combine_operator) VALUES (?, ?, ?)',
-                       (title_query, content_query, combineOperator))
+            cursor = db.cursor()
+            cursor.execute('INSERT INTO content_queries (title_query, content_query, combine_operator, language, country) VALUES (?, ?, ?, ?, ?)',
+                        (title_query, content_query, combineOperator, language, country))
+            db.commit()
+            # Get the last inserted row ID
+            cq_id = cursor.lastrowid
+            
+            results_list = []
+            for domain, data in results.items():
+                for link_data in data['links']:
+                    res =  [
+                        cq_id,
+                        domain,
+                        str(data['count']),
+                        link_data['title'],
+                        link_data['link'],
+                        str(link_data['count']),
+                        ', '.join(link_data['engines'])
+                    ]
+                    results_list.append(res)
+
+            # Insert data into the database
+            # Prepare your SQL insert statement including the additional column
+            insert_sql = 'INSERT INTO content_queries_results (cq_id, Domain,	Occcurences,	Title,	Link,	Link_Occurences,	Engines) VALUES (?,?, ?, ?, ?, ?, ?)'
+
+            # Execute the insert command
+            cursor.executemany(insert_sql, results_list)
             db.commit()
 
     return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)

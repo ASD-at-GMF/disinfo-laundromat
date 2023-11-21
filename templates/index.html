@@ -82,41 +82,45 @@
         <hr />
         <h2>Content Search</h2>
         <form method="post" action="/content">
-            <div class="form-group">
-                <label for="titleQuery">Title Query:</label>
-                <input type="text" class="form-control" id="titleQuery" name="titleQuery"
-                    placeholder="Enter title query">
+            <div class="row">
+                <div class="form-group col-md-5">
+                    <label for="titleQuery">Title Query:</label>
+                    <textarea type="text" class="form-control" id="titleQuery" name="titleQuery"
+                        placeholder="Enter title query"></textarea>
+                </div>
+                <div class="form-group col-md-2">
+                    <label for="combineOperator">AND/OR:</label>
+                    <select class="form-control" id="combineOperator" name="combineOperator">
+                        <option value="AND">AND</option>
+                        <option value="OR">OR</option>
+                    </select>
+                </div>
+                <div class="form-group col-md-5">
+                    <label for="contentQuery">Content Query:</label>
+                    <textarea type="text" class="form-control" id="contentQuery" name="contentQuery"
+                        placeholder="Enter content query"></textarea>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="combineOperator">AND/OR:</label>
-                <select class="form-control" id="combineOperator" name="combineOperator">
-                    <option value="AND">AND</option>
-                    <option value="OR">OR</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="contentQuery">Content Query:</label>
-                <input type="text" class="form-control" id="contentQuery" name="contentQuery"
-                    placeholder="Enter content query">
-            </div>
-            <div class="form-group">
-                <!-- Country Dropdown -->
-                <label for="country">Country:</label>
-                <select name="country" id="country">
-                    {% for code, name in countries.items() %}
-                    <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <!-- Country Dropdown -->
+                    <label for="country">Country:</label>
+                    <select class="form-control" name="country" id="country">
+                        {% for code, name in countries.items() %}
+                        <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <!-- Language Dropdown -->
-                <label for="language">Language:</label>
-                <select name="language" id="language">
-                    {% for code, name in languages.items() %}
-                    <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
-                    {% endfor %}
-                </select>
+                <div class="form-group  col-md-6">
+                    <!-- Language Dropdown -->
+                    <label for="language">Language:</label>
+                    <select class="form-control" name="language" id="language">
+                        {% for code, name in languages.items() %}
+                        <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
@@ -276,8 +280,8 @@
     }
 
     .highlight-gdelt {
-    background-color: lightgreen;
-}
+        background-color: lightgreen;
+    }
 </style>
 
 </html>

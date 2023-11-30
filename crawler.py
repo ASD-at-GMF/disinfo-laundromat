@@ -340,30 +340,85 @@ def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = 
     finally:
         return []
 
+def fetch_shodan_data(ip):
+    url = f"https://internetdb.shodan.io/{ip}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return None
+
+def parse_shodan_json(shodan_json, domain):
+    shodan_indicators = []
+    if shodan_json:
+        if len(shodan_json["hostnames"]) > 0:
+            for hostname in shodan_json["hostnames"]:
+                shodan_indicators.append({
+                    "indicator_type": "1-ip_shodan_hostnames",
+                    "indicator_content": hostname,
+                    "domain_name": domain
+                })
+        if len(shodan_json["vulns"]) > 0:
+            for vuln in shodan_json["vulns"]:
+                shodan_indicators.append({
+                    "indicator_type": "2-ip_shodan_vuln",
+                    "indicator_content": vuln,
+                    "domain_name": domain
+                })
+        if len(shodan_json["cpe"]) > 0:
+            for cpe in shodan_json["cpe"]:
+                shodan_indicators.append({
+                    "indicator_type": "3-ip_shodan_cpe",
+                    "indicator_content": cpe,
+                    "domain_name": domain
+                })
+        if len(shodan_json["ports"]) > 0:
+            shodan_indicators.append({
+                "indicator_type": "3-ip_shodan_ports",
+                "indicator_content": shodan_json["ports"],
+                "domain_name": domain
+            })
+
+    return shodan_indicators
+
+def get_shodan_indicators(url, soup, response):
+    shodan_indicators = []
+    ip = socket.gethostbyname('www.google.com')
+
+    shodan_json = fetch_shodan_data(ip)
+    shodan_indicators = parse_shodan_json(shodan_json, domain)
+
+    return shodan_indicators
+
+
 def get_ipms_indicators(url, soup, response):
     ipms_indicators = []
+    try:
+        if len(MYIPMS_API_PATH) > 0:
+            api_url = 'https://api.myip.ms'
+            domain = get_domain_name(url)
+            # Generate the current GMT timestamp
+            timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
 
-    if len(MYIPMS_API_PATH) > 0:
-        api_url = 'https://api.myip.ms'
-        domain = get_domain_name(url)
-        # Generate the current GMT timestamp
-        timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
+            # Create the signature
+            ipms_domain_signature_raw = f"{api_url}/{domain}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
+            ipms_domain_signature = hashlib.md5(ipms_domain_signature_raw.encode()).hexdigest()
+            # Construct the URL
+            ipms_domain_url = f"{api_url}/{domain}/{MYIPMS_API_PATH}/signature/{ipms_domain_signature}/timestamp/{timestamp}"
 
-        # Create the signature
-        ipms_domain_signature_raw = f"{api_url}/{domain}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
-        ipms_domain_signature = hashlib.md5(ipms_domain_signature_raw.encode()).hexdigest()
-        # Construct the URL
-        ipms_domain_url = f"{api_url}/{domain}/{MYIPMS_API_PATH}/signature/{ipms_domain_signature}/timestamp/{timestamp}"
+            # Repeat the process for the IP address
+            ip_address = socket.gethostbyname(domain)
+            ipms_ip_signature_raw = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
+            ipms_ip_signature = hashlib.md5(ipms_ip_signature_raw.encode()).hexdigest()
+            ipms_ip_url = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/signature/{ipms_ip_signature}/timestamp/{timestamp}"
 
-        # Repeat the process for the IP address
-        ip_address = socket.gethostbyname(domain)
-        ipms_ip_signature_raw = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
-        ipms_ip_signature = hashlib.md5(ipms_ip_signature_raw.encode()).hexdigest()
-        ipms_ip_url = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/signature/{ipms_ip_signature}/timestamp/{timestamp}"
+            ipms_indicators.extend(get_ipms_domain_indicators(url, ipms_domain_url))
+            ipms_indicators.extend(get_ipms_ip_indicators(url, ipms_ip_url))
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return ipms_indicators
 
-        ipms_indicators.extend(get_ipms_domain_indicators(url, ipms_domain_url))
-        ipms_indicators.extend(get_ipms_ip_indicators(url, ipms_ip_url))
-    return ipms_indicators
 
 def get_ipms_domain_indicators(url, ipms_url):
     ipms_indicators = []
@@ -678,10 +733,10 @@ def add_urlscan_indicators(domain, urlscan_result_url):
 
 # Send a GET request to the specified URL, ignoring bad SSL certificates
 def get_endpoints(url,endpoints):
-    for endpoint in endpoints:
-        response = requests.get(f"{url}/{endpoint}", verify=False)
-        if response.status_code == 200:
-            return response.text
+#     for endpoint in endpoints:
+#         response = requests.get(f"{url}/{endpoint}", verify=False)
+#         if response.status_code == 200:
+#             return response.text
     return None
 
 
@@ -773,6 +828,7 @@ INDICATOR_FUNCTIONS = {
     'parse_classes': parse_classes,
     'detect_and_parse_feed_content': detect_and_parse_feed_content,
     'get_ipms_indicators': get_ipms_indicators,
+    'get_shodan_indicators': get_shodan_indicators,
     #'parse_cms': parse_cms,
     #'parse_sitemaps': parse_sitemaps,
     'add_associated_domains_from_cert': add_associated_domains_from_cert,
@@ -788,7 +844,8 @@ def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS):
     # Add the URL to the set of visited URLs
     domain = get_domain_name(url)
     visited_urls.add(domain)
-    # Send a GET request to the specified URL, ignoring bad SSL certificates
+    # Send a GET request to the specified URL, ignoring bad SSL certificates]
+
     response = requests.get(url, verify=False)
     # Parse the HTML content of the page
     soup = BeautifulSoup(response.text, "html.parser")
@@ -813,7 +870,7 @@ def write_indicators(indicators, output_file):
     )
     # this is done so if anything bad happens to break the script, we still get partial results
     # this approach also keeps the indicators list from becoming huge and slowing down
-    if Path(output_file).exists():
+    if Path(output_file).exists():  
         attribution_table.to_csv(
             output_file,
             index=False,    

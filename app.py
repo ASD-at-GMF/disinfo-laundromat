@@ -12,7 +12,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, U
 from flask_bcrypt import Bcrypt
 
 # Paramaterizable Variables
-from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY
+from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER
 from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE
 # Import all your functions here
 from crawler import *
@@ -58,7 +58,7 @@ def load_user(user_id):
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(SQLLITE_DB_PATH)
         # This enables column access by name: row['column_name']
         db.row_factory = sqlite3.Row
     return db
@@ -140,9 +140,10 @@ def fingerprint():
     url = ''
     if request.method == 'POST':
         url = request.form['url']
+        run_urlscan =  'run_urlscan' in request.form
         # Do something with the url using your functions
         try:
-            indicators = crawl(url, set())
+            indicators = crawl(url, set(), run_urlscan = run_urlscan)
             indicators_df = pd.DataFrame(
                 columns=["indicator_type", "indicator_content", "domain_name"],
                 data=indicators,
@@ -246,7 +247,7 @@ def indicators():
 
     data = []
     
-    with open('indicators_output.csv', 'r', encoding='utf-8') as file:
+    with open(KNOWN_INDICATORS, 'r', encoding='utf-8') as file:
         csv_reader = csv.DictReader(file)
         unique_types_list = []
         for row in csv_reader:
@@ -261,14 +262,46 @@ def indicators():
 
 def filter_gdelt_query(query):
     """
-    Remove words of two letters or fewer and non-alphanumeric characters from the query.
+    Remove words of two letters or fewer and non-alphanumeric characters from the query, shortens to 249 characters
     """
     # Remove non-alphanumeric characters
     alphanumeric_query = re.sub(r'\W+', ' ', query)
-    # Filter out short words
-    return ' '.join(word for word in alphanumeric_query.split() if len(word) > 2)
+    # Filter out short words, then truncate to 249 characters, then remove the last word (in case it's cut off)
+    filtered_query = ' '.join(word for word in alphanumeric_query.split() if len(word) > 2)
+    if len(filtered_query) > 249:
+        filtered_query = filtered_query[:248]
+        filtered_query = filtered_query[:filtered_query.rfind(' ')]
+    return filtered_query
 
+def fetch_copyscape_results(title_query, content_query, combineOperator, language, country):
+    """
+    Send the query to the COPYSCAPR API and return the parsed JSON response.
+    """
+    base_url = "https://www.copyscape.com/api/"
 
+    params = {
+        'u': COPYSCAPE_USER,
+        'k': COPYSCAPE_API_KEY,
+        'o': 'csearch',
+        'f': 'json',
+        'e': 'UTF-8',
+        't': re.sub(r'\W+', ' ', title_query + " " + content_query) # Remove non-alphanumeric characters
+    }
+
+    try:
+        response = requests.post(base_url, data=params)
+        response.raise_for_status()  # Raise an error for bad status codes
+        results_cs = json.loads(response.text)
+        if len(results_cs["result"]) > 0:
+            results_cs = format_copyscape_output(results_cs['result'])
+        else:
+            print("Failed to fetch  GDELT data")
+
+        return results_cs
+    except requests.RequestException as e:
+        print(f"Error during request: {e}")
+        return None
+    
 def fetch_gdelt_results(title_query, content_query, combineOperator, language, country):
     """
     Send the query to the GDELT API and return the parsed JSON response.
@@ -299,8 +332,6 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         print(f"Error during request: {e}")
         return None
 
-# TODO Federate this out
-
 
 def fetch_results(title_query, content_query, combineOperator, language, country):
     # Parameters for SERPAPI Google integration
@@ -309,6 +340,22 @@ def fetch_results(title_query, content_query, combineOperator, language, country
 
     return results
 
+def format_copyscape_output(data):
+    output = {}
+    for article in data:
+        domain = urlparse(article["url"]).netloc
+        if domain not in output:
+            output[domain] = {"count": 0, "links": [],
+                              "concern": False, "source": []}
+        output[domain]["count"] += 1
+        output[domain]["links"].append({
+            "link": article["url"],
+            "title": article["title"],
+            "count": 1,  # Assuming each link is unique and counts as 1
+            # Placeholder, as the engine is not specified in the data
+            "engines": ["Plagiarism Checker"]
+        })
+    return output
 
 def format_gdelt_output(data):
     output = {}
@@ -327,13 +374,15 @@ def format_gdelt_output(data):
         })
     return output
 
-
 def fetch_serp_results(title_query, content_query, combineOperator, language, country):
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github(
         'https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
     results_gdelt = fetch_gdelt_results(
         title_query, content_query, combineOperator, language, country)
+    if COPYSCAPE_API_KEY and COPYSCAPE_USER:
+        results_cs = fetch_copyscape_results(
+            title_query, content_query, combineOperator, language, country)
 
     paramsList = customize_params_by_platform(
         title_query, content_query, combineOperator, language, country)
@@ -376,6 +425,17 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         else:
             # If the key is not in the first dictionary, add it
             aggregated_results[key] = value
+
+    if COPYSCAPE_API_KEY and COPYSCAPE_USER:
+        for key, value in results_cs.items():
+            if key in aggregated_results:
+                # Sum the 'count' for overlapping keys
+                aggregated_results[key]['count'] += value['count']
+                combined_links = aggregated_results[key]['links'] + value['links']
+                aggregated_results[key]['links'] = combined_links
+            else:
+                # If the key is not in the first dictionary, add it
+                aggregated_results[key] = value
 
     local_domains_dict = {domain: source for domain, source in local_domains}
     # Flagging domains of concern and tracking their source

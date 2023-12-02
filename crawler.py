@@ -26,8 +26,7 @@ from usp.tree import sitemap_tree_for_homepage
 import feedparser
 import hashlib
 import datetime
-from config import MYIPMS_API_PATH
-
+from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY
 
 visited = set()
 
@@ -365,8 +364,8 @@ def parse_shodan_json(shodan_json, domain):
                     "indicator_content": vuln,
                     "domain_name": domain
                 })
-        if len(shodan_json["cpe"]) > 0:
-            for cpe in shodan_json["cpe"]:
+        if len(shodan_json["cpes"]) > 0:
+            for cpe in shodan_json["cpes"]:
                 shodan_indicators.append({
                     "indicator_type": "3-ip_shodan_cpe",
                     "indicator_content": cpe,
@@ -383,7 +382,8 @@ def parse_shodan_json(shodan_json, domain):
 
 def get_shodan_indicators(url, soup, response):
     shodan_indicators = []
-    ip = socket.gethostbyname('www.google.com')
+    domain = get_domain_name(url)
+    ip = socket.gethostbyname(domain)
 
     shodan_json = fetch_shodan_data(ip)
     shodan_indicators = parse_shodan_json(shodan_json, domain)
@@ -674,8 +674,7 @@ def parse_domain_name(url, soup, response):
     return tag_indicators
 
 def start_urlscan(url):
-    api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
-    urlscan_key = api_keys.get("URLSCAN")
+    urlscan_key = URLSCAN_API_KEY
     if not urlscan_key:
         print("No urlscan API key provided. Passing...")
         return None
@@ -687,38 +686,23 @@ def start_urlscan(url):
     submission_response = response.json()
     return submission_response["api"]
 
+#todo: add more indicators from urlscan
+def add_urlscan_indicators(domain, data):
 
-def add_urlscan_indicators(domain, urlscan_result_url):
-    result = requests.get(urlscan_result_url)
-    if result.status_code == 404:
-        print("sleeping for urlscan results")
-        time.sleep(20)
-    data = result.json()
     urlscan_indicators = []
     urlscan_indicators.append(
-        [
+        
             {
                 "indicator_type": "2-global_variable",
-                "indicator_content": json.dumps(variable),
+                "indicator_content": [f"{item['prop']}|{item['type']}" for item in data["data"]["globals"]],
                 "domain_name": domain,
             }
-            for variable in data["data"]["globals"]
-        ]
+        
     )
-    certs = data["lists"]["certificates"]
-    urlscan_indicators.append(
-        [
-            {
-                "indicator_type": "2-urlscan_certificate",
-                "indicator_content": json.dumps(certificate),
-                "domain_name": domain,
-            }
-            for certificate in certs
-        ]
-    )
+
     # wappalyzer is used to detect tech used in the website
     detected_tech = data["meta"]["processors"]["wappa"]["data"]
-    urlscan_indicators.append(
+    urlscan_indicators.extend(
         [
             {
                 "indicator_type": "2-techstack",
@@ -826,7 +810,7 @@ INDICATOR_FUNCTIONS = {
     'add_cdn_domains': add_cdn_domains,
     'parse_domain_name': parse_domain_name,
     'parse_classes': parse_classes,
-    'detect_and_parse_feed_content': detect_and_parse_feed_content,
+    #'detect_and_parse_feed_content': detect_and_parse_feed_content,
     'get_ipms_indicators': get_ipms_indicators,
     'get_shodan_indicators': get_shodan_indicators,
     #'parse_cms': parse_cms,
@@ -839,14 +823,21 @@ INDICATOR_FUNCTIONS = {
 
 
 
-def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS):
+def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
     indicators = []
     # Add the URL to the set of visited URLs
     domain = get_domain_name(url)
     visited_urls.add(domain)
-    # Send a GET request to the specified URL, ignoring bad SSL certificates]
 
-    response = requests.get(url, verify=False)
+    if run_urlscan:
+        url_submission = start_urlscan(url)
+
+    # Send a GET request to the specified URL, ignoring bad SSL certificates]
+    if len(SCRAPER_API_KEY) > 0 :
+        payload = { 'api_key': SCRAPER_API_KEY, 'url': url } 
+        response = requests.get('https://api.scraperapi.com/', params=payload)
+    else:
+        response = requests.get(url, verify=False)
     # Parse the HTML content of the page
     soup = BeautifulSoup(response.text, "html.parser")
 
@@ -858,7 +849,21 @@ def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS):
                 indicators.extend(function_to_run(url, soup, response))
         except Exception as e:
             print(f"Exception occurred while running {function_name}: {e}")
-    #indicators.extend(parse_dom_tree(url, soup))
+
+    if run_urlscan and url_submission is not None:
+        start_time = time.time()  # Record the start time
+        while True:
+            # Check if 2 minutes have passed
+            if time.time() - start_time > 120:
+                print("Timeout: Results not available within 2 minutes.")
+                return None
+            response = requests.get(url_submission, headers={'API-Key': URLSCAN_API_KEY})
+            if response.status_code == 404:
+                print("Results not ready, retrying in 10 seconds...")
+                time.sleep(10)  # Wait for 10 seconds before retrying
+            else:
+                indicators.extend(add_urlscan_indicators(domain, response.json()))
+                break
 
     return indicators
 
@@ -903,6 +908,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "-c", "--domain-column", type=str, required=False, default="Domain"
     )
+    #option to run urlscan
+    parser.add_argument(
+        "-u", "--run-urlscan", type=bool, required=False, default=False
+    )
+
     parser.add_argument(
         "-o",
         "--output-file",
@@ -914,13 +924,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     domain_col = args.domain_column
-
     output_file = args.output_file
+    run_urlscan = args.run_urlscan
     input_data = pd.read_csv(args.input_file)
     domains = input_data[domain_col]
     for domain in domains:
         try:
-            indicators = crawl(domain, visited_urls, INDICATOR_FUNCTIONS)
+            indicators = crawl(domain, visited_urls, INDICATOR_FUNCTIONS, run_urlscan=run_urlscan)
             write_indicators(indicators, output_file=output_file)
         except Exception as e:
             print(f"Failing error on {domain}. See traceback below. Soldiering on...")
@@ -930,17 +940,10 @@ if __name__ == "__main__":
     #     write_indicators(builtwith_indicators, output_file=output_file)
     # except Exception as e:
     #     print("Builtwith indicators failed. Continuing on.")
-    #print("Running urlscans")
-   # url_scan_submissions = {}
-    #for #domain in domains:
-        # print(f"Collecting {domain}")
-        #url_scan_submissions[domain] = start_urlscan(domain)
-    # this way we can retry pulling if something fails
-    #with open("urlscan_submissions.json", "w") as f:
-        #json.dump(url_scan_submissions, f)
-    #time.sleep(60)  # this should be replaced with more clever retrying
-    #with open("urlscan_submissions.json", "r") as f:
-        #rl_scan_submissions = json.load(f)
+    # url_scan_submissions = {}
+    # for domain in domains:
+    #     print(f"Collecting {domain}")
+    #     url_scan_submissions[domain] = start_urlscan(domain)
 
     # for domain, url_submission in url_scan_submissions.items():
     #     try:

@@ -688,16 +688,67 @@ def start_urlscan(url):
 
 #todo: add more indicators from urlscan
 def add_urlscan_indicators(domain, data):
-
     urlscan_indicators = []
     urlscan_indicators.append(
-        
             {
                 "indicator_type": "2-global_variable",
                 "indicator_content": [f"{item['prop']}|{item['type']}" for item in data["data"]["globals"]],
                 "domain_name": domain,
             }
-        
+    )
+    urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_cookies",
+                "indicator_content": [f"{item['name']}|{item['domain']}" for item in data["data"]["cookies"]],
+                "domain_name": domain,
+            }
+    )
+    urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_consolemessages",
+                "indicator_content": [f"{item['message']['level']}|{item['message']['text']}" for item in data["data"]["console"]],
+                "domain_name": domain,
+            }
+    )
+    urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_consolemessages",
+                "indicator_content": [f"{item['message']['level']}|{item['message']['text']}" for item in data["data"]["console"]],
+                "domain_name": domain,
+            }
+    )
+    urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_asn",
+                "indicator_content": data["data"]["page"]["asn"],
+                "domain_name": domain,
+            }
+    )
+    urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_domainsonpage",
+                "indicator_content": data["lists"]["domains"],
+                "domain_name": domain,
+            }
+    )
+    urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_urlssonpage",
+                "indicator_content": data["lists"]["urls"],
+                "domain_name": domain,
+            }
+    )
+
+    links = data["data"]["links"]
+    urlscan_indicators.extend(
+        [
+            {
+                "indicator_type": "3-urlscanhrefs",
+                "indicator_content": link["href"] + "|" + link["text"],
+                "domain_name": domain,
+            }
+            for link in links
+        ]
     )
 
     # wappalyzer is used to detect tech used in the website
@@ -813,6 +864,7 @@ INDICATOR_FUNCTIONS = {
     #'detect_and_parse_feed_content': detect_and_parse_feed_content,
     'get_ipms_indicators': get_ipms_indicators,
     'get_shodan_indicators': get_shodan_indicators,
+    
     #'parse_cms': parse_cms,
     #'parse_sitemaps': parse_sitemaps,
     'add_associated_domains_from_cert': add_associated_domains_from_cert,

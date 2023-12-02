@@ -992,15 +992,4 @@ if __name__ == "__main__":
     #     write_indicators(builtwith_indicators, output_file=output_file)
     # except Exception as e:
     #     print("Builtwith indicators failed. Continuing on.")
-    # url_scan_submissions = {}
-    # for domain in domains:
-    #     print(f"Collecting {domain}")
-    #     url_scan_submissions[domain] = start_urlscan(domain)
-
-    # for domain, url_submission in url_scan_submissions.items():
-    #     try:
-    #         indicators = add_urlscan_indicators(domain, url_submission)
-    #         write_indicators(indicators, output_file=output_file)
-    #     except Exception as e:
-    #         print(f"getting urlscan results for {domain} failed. continuing on.")
-    #         print(traceback.print_exc())
+ 

@@ -6,7 +6,8 @@ from io import StringIO
 from urllib.parse import urlparse
 import csv
 import sys
-
+from newspaper import Article
+import string
 import sqlite3
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
 from flask_bcrypt import Bcrypt
@@ -165,7 +166,6 @@ def fingerprint():
 
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
-
 @app.route('/content', methods=['GET', 'POST'])
 def content():
     results = None
@@ -181,43 +181,31 @@ def content():
             # Error message if neither is provided
             flash("Please provide at least a title or content query.")
         else:
-            results = fetch_results(
+            results, csv_data = fetch_content_results(
                 title_query, content_query, combineOperator, language, country)
-            # Convert results to CSV
-            csv_data = convert_results_to_csv(results)
-            # Save the query to the database
-
-            db = get_db()
-            cursor = db.cursor()
-            cursor.execute('INSERT INTO content_queries (title_query, content_query, combine_operator, language, country) VALUES (?, ?, ?, ?, ?)',
-                           (title_query, content_query, combineOperator, language, country))
-            db.commit()
-            # Get the last inserted row ID
-            cq_id = cursor.lastrowid
-
-            results_list = []
-            for domain, data in results.items():
-                for link_data in data['links']:
-                    res = [
-                        cq_id,
-                        domain,
-                        str(data['count']),
-                        link_data['title'],
-                        link_data['link'],
-                        str(link_data['count']),
-                        ', '.join(link_data['engines'])
-                    ]
-                    results_list.append(res)
-
-            # Insert data into the database
-            # Prepare your SQL insert statement including the additional column
-            insert_sql = 'INSERT INTO content_queries_results (cq_id, Domain,	Occcurences,	Title,	Link,	Link_Occurences,	Engines) VALUES (?,?, ?, ?, ?, ?, ?)'
-
-            # Execute the insert command
-            cursor.executemany(insert_sql, results_list)
-            db.commit()
 
     return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
+
+
+@app.route('/parse-url', methods=['POST'])
+def parse_url():
+    url = request.form['url']
+    if not url:
+        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+    try:
+        # Extracting article data-
+        article = Article(url)
+        article.download()
+        article.parse()
+
+        results, csv_data = fetch_content_results(
+                article.title, article.text, "OR", "en", "us")
+
+        return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
+
+
+    except Exception as e:
+        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
 
 @app.route('/download_csv', methods=['POST'])
@@ -333,12 +321,49 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         return None
 
 
-def fetch_results(title_query, content_query, combineOperator, language, country):
+def fetch_content_results(title_query, content_query, combineOperator, language, country):
+    title_query = truncate_text(title_query)
+    content_query = truncate_text(content_query)
+
     # Parameters for SERPAPI Google integration
     results = fetch_serp_results(
         title_query, content_query, combineOperator, language, country)
 
-    return results
+    # Convert results to CSV
+    csv_data = convert_results_to_csv(results)
+    # Save the query to the database
+
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute('INSERT INTO content_queries (title_query, content_query, combine_operator, language, country) VALUES (?, ?, ?, ?, ?)',
+                    (title_query, content_query, combineOperator, language, country))
+    db.commit()
+    # Get the last inserted row ID
+    cq_id = cursor.lastrowid
+
+    results_list = []
+    for domain, data in results.items():
+        for link_data in data['links']:
+            res = [
+                cq_id,
+                domain,
+                str(data['count']),
+                link_data['title'],
+                link_data['link'],
+                str(link_data['count']),
+                ', '.join(link_data['engines'])
+            ]
+            results_list.append(res)
+
+    # Insert data into the database
+    # Prepare your SQL insert statement including the additional column
+    insert_sql = 'INSERT INTO content_queries_results (cq_id, Domain,	Occcurences,	Title,	Link,	Link_Occurences,	Engines) VALUES (?,?, ?, ?, ?, ?, ?)'
+
+    # Execute the insert command
+    cursor.executemany(insert_sql, results_list)
+    db.commit()
+
+    return results, csv_data
 
 def format_copyscape_output(data):
     output = {}
@@ -542,7 +567,7 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
                     base_query += " " + combineOperator + " "  # Combining title and content queries
                 base_query += "intext:\"" + content_query + "\""
             paramsList[idx]['q'] = base_query
-        if platform == 'bing':
+        if platform == 'bing' or platform == 'bing_news':
             if title_query:
                 base_query += "intitle:\"" + title_query + "\""
 
@@ -589,6 +614,13 @@ def convert_results_to_csv(results):
             csv_list.append(','.join(row))
 
     return "\n".join(csv_list)
+
+def truncate_text(text):
+    # Replacing each type of quotation mark with an empty string
+    if len(text) > 249:
+        text = text[:248]
+        text = text[:text.rfind(' ')]
+    return text
 
 
 def load_domains_of_concern(filename=SITES_OF_CONCERN):

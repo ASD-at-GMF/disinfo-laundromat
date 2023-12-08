@@ -11,6 +11,8 @@ import string
 import sqlite3
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
 from flask_bcrypt import Bcrypt
+from bs4 import BeautifulSoup
+
 
 # Paramaterizable Variables
 from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER
@@ -159,7 +161,7 @@ def fingerprint():
             matches_df = find_matches(
                 indicators_df, comparison=comparison_indicators)
 
-            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_html(classes='table table-striped'), matches_df=matches_df.to_html(classes='table table-striped'))
+            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'))
 
         except Exception as e:
             return render_template('error.html', error=e)
@@ -205,10 +207,20 @@ def parse_url():
 
 
     except Exception as e:
+        response = requests.get(url)
+        if response.status_code == 200:
+            # Parse the HTML content
+            soup = BeautifulSoup(response.text, 'html.parser')
+            meta_title = soup.title.string or soup.find('meta', attrs={'name': 'title'})['content'] if soup.title else "" 
+            meta_description = soup.find('meta', attrs={'name': 'description'})['content'] if soup.find('meta', attrs={'name': 'description'}) else ""
+            flash("This page could not automatically be parsed for content, but a potential title and first paragraph have been extracted, copy and paste those below if correct: " + meta_title + ' : ' + meta_description)
+
+        else:
+            flash("This page could not automatically be parsed for content. Please enter a title and/or content query manually.")
+        
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
-
-@app.route('/download_csv', methods=['POST'])
+@app.route('/download_csv', methods=['POST2222'])
 def download_csv():
     csv_data = request.form.get('csv_data', '')
 
@@ -280,12 +292,15 @@ def fetch_copyscape_results(title_query, content_query, combineOperator, languag
         response = requests.post(base_url, data=params)
         response.raise_for_status()  # Raise an error for bad status codes
         results_cs = json.loads(response.text)
-        if len(results_cs["result"]) > 0:
+        
+        if "result" in results_cs and len(results_cs["result"]) > 0:
             results_cs = format_copyscape_output(results_cs['result'])
+            return results_cs
         else:
-            print("Failed to fetch  GDELT data")
+            print("No matches in CopyScape data or an error occurred")
+            return None
 
-        return results_cs
+
     except requests.RequestException as e:
         print(f"Error during request: {e}")
         return None
@@ -312,10 +327,11 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         results_gdelt = response.json()
         if results_gdelt:
             results_gdelt = format_gdelt_output(results_gdelt)
+            return results_gdelt
         else:
-            print("Failed to fetch  GDELT data")
+            print("No results matched for GDELT data")
+            return None
 
-        return results_gdelt
     except requests.RequestException as e:
         print(f"Error during request: {e}")
         return None
@@ -440,18 +456,18 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
                 aggregated_results[domain]['links'].append(link_data)
 
             aggregated_results[domain]['count'] += 1
+    if results_gdelt is not None:
+        for key, value in results_gdelt.items():
+            if key in aggregated_results:
+                # Sum the 'count' for overlapping keys
+                aggregated_results[key]['count'] += value['count']
+                combined_links = aggregated_results[key]['links'] + value['links']
+                aggregated_results[key]['links'] = combined_links
+            else:
+                # If the key is not in the first dictionary, add it
+                aggregated_results[key] = value
 
-    for key, value in results_gdelt.items():
-        if key in aggregated_results:
-            # Sum the 'count' for overlapping keys
-            aggregated_results[key]['count'] += value['count']
-            combined_links = aggregated_results[key]['links'] + value['links']
-            aggregated_results[key]['links'] = combined_links
-        else:
-            # If the key is not in the first dictionary, add it
-            aggregated_results[key] = value
-
-    if COPYSCAPE_API_KEY and COPYSCAPE_USER:
+    if COPYSCAPE_API_KEY and COPYSCAPE_USER and results_cs is not None:
         for key, value in results_cs.items():
             if key in aggregated_results:
                 # Sum the 'count' for overlapping keys
@@ -465,7 +481,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
     local_domains_dict = {domain: source for domain, source in local_domains}
     # Flagging domains of concern and tracking their source
     for domain, data in aggregated_results.items():
-        local_source = local_domains_dict.get(domain)
+        local_source = local_domains_dict.get(domain) or local_domains_dict.get(domain.split('.')[1])  # Check for FQDN and no subdomain
         github_source = "statemedia" if domain in github_domains else None
 
         print(domain, local_source, github_source)

@@ -1,6 +1,5 @@
 import os
 import requests
-import whois
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urlsplit
 import socket
@@ -720,7 +719,7 @@ def add_urlscan_indicators(domain, data):
     urlscan_indicators.append(
             {
                 "indicator_type": "2-urlscan_asn",
-                "indicator_content": data["data"]["page"]["asn"],
+                "indicator_content": data["page"]["asn"],
                 "domain_name": domain,
             }
     )
@@ -849,7 +848,7 @@ def detect_and_parse_feed_content(url, soup, response):
 INDICATOR_FUNCTIONS = {
     'add_response_headers': add_response_headers,
     'add_ip_address': add_ip_address,
-    'add_who_is': add_who_is,
+    ##'add_who_is': add_who_is,
     'parse_meta_tags': parse_meta_tags,
     'parse_script_tags': parse_script_tags,
     'parse_iframe_ids': parse_iframe_ids,
@@ -864,7 +863,6 @@ INDICATOR_FUNCTIONS = {
     #'detect_and_parse_feed_content': detect_and_parse_feed_content,
     'get_ipms_indicators': get_ipms_indicators,
     'get_shodan_indicators': get_shodan_indicators,
-    
     #'parse_cms': parse_cms,
     #'parse_sitemaps': parse_sitemaps,
     'add_associated_domains_from_cert': add_associated_domains_from_cert,

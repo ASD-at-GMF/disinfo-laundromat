@@ -176,10 +176,30 @@
                     <a href="{{ url_for('indicators') }}" class="btn btn-secondary">View All Indicators</a>
                 </form>
             </div>
+                    
+            <div class="container mt-4">
+                <h2>How indicators should be used</h2>
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <strong class=" text-success">Tier 1: Conclusive Indicators</strong>
+                        <p>Tier 1 offers high-confidence evidence of common ownership among websites. Key indicators include shared domain names, identical IDs for web services, multi-domain certificates, and matching WHOIS information (when visible). These elements provide strong evidence of relationships between multiple sites.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <strong class=" text-warning">Tier 2: Associative Indicators</strong>
+                        <p>Tier 2 indicators suggest a reasonable probability of a shared relationship, but they are less definitive than Tier 1. They include the use of the same Content Delivery Network (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in standard and custom response headers. These elements indicate a likelihood of association but require further corroboration.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <strong class="text-danger">Tier 3: Tertiary Indicators</strong>
+                        <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation. They encompass shared architectural aspects like operating systems, Content Management Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services, shared unique identifiers, highly similar images, extensive overlap in CSS classes, HTML ID tags and iFrame ID tags. These indicators alone are not conclusive but can support stronger evidence from Tier 1 and Tier 2.</p>
+                    </li>
+                </ul>
+            </div>
+        
             {% else %}
             <p>Please log in to access allow website fingerprinting</p>
             <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
         </div>
+
         {% endif %}
 
 

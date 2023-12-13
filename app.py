@@ -146,7 +146,8 @@ def fingerprint():
         run_urlscan =  'run_urlscan' in request.form
         # Do something with the url using your functions
         try:
-            indicators = crawl(url, set(), run_urlscan = run_urlscan)
+            urls = url.split(',')
+            indicators = crawl_one_or_more_urls(urls, set(), run_urlscan = run_urlscan)
             indicators_df = pd.DataFrame(
                 columns=["indicator_type", "indicator_content", "domain_name"],
                 data=indicators,
@@ -158,8 +159,17 @@ def fingerprint():
                 KNOWN_INDICATORS)  # read the csv file
             # print(indicators_df.head(), comparison_indicators.head())
             # Find matches
-            matches_df = find_matches(
-                indicators_df, comparison=comparison_indicators)
+            # Split DataFrame into smaller DataFrames based on 'domain'
+            grouped_indicators = indicators_df.groupby('domain_name')
+
+            # Create a dictionary to store each group as a DataFrame
+            grouped_indicators_dfs = {group: data for group, data in grouped_indicators}
+            
+            matches_df = pd.DataFrame()
+            for group, grouped_indicators_df in grouped_indicators_dfs.items():
+                grouped_matches_df = find_matches(grouped_indicators_df, comparison=comparison_indicators)
+                matches_df = pd.concat([matches_df, grouped_matches_df])
+            matches_df.reset_index(drop=True, inplace=True)
 
             return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'))
 

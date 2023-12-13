@@ -213,6 +213,24 @@ FEATURE_MATCHING: Dict[str, str] = {
 "1-crypto-wallet" : "direct",
 "1-domain" : "direct",
 "1-domain_suffix" : "direct",
+"1-fb_pixel_id" : "direct",
+"1-fb_pixel_id" : "direct",
+"1-adobe_analytics_id" : "direct",
+"3-sitemap_entries" : "direct",
+"3-css_classes" : "direct",
+"3-ipms_domain_iprangeowner_cidr" : "direct",
+"3-ipms_domain_iprangeowner_ownerName" : "direct",
+"3-ipms_domain_iprangeowner_address" : "direct",
+"3-ipms_domain_nameserver" : "direct",
+"3-ipms_domain_otheripused" : "direct",
+"3-ipms_siteonthisip_now" : "direct",
+"3-ipms_siteonthisip_before" : "direct",
+"3-ipms_siteonthisip_broken" : "direct",
+"3-ipms_useragents" : "direct",
+"1-ip_shodan_hostnames" : "direct",
+"3-ip_shodan_ports" : "direct",
+"2-ip_shodan_vuln" : "direct",
+"3-ip_shodan_cpe" : "direct",
 "1-ga_id" : "direct",
 "1-ga_tag_id" : "direct",
 "1-ip" : "direct",
@@ -277,6 +295,13 @@ methods = {
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     matches_per_feature = []
+    # Get unique values from 'column_name'
+    unique_values = data['indicator_type'].unique()
+    for value in unique_values:
+        if value not in FEATURE_MATCHING.keys():
+            FEATURE_MATCHING[value] = 'direct'
+            print(f"\"{value}\" : \"direct\",")
+
     for feature, method in FEATURE_MATCHING.items():
         feature_df = data[data[INDICATOR_TYPE] == feature]
         if feature_df.shape[0] > 1:

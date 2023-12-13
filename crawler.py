@@ -917,6 +917,13 @@ def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=F
 
     return indicators
 
+def crawl_one_or_more_urls(urls,  visited_urls,  functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
+    indicators = []
+    for url in urls:
+        indicators.extend(crawl(url, visited_urls, functions_to_run=functions_to_run, run_urlscan=run_urlscan))
+    return indicators
+
+
 
 def write_indicators(indicators, output_file):
     attribution_table = pd.DataFrame(

@@ -566,7 +566,7 @@ def find_google_analytics_id(url, text):
     return find_with_regex(ga_id_pattern, text, url, "1-ga_id")
 
 def find_google_tag_id(url, text):
-    ga_id_pattern = "(G-([A-Za-z0-9]+)|GTM-[A-Za-z0-9]+|AW-[A-Za-z0-9]+|GT-([A-Za-z0-9]+))"
+    ga_id_pattern = "(G-([A-Za-z0-9]{6,16})|GTM-[A-Za-z0-9]{6,16}|AW-[A-Za-z0-9]{6,16}|GT-([A-Za-z0-9]{6,16}))"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_tag_id")
 
 def find_adobe_analytics_id(url, text):

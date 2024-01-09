@@ -428,6 +428,10 @@ def find_google_analytics_id(url, text):
     ga_id_pattern = "(UA-\d{6,8}|UA-\d{6,8}-\d{1})"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_id")
 
+def find_google_adsense_id(url, text):
+    adsense_id_pattern = "pub-\d{10,20}"
+    return find_with_regex(adsense_id_pattern, text, url, "1-adsense_id")
+
 def find_google_tag_id(url, text):
     ga_id_pattern = "G-([A-Za-z0-9]+)"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_tag_id")
@@ -465,6 +469,7 @@ def parse_tracking_ids(url, soup, response):
     text = response.text
     tag_indicators = []
     tag_indicators.extend(find_google_analytics_id(url, text))
+    tag_indicators.extend(find_google_adsense_id(url, text))
     tag_indicators.extend(find_google_tag_id(url, text))
     tag_indicators.extend(find_yandex_track_id(url, text))
     tag_indicators.extend(find_adobe_analytics_id(url, text))

@@ -884,10 +884,10 @@ def add_urlscan_indicators(domain, data):
 
 # Send a GET request to the specified URL, ignoring bad SSL certificates
 def get_endpoints(url, endpoints):
-    for endpoint in endpoints:
-        response = requests.get(f"{url}/{endpoint}", verify=False)
-        if response.status_code == 200:
-            return response.text
+    # for endpoint in endpoints:
+    #     response = requests.get(f"{url}/{endpoint}", verify=False)
+    #     if response.status_code == 200:
+    #         return response.text
     return ''
 
 
@@ -969,26 +969,26 @@ def detect_and_parse_feed_content(url, soup, response):
 
 
 INDICATOR_FUNCTIONS = {
-    "add_response_headers": add_response_headers,
-    "add_ip_address": add_ip_address,
+    'add_response_headers': add_response_headers,
+    'add_ip_address': add_ip_address,
     ##'add_who_is': add_who_is,
-    "parse_meta_tags": parse_meta_tags,
-    "parse_script_tags": parse_script_tags,
-    "parse_iframe_ids": parse_iframe_ids,
-    "parse_id_attributes": parse_id_attributes,
-    "parse_link_tags": parse_link_tags,
-    "parse_body": parse_body,
-    "parse_footer": parse_footer,
-    "parse_google_ids": parse_tracking_ids,
-    "add_cdn_domains": add_cdn_domains,
-    "parse_domain_name": parse_domain_name,
-    "parse_classes": parse_classes,
+    'parse_meta_tags': parse_meta_tags,
+    'parse_script_tags': parse_script_tags,
+    'parse_iframe_ids': parse_iframe_ids,
+    'parse_id_attributes': parse_id_attributes,
+    'parse_link_tags': parse_link_tags,
+    'parse_body': parse_body,
+    'parse_footer': parse_footer,
+    'parse_google_ids': parse_tracking_ids,
+    'add_cdn_domains': add_cdn_domains,
+    'parse_domain_name': parse_domain_name,
+    'parse_classes': parse_classes,
     #'detect_and_parse_feed_content': detect_and_parse_feed_content,
-    "get_ipms_indicators": get_ipms_indicators,
-    "get_shodan_indicators": get_shodan_indicators,
+    'get_ipms_indicators': get_ipms_indicators,
+    'get_shodan_indicators': get_shodan_indicators,
     #'parse_cms': parse_cms,
     #'parse_sitemaps': parse_sitemaps,
-    "add_associated_domains_from_cert": add_associated_domains_from_cert,
+    'add_associated_domains_from_cert': add_associated_domains_from_cert,
     # Uncomment the following if needed
     # 'parse_images': parse_images,
     # 'parse_dom_tree': parse_dom_tree,

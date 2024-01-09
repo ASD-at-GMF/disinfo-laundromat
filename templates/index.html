@@ -234,61 +234,38 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Associations</th>
                                 <th>Domain</th>
-                                <th>Occurrences</th>
-                                <th>Links</th>
+                                <th>Associations</th>
+                                <th>Title</th>
+                                <th>Vol (Link)</th>
+                                <th>Engines</th>
+                                <th>Vol (Domain)</th>
+                                <th>Match Score</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for domain, data in results.items() %}
+                            {% for link_data in results %}
                             <tr>
-                                <td> {% if "EuVsDisinfo" in data['source'] %}
-                                    <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
-                                    {% elif "statemedia" in data['source'] %}
-                                    <i class="fas fa-globe text-primary" title="State Media Domain"></i>
-                                    {% elif "Pink Slime" in data['source'] %}
-                                    <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
-                                    {% elif "Newsguard AI" in data['source'] %}
-                                    <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
-                                    {% elif data['source']%}
-                                    <i class="fas fa-bell" title="{{data['source']}}"></i>
+                                <td>{{ link_data['domain'] }}</td>
+                                <td>
+                                    <!-- Display source with icon based on conditions -->
+                                    {% if "EuVsDisinfo" in link_data['source'] %}
+                                        <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                                    {% elif "statemedia" in link_data['source'] %}
+                                        <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                                    {% elif "Pink Slime" in link_data['source'] %}
+                                        <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                                    {% elif "Newsguard AI" in link_data['source'] %}
+                                        <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
+                                    {% elif link_data['source'] %}
+                                        <i class="fas fa-bell" title="{{ link_data['source'] }}"></i>
                                     {% endif %}
                                 </td>
-                                <td>{{ domain }}</td>
-                                <td>{{ data['count'] }}</td>
-                                <td>
-                                    <button class="btn btn-primary toggle-links">View Links</button>
-                                    <button class="btn btn-link submit-fingerprint"
-                                        data-url="https://{{domain}}">Fingerprint</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="4">
-                                    <table class="table table-sm link-list" style="display: none;">
-                                        <thead>
-                                            <tr>
-                                                <th>Title</th>
-                                                <th>Link</th>
-                                                <th>Occurrences</th>
-                                                <th>Engines</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for link_data in data['links'] %}
-                                            <tr>
-                                                <td>{{ link_data['title'] }}</td>
-                                                <td><a href="{{ link_data['link'] }}" target="_blank">{{
-                                                        link_data['link']
-                                                        }}</a>
-                                                </td>
-                                                <td>{{ link_data['count'] }}</td>
-                                                <td>{{ link_data['engines']|join(', ') }}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </td>
+                                <td><a href="{{ link_data['url'] }}" target="_blank">{{ link_data['title'] }}</a></td>
+                                <td>{{ link_data['link_count'] }}</td>
+                                <td>{{ link_data['engines']|join(', ') }}</td>
+                                <td>{{ link_data['domain_count'] }}</td>
+                                <td>{{ link_data['score'] }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>

@@ -65,6 +65,7 @@
             });
         });
         $(document).ready(function () {
+            $('#content_table').DataTable();
             $('#indicators_table').DataTable();
             $('#matches_table').DataTable();
         });
@@ -231,7 +232,7 @@
 
             <div class="collapse show" id="collapsibleTable">
                 <div class="col-md-12">
-                    <table class="table table-striped">
+                    <table id="content_table" class="table table-striped table-bordered">
                         <thead>
                             <tr>
                                 <th>Domain</th>

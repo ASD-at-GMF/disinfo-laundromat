@@ -15,3 +15,4 @@ ultimate-sitemap-parser==0.5
 feedparser==6.0.10
 flask_bcrypt==1.0.1
 flask_login==0.6.3
+newspaper3k==0.2.8

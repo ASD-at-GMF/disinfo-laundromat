@@ -12,6 +12,8 @@ import sqlite3
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
 from flask_bcrypt import Bcrypt
 from bs4 import BeautifulSoup
+from difflib import SequenceMatcher
+
 
 
 # Paramaterizable Variables
@@ -359,35 +361,35 @@ def fetch_content_results(title_query, content_query, combineOperator, language,
     csv_data = convert_results_to_csv(results)
     # Save the query to the database
 
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute('INSERT INTO content_queries (title_query, content_query, combine_operator, language, country) VALUES (?, ?, ?, ?, ?)',
-                    (title_query, content_query, combineOperator, language, country))
-    db.commit()
-    # Get the last inserted row ID
-    cq_id = cursor.lastrowid
+    # db = get_db()
+    # cursor = db.cursor()
+    # cursor.execute('INSERT INTO content_queries (title_query, content_query, combine_operator, language, country) VALUES (?, ?, ?, ?, ?)',
+    #                 (title_query, content_query, combineOperator, language, country))
+    # db.commit()
+    # # Get the last inserted row ID
+    # cq_id = cursor.lastrowid
 
-    results_list = []
-    for domain, data in results.items():
-        for link_data in data['links']:
-            res = [
-                cq_id,
-                domain,
-                str(data['count']),
-                link_data['title'],
-                link_data['link'],
-                str(link_data['count']),
-                ', '.join(link_data['engines'])
-            ]
-            results_list.append(res)
+    # results_list = []
+    # for domain, data in results.items():
+    #     for link_data in data['links']:
+    #         res = [
+    #             cq_id,
+    #             domain,
+    #             str(data['count']),
+    #             link_data['title'],
+    #             link_data['link'],
+    #             str(link_data['count']),
+    #             ', '.join(link_data['engines'])
+    #         ]
+    #         results_list.append(res)
 
-    # Insert data into the database
-    # Prepare your SQL insert statement including the additional column
-    insert_sql = 'INSERT INTO content_queries_results (cq_id, Domain,	Occcurences,	Title,	Link,	Link_Occurences,	Engines) VALUES (?,?, ?, ?, ?, ?, ?)'
+    # # Insert data into the database
+    # # Prepare your SQL insert statement including the additional column
+    # insert_sql = 'INSERT INTO content_queries_results (cq_id, Domain,	Occcurences,	Title,	Link,	Link_Occurences,	Engines) VALUES (?,?, ?, ?, ?, ?, ?)'
 
-    # Execute the insert command
-    cursor.executemany(insert_sql, results_list)
-    db.commit()
+    # # Execute the insert command
+    # cursor.executemany(insert_sql, results_list)
+    # db.commit()
 
     return results, csv_data
 
@@ -507,7 +509,31 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
     aggregated_results = dict(sorted(aggregated_results.items(
     ), key=lambda item: item[1]['count'], reverse=True))
 
-    return aggregated_results
+    # FLATTEN DOMAINS Iterate over each domain in the JSON data
+
+    flattened_data = []
+
+    for domain, domain_data in aggregated_results.items():
+        for link in domain_data['links']:
+            # Create a dictionary for each link with the required information
+            link_info = {
+                'domain': domain,
+                'source': domain_data['source'],
+                'url': link['link'],
+                'title': link['title'],
+                'link_count': link['count'],
+                'engines': link['engines'],
+                'domain_count': domain_data['count'],
+                'score' : sequence_match_score(title_query, link['title'])
+            }
+            # Add the dictionary to the list
+            flattened_data.append(link_info)
+
+    # Assuming flattened_data is your list of dictionaries
+    flattened_data = sorted(flattened_data, key=lambda x: x['score'], reverse=True)
+
+
+    return flattened_data
 
 
 def customize_params_by_platform(title_query, content_query, combineOperator, language, country):
@@ -624,20 +650,20 @@ def convert_results_to_csv(results):
 
     # Header
     csv_list.append(','.join(
-        ['Domain', 'Occurrences', 'Title', 'Link', 'Link Occurrences', 'Engines']))
+        ['Domain', 'Domain Occurrences', 'Title', 'Link', 'Link Occurrences', 'Engines', 'Score']))
 
     # Data
-    for domain, data in results.items():
-        for link_data in data['links']:
-            row = [
-                domain,
-                str(data['count']),
-                link_data['title'],
-                link_data['link'],
-                str(link_data['count']),
-                ', '.join(link_data['engines'])
-            ]
-            csv_list.append(','.join(row))
+    for data in results:
+        row = [
+            data['domain'],
+            str(data['domain_count']),
+            data['title'],
+            data['url'],
+            str(data['link_count']),
+            ', '.join(data['engines']),
+            str(data['score'])
+        ]
+        csv_list.append(','.join(row))
 
     return "\n".join(csv_list)
 
@@ -648,6 +674,24 @@ def truncate_text(text):
         text = text[:text.rfind(' ')]
     return text
 
+def sequence_match_score(title1, title2):
+    """
+    Compute the similarity score between two titles using SequenceMatcher.
+
+    Args:
+    title1 (str): First title.
+    title2 (str): Second title.
+
+    Returns:
+    float: Similarity score between the two titles.
+    """
+    # Initialize SequenceMatcher with the two titles
+    matcher = SequenceMatcher(None, title1, title2)
+
+    # Get the match ratio
+    score = matcher.ratio()
+
+    return round(score*100,1)
 
 def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:

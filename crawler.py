@@ -131,7 +131,7 @@ def parse_classes(url, soup, response):
     for elem in soup.select("[class]"):
         classes = elem["class"]
         used_classes.update(classes)
-    tag_indicators.append(add_indicator(url, "3-css_classes", ",".join(used_classes)))
+    tag_indicators.append(add_indicator(url, "3-css_classes", used_classes))
     return tag_indicators
 
 def parse_sitemaps(url, soup, response):    
@@ -220,7 +220,7 @@ def parse_script_tags(url, soup, response):
 
 def parse_id_attributes(url, soup, response):
     ids = [element['id'] for element in soup.find_all(id=True)]    
-    id_indicators = [add_indicator(url, "3-id_tags", ','.join(ids))]
+    id_indicators = [add_indicator(url, "3-id_tags", ids)]
     return id_indicators
 
 def parse_iframe_ids(url, soup, response):
@@ -231,15 +231,12 @@ def parse_iframe_ids(url, soup, response):
     return iframe_indicators
 
 def parse_link_tags(url, soup, response):
-    
     link_tags = soup.find_all("link")
+    href_links = [link["href"] for link in link_tags if link.has_attr("href")]
     tag_indicators = []
-    # Iterate over the meta tags
-    for link_tag in link_tags:
-        # Get the name and content attributes of the meta tags
-        href = link_tag.get("href")
-        if href:
-            tag_indicators.append(add_link_tags(url, href))
+    # Iterate over the link tags
+
+    tag_indicators.append(add_link_tags(url, href_links))
     return tag_indicators
 
 
@@ -357,19 +354,17 @@ def parse_shodan_json(shodan_json, domain):
                     "domain_name": domain
                 })
         if len(shodan_json["vulns"]) > 0:
-            for vuln in shodan_json["vulns"]:
-                shodan_indicators.append({
-                    "indicator_type": "2-ip_shodan_vuln",
-                    "indicator_content": vuln,
-                    "domain_name": domain
-                })
+            shodan_indicators.append({
+                "indicator_type": "2-ip_shodan_vuln",
+                "indicator_content": shodan_json["vulns"],
+                "domain_name": domain
+            })
         if len(shodan_json["cpes"]) > 0:
-            for cpe in shodan_json["cpes"]:
-                shodan_indicators.append({
-                    "indicator_type": "3-ip_shodan_cpe",
-                    "indicator_content": cpe,
-                    "domain_name": domain
-                })
+            shodan_indicators.append({
+                "indicator_type": "3-ip_shodan_cpe",
+                "indicator_content": shodan_json["cpes"],
+                "domain_name": domain
+            })
         if len(shodan_json["ports"]) > 0:
             shodan_indicators.append({
                 "indicator_type": "3-ip_shodan_ports",
@@ -567,11 +562,11 @@ def add_associated_domains_from_cert(url, soup, response):
 
 
 def find_google_analytics_id(url, text):
-    ga_id_pattern = "(UA-\d{6,8}|UA-\d{6,8}-\d{1})"
+    ga_id_pattern = "(UA-\d{6,}|UA-\d{6,}-\d{1})"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_id")
 
 def find_google_tag_id(url, text):
-    ga_id_pattern = "G-([A-Za-z0-9]+)"
+    ga_id_pattern = "(G-([A-Za-z0-9]+)|GTM-[A-Za-z0-9]+|AW-[A-Za-z0-9]+|GT-([A-Za-z0-9]+))"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_tag_id")
 
 def find_adobe_analytics_id(url, text):
@@ -645,7 +640,7 @@ def add_domain_suffix(url, domain_suffix):
 def find_domain_suffix(url):
     tag_indicators = []
     ext = tldextract.extract(url)
-    domain_suffix = ext[1] + "." + ext[2]
+    domain_suffix = ext.suffix + "." + ext.domain
     tag_indicators.append(add_domain_suffix(url, domain_suffix))
     return tag_indicators  # joins the strings
 
@@ -661,7 +656,7 @@ def add_second_level_domain(url, domain):
 def find_second_level_domain(url):
     tag_indicators = []
     ext = tldextract.extract(url)
-    domain = ext[1]
+    domain = ext.domain
     tag_indicators.append(add_second_level_domain(url, domain))
     return tag_indicators
 
@@ -690,7 +685,7 @@ def add_urlscan_indicators(domain, data):
     urlscan_indicators = []
     urlscan_indicators.append(
             {
-                "indicator_type": "2-global_variable",
+                "indicator_type": "2-urlscan_globalvariable",
                 "indicator_content": [f"{item['prop']}|{item['type']}" for item in data["data"]["globals"]],
                 "domain_name": domain,
             }
@@ -709,13 +704,7 @@ def add_urlscan_indicators(domain, data):
                 "domain_name": domain,
             }
     )
-    urlscan_indicators.append(
-            {
-                "indicator_type": "2-urlscan_consolemessages",
-                "indicator_content": [f"{item['message']['level']}|{item['message']['text']}" for item in data["data"]["console"]],
-                "domain_name": domain,
-            }
-    )
+
     urlscan_indicators.append(
             {
                 "indicator_type": "2-urlscan_asn",
@@ -752,15 +741,12 @@ def add_urlscan_indicators(domain, data):
 
     # wappalyzer is used to detect tech used in the website
     detected_tech = data["meta"]["processors"]["wappa"]["data"]
-    urlscan_indicators.extend(
-        [
-            {
-                "indicator_type": "2-techstack",
-                "indicator_content": tech["app"],
-                "domain_name": domain,
-            }
-            for tech in detected_tech
-        ]
+    urlscan_indicators.append(
+        {
+            "indicator_type": "2-techstack",
+            "indicator_content": [tech["app"] for tech in detected_tech],
+            "domain_name": domain
+        }
     )
     return urlscan_indicators
 
@@ -976,7 +962,7 @@ if __name__ == "__main__":
         type=str,
         help="file to save final list of match results",
         required=False,
-        default=os.path.join(".", "indicators_output.csv"),
+        default=os.path.join(".", "indicators_output_dmi.csv"),
     )
 
     args = parser.parse_args()
@@ -987,6 +973,7 @@ if __name__ == "__main__":
     domains = input_data[domain_col]
     for domain in domains:
         try:
+            #time.sleep(1)
             indicators = crawl(domain, visited_urls, INDICATOR_FUNCTIONS, run_urlscan=run_urlscan)
             write_indicators(indicators, output_file=output_file)
         except Exception as e:

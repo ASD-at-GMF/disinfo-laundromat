@@ -97,12 +97,14 @@
         {% endif %}
         {% endwith %}
         <h2 class="mt-3">Content Search</h2>
+        <p>Search for instances of reposted content by title and/or content. This will search search services, the GDELT database, and copyscape for text that closely match your
+            query. Searching by URL attempts to automatically parses the title and content, but will not be successful for all articles</p>
         <h4 class="mt-3">By URL</h4>
         <div class="row">
             <div class="col-md-12">
                 <form method="POST" action="/parse-url">
                     <div class="form-group">
-                        <label for="url">Enter URL:</label>
+                        <label for="url"><strong>Enter Article URL:</strong> (Enter the full url, e.g. https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a title/content query if prompted) </label>
                         <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
@@ -110,11 +112,11 @@
             </div>
         </div>
         <hr />
-        <h4 class="mt-3">By String</h4>
+        <h4 class="mt-3">By Title and/or Content</h4>
         <form method="post" action="/content">
             <div class="row">
                 <div class="form-group col-md-5">
-                    <label for="titleQuery">Title Query:</label>
+                    <label for="titleQuery"><strong>Title Query:</strong> Enter all or part of a title of an article or content</label>
                     <textarea type="text" class="form-control" id="titleQuery" name="titleQuery"
                         placeholder="Enter title query"></textarea>
                 </div>
@@ -126,7 +128,7 @@
                     </select>
                 </div>
                 <div class="form-group col-md-5">
-                    <label for="contentQuery">Content Query:</label>
+                    <label for="contentQuery"><strong>Content Query:</strong> Enter all or part of the body of an article or piece of content</label>
                     <textarea type="text" class="form-control" id="contentQuery" name="contentQuery"
                         placeholder="Enter content query"></textarea>
                 </div>
@@ -134,7 +136,7 @@
             <div class="row">
                 <div class="form-group col-md-6">
                     <!-- Country Dropdown -->
-                    <label for="country">Country:</label>
+                    <label for="country"><strong>Country:</strong> Select a country to search. Not all countries are served by all services, and will fall back to the USA if unsupported</label>
                     <select class="form-control" name="country" id="country">
                         {% for code, name in countries.items() %}
                         <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
@@ -144,7 +146,7 @@
 
                 <div class="form-group  col-md-6">
                     <!-- Language Dropdown -->
-                    <label for="language">Language:</label>
+                    <label for="language"><strong>Language:</strong> Select a language to search. Not all languages are served by all services, and will fall back to the english if unsupported</label>
                     <select class="form-control" name="language" id="language">
                         {% for code, name in languages.items() %}
                         <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
@@ -159,21 +161,27 @@
 
 
         <h2 class="mt-3">Website Fingerprinting</h2>
+        <p>Website fingerprinting is a technique that allows you to identify websites that are likely to be owned by the same entity. This is done by looking for commonalities in the underlying code of the website, such as shared HTML, CSS, and Javascript.
+            This tool will allow you to enter a domain name and will return a list of technical indicators associated with this site. It will also return a list of other domains that are likely to be owned by the same entity.
+        </p>
+        <!--
+            Add a list of indicators and how they should be interpreted
+        -->
         {% if current_user.is_authenticated %}
         <div class="row">
             <div class="col-md-12">
                 <form method="POST" id='fingerprint' action="/fingerprint">
                     <div class="form-group">
-                        <label for="url">Enter URL:</label>
+                        <label for="url"><strong>Enter Domain:</strong> Ensure you include https:// and any subdomain you're interested in (e.g. https://tech.cnn.com). Multiple sites can be specified, seperated by a comma</label>
                         <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
                     </div>
                     <!-- Checkbox for URLSCAN -->
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="run_urlscan" name="run_urlscan">
-                        <label class="form-check-label" for="run_urlscan">Run URLSCAN (may take up to 2 minutes)</label>
+                        <label class="form-check-label" for="run_urlscan">Run <a href="https://urlscan.io/" target="_blank">URLSCAN</a> (may take up to 2 minutes)</label>
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button> or
-                    <a href="{{ url_for('indicators') }}" class="btn btn-secondary">View All Indicators</a>
+                    <a href="{{ url_for('indicators') }}" class="btn btn-secondary">View All Indicators by Type</a>
                 </form>
             </div>
                     
@@ -207,7 +215,8 @@
             <hr />
             {% if results %}
             <div class="row mb-3">
-                <h2 class="mt-3 mr-3">Results</h2>
+                <h2 class="mt-3 mr-3">Title & Content Match Results</h2>
+                <p>While the results show near text matches from across the web, this does necessarily not indicate a relationship or deliberate plagiarism between entities, as content may be licensed or quoted</p>
 
                 <form method="post" action="/download_csv" class="mt-3 mr-3">
                     <button class="btn btn-primary mr-3" type="button" data-toggle="collapse"
@@ -289,7 +298,10 @@
             {% endif %}
             <!-- Section for Indicators and Matches Tables -->
             {% if indicators_df %}
-            <h2 class="mt-3">Indicators</h2> <button class="btn btn-primary" type="button" data-toggle="collapse"
+            <h2 class="mt-3">Indicators</h2> 
+            <p>Indicators are technical elements that can be used to identify relationships between websites. The table below shows all indicators for the specified domain(s). </p>
+
+            <button class="btn btn-primary" type="button" data-toggle="collapse"
                 data-target="#collapsibleIndicatorTable" aria-expanded="false"
                 aria-controls="collapsibleIndicatorTable">
                 Show/Hide Table
@@ -318,7 +330,9 @@
             </div>
             {% endif %}
             {% if matches_df %}
-            <h2 class="mt-3">Matches</h2> <button class="btn btn-primary" type="button" data-toggle="collapse"
+            <h2 class="mt-3">Matches</h2> 
+            <p>Matches are pairs of domain names that have been identified as having identical or > 90% matches where an indicator is a list. The table below shows all matches for the specified domain(s).</p>
+            <button class="btn btn-primary" type="button" data-toggle="collapse"
                 data-target="#collapsibleMatchesTable" aria-expanded="false" aria-controls="collapsibleMatchesTable">
                 Show/Hide Table
             </button>

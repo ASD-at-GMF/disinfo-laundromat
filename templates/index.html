@@ -238,9 +238,10 @@
                                 <th>Domain</th>
                                 <th>Associations</th>
                                 <th>Title</th>
-                                <th>Vol (Link)</th>
+                                <th>Snippet</th>
+                                <!--<th>Vol (Link)</th>-->
                                 <th>Engines</th>
-                                <th>Vol (Domain)</th>
+                               <!-- <th>Vol (Domain)</th>-->
                                 <th>Match Score</th>
                             </tr>
                         </thead>
@@ -263,9 +264,10 @@
                                     {% endif %}
                                 </td>
                                 <td><a href="{{ link_data['url'] }}" target="_blank">{{ link_data['title'] }}</a></td>
-                                <td>{{ link_data['link_count'] }}</td>
+                                <td>{{ link_data['snippet'] }}</td>
+                               <!-- <td>{{ link_data['link_count'] }}</td>-->
                                 <td>{{ link_data['engines']|join(', ') }}</td>
-                                <td>{{ link_data['domain_count'] }}</td>
+                                <!--<td>{{ link_data['domain_count'] }}</td>-->
                                 <td>{{ link_data['score'] }}</td>
                             </tr>
                             {% endfor %}

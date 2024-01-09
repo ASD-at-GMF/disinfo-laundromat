@@ -404,6 +404,7 @@ def format_copyscape_output(data):
         output[domain]["links"].append({
             "link": article["url"],
             "title": article["title"],
+            "snippet": article["textsnippet"],
             "count": 1,  # Assuming each link is unique and counts as 1
             # Placeholder, as the engine is not specified in the data
             "engines": ["Plagiarism Checker"]
@@ -421,6 +422,7 @@ def format_gdelt_output(data):
         output[domain]["links"].append({
             "link": article["url"],
             "title": article["title"],
+            "snippet": "",
             "count": 1,  # Assuming each link is unique and counts as 1
             # Placeholder, as the engine is not specified in the data
             "engines": ["GDELT"]
@@ -452,7 +454,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         for result in organic_results:
             domain = urlparse(result.get('link')).netloc
             link_data = {'link': result.get('link'), 'title': result.get(
-                'title'), 'count': 1, 'engines': [search_engine]}
+                'title'), 'snippet': result.get('snippet') , 'count': 1, 'engines': [search_engine]}
 
             if domain not in aggregated_results:
                 aggregated_results[domain] = {'count': 0, 'links': []}
@@ -521,10 +523,11 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
                 'source': domain_data['source'],
                 'url': link['link'],
                 'title': link['title'],
+                'snippet': link['snippet'],
                 'link_count': link['count'],
                 'engines': link['engines'],
                 'domain_count': domain_data['count'],
-                'score' : sequence_match_score(title_query, link['title'])
+                'score' : max(sequence_match_score(title_query, link['title']), sequence_match_score(content_query, link['snippet']))
             }
             # Add the dictionary to the list
             flattened_data.append(link_info)
@@ -650,7 +653,7 @@ def convert_results_to_csv(results):
 
     # Header
     csv_list.append(','.join(
-        ['Domain', 'Domain Occurrences', 'Title', 'Link', 'Link Occurrences', 'Engines', 'Score']))
+        ['Domain', 'Domain Occurrences', 'Title', 'Snippet','Link', 'Link Occurrences', 'Engines', 'Score']))
 
     # Data
     for data in results:
@@ -658,6 +661,7 @@ def convert_results_to_csv(results):
             data['domain'],
             str(data['domain_count']),
             data['title'],
+            data['snippet'],
             data['url'],
             str(data['link_count']),
             ', '.join(data['engines']),

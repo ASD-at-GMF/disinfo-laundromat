@@ -133,7 +133,7 @@ def add_who_is(url, soup, response):
             if (
                 "name" in result
                 and result.name is not None
-                and isinstance(result.name, list)
+                and isinstance(result.name, str)
             ):
                 if (
                     "priva" not in result.name.lower()
@@ -497,30 +497,31 @@ def get_ipms_domain_indicators(url, ipms_url):
 
     try:
         data = json.loads(api_result.content)
-        ipms_indicators.append(
-            add_indicator(
-                url, "3-ipms_domain_iprangeowner_cidr", data["owners"]["owner"]["cidr"]
+        if "owners" in data:
+            ipms_indicators.append(
+                add_indicator(
+                    url, "3-ipms_domain_iprangeowner_cidr", data["owners"]["owner"]["cidr"]
+                )
             )
-        )
-        ipms_indicators.append(
-            add_indicator(
-                url,
-                "3-ipms_domain_iprangeowner_ownerName",
-                data["owners"]["owner"]["ownerName"],
+            ipms_indicators.append(
+                add_indicator(
+                    url,
+                    "3-ipms_domain_iprangeowner_ownerName",
+                    data["owners"]["owner"]["ownerName"],
+                )
             )
-        )
-        ipms_indicators.append(
-            add_indicator(
-                url,
-                "3-ipms_domain_iprangeowner_address",
-                data["owners"]["owner"]["address"],
+            ipms_indicators.append(
+                add_indicator(
+                    url,
+                    "3-ipms_domain_iprangeowner_address",
+                    data["owners"]["owner"]["address"],
+                )
             )
-        )
-        for dns in data["dns"]:
+        for dns in data.get("dns", []):
             ipms_indicators.append(
                 add_indicator(url, "3-ipms_domain_nameserver", dns["nameserver"])
             )
-        unique_ips = {entry["ip_address"] for entry in data["ip_change_history"]}
+        unique_ips = {entry["ip_address"] for entry in data.get("ip_change_history", [])}
         for ip in unique_ips:
             ipms_indicators.append(add_indicator(url, "3-ipms_domain_otheripused", ip))
 
@@ -533,6 +534,8 @@ def get_ipms_domain_indicators(url, ipms_url):
         traceback.print_exc()
     except Exception as e:
         traceback.print_exc()
+    finally:
+        return ipms_indicators
 
 
 def get_ipms_ip_indicators(url, ipms_url):
@@ -541,19 +544,19 @@ def get_ipms_ip_indicators(url, ipms_url):
 
     try:
         data = json.loads(api_result.content)
-        for site in data["websites_on_ip_now"]:
+        for site in data.get("websites_on_ip_now", []):
             ipms_indicators.append(
                 add_indicator(url, "3-ipms_siteonthisip_now", site["website"])
             )
-        for site in data["websites_on_ip_before"]:
+        for site in data.get("websites_on_ip_before", []):
             ipms_indicators.append(
                 add_indicator(url, "3-ipms_siteonthisip_before", site["website"])
             )
-        for site in data["not_working_websites_on_ip"]:
+        for site in data.get("not_working_websites_on_ip", []):
             ipms_indicators.append(
                 add_indicator(url, "3-ipms_siteonthisip_broken", site["website"])
             )
-        for useragent in data["useragents_on_ip"]:
+        for useragent in data.get("useragents_on_ip", []):
             ipms_indicators.append(
                 add_indicator(url, "3-ipms_useragents", useragent["useragent"])
             )
@@ -561,11 +564,13 @@ def get_ipms_ip_indicators(url, ipms_url):
         return ipms_indicators
     except IndexError as e:
         print(
-            "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
+            "Error hit iterating running through IPMS results. Have you hit your IPMS API limit?"
         )
         traceback.print_exc()
     except Exception as e:
         traceback.print_exc()
+    finally:
+        return ipms_indicators
 
 
 def add_meta_generic_tags(url, name, content):
@@ -589,7 +594,7 @@ def parse_body(url, soup, response):
 def parse_footer(url, soup, response):
     tag_indicators = []
 
-    footer = soup.find_all("footer")
+    footer = soup.find("footer")
     # Extract text
     if footer:
         footer_text = footer.get_text(strip=True)
@@ -619,13 +624,13 @@ def find_wallets(url, text):
     btc_matches = set(re.findall(btc_address_regex, text))
     # Get transaction data for the address from the BlockCypher API
     for match in btc_matches:
-        tag_indicators.append(find_wallet_transactions(match, "btc"))
+        tag_indicators.append(find_wallet_transactions(wallet=match, wallet_type="btc", url=url))
 
     bch_address_regex = re.compile(r"^[qQ][a-km-zA-HJ-NP-Z1-9]{41}$")
     bch_matches = set(re.findall(bch_address_regex, text))
     # Get transaction data for the address from the BlockCypher API
     for match in bch_matches:
-        tag_indicators.append(find_wallet_transactions(match, "bch"))
+        tag_indicators.append(find_wallet_transactions(wallet=match, wallet_type="bch", url=url))
 
     tag_indicators.extend(
         find_with_regex(crypto_wallet_pattern, text, url, "1-crypto-wallet")
@@ -638,7 +643,7 @@ def find_wallet_transactions(url, wallet_type, wallet):
     tag_indicators = []
 
     # Check if transaction data exists for the address
-    if tx_data is not None:
+    if tx_data:
         # Extract the addresses involved in transactions with the given address
         addresses = set()
         for input in tx_data["txs"]:
@@ -879,11 +884,11 @@ def add_urlscan_indicators(domain, data):
 
 # Send a GET request to the specified URL, ignoring bad SSL certificates
 def get_endpoints(url, endpoints):
-    #     for endpoint in endpoints:
-    #         response = requests.get(f"{url}/{endpoint}", verify=False)
-    #         if response.status_code == 200:
-    #             return response.text
-    return None
+    for endpoint in endpoints:
+        response = requests.get(f"{url}/{endpoint}", verify=False)
+        if response.status_code == 200:
+            return response.text
+    return ''
 
 
 def parse_cms(url, soup, response):
@@ -992,6 +997,7 @@ INDICATOR_FUNCTIONS = {
 
 def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
     indicators = []
+    url_submission = None
     # Add the URL to the set of visited URLs
     domain = get_domain_name(url)
     visited_urls.add(domain)

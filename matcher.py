@@ -209,7 +209,7 @@ def parse_certificate_matches(
 
 ## Main program
 FEATURE_MATCHING: Dict[str, str] = {
-    "1-cert-domain" : "direct",
+"1-cert-domain" : "direct",
 "1-crypto-wallet" : "direct",
 "1-domain" : "direct",
 "1-domain_suffix" : "direct",
@@ -228,9 +228,9 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-ipms_siteonthisip_broken" : "direct",
 "3-ipms_useragents" : "direct",
 "1-ip_shodan_hostnames" : "direct",
-"3-ip_shodan_ports" : "direct",
-"2-ip_shodan_vuln" : "direct",
-"3-ip_shodan_cpe" : "direct",
+"3-ip_shodan_ports" : "iou",
+"2-ip_shodan_vuln" : "iou",
+"3-ip_shodan_cpe" : "iou",
 "1-ga_id" : "direct",
 "1-ga_tag_id" : "direct",
 "1-ip" : "direct",
@@ -244,7 +244,7 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-header-server" : "direct",
 "3-id_tags" : "iou",
 "3-iframe_id_tags" : "iou",
-"3-link_href" : "direct",
+"3-link_href" : "iou",
 "3-meta_generic" : "direct",
 "3-meta_social" : "direct",
 "3-script_src" : "direct",
@@ -258,7 +258,14 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-wp-posts" : "iou",
 "3-wp-tags" : "iou",
 "3-wp-users" : "iou",
-
+"2-urlscan_globalvariable": "iou",
+"2-urlscan_cookies": "iou",
+"2-urlscan_consolemessages": "iou",
+"2-urlscan_asn": "direct",
+"2-urlscan_domainsonpage": "iou",
+"2-urlscan_urlssonpage" : "iou",
+"3-urlscanhrefs" : "direct",
+"2-techstack" : "iou"
 }
 
 WHOIS_FEATURES = [
@@ -303,6 +310,7 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
             print(f"\"{value}\" : \"direct\",")
 
     for feature, method in FEATURE_MATCHING.items():
+        print(f"Matching {feature} with method: {method}")
         feature_df = data[data[INDICATOR_TYPE] == feature]
         if feature_df.shape[0] > 1:
             if comparison is not None:

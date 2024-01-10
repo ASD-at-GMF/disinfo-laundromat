@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 from collections import Counter
 import io
-
+import zipfile
 
 # Paramaterizable Variables
 from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER
@@ -150,31 +150,8 @@ def fingerprint():
         # Do something with the url using your functions
         try:
             urls = url.split(',')
-            indicators = crawl_one_or_more_urls(urls, set(), run_urlscan = run_urlscan)
-            indicator_summary = summarize_indicators(indicators)
-            indicators_df = pd.DataFrame(
-                columns=["indicator_type", "indicator_content", "domain_name"],
-                data=indicators,
-            )
-
-            insert_indicators(indicators)
-
-            comparison_indicators = pd.read_csv(
-                KNOWN_INDICATORS)  # read the csv file
-            # print(indicators_df.head(), comparison_indicators.head())
-            # Find matches
-            # Split DataFrame into smaller DataFrames based on 'domain'
-            grouped_indicators = indicators_df.groupby('domain_name')
-
-            # Create a dictionary to store each group as a DataFrame
-            grouped_indicators_dfs = {group: data for group, data in grouped_indicators}
             
-            matches_df = pd.DataFrame()
-            for group, grouped_indicators_df in grouped_indicators_dfs.items():
-                grouped_matches_df = find_matches(grouped_indicators_df, comparison=comparison_indicators)
-                matches_df = pd.concat([matches_df, grouped_matches_df])
-            matches_df.reset_index(drop=True, inplace=True)
-            matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
+            indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, run_urlscan = run_urlscan)
 
             return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
 
@@ -182,6 +159,38 @@ def fingerprint():
             return render_template('error.html', errorx=e)
 
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+
+def find_indicators_and_matches(urls, run_urlscan = False):
+    indicators = crawl_one_or_more_urls(urls, set(), run_urlscan = run_urlscan)
+    indicator_summary = summarize_indicators(indicators)
+    indicators_df = pd.DataFrame(
+        columns=["indicator_type", "indicator_content", "domain_name"],
+        data=indicators,
+    )
+
+    insert_indicators(indicators)
+
+
+    comparison_indicators = pd.read_csv(
+        KNOWN_INDICATORS)  # read the csv file
+    
+    comparison_indicators = pd.concat([indicators_df, comparison_indicators])
+    # print(indicators_df.head(), comparison_indicators.head())
+    # Find matches
+    # Split DataFrame into smaller DataFrames based on 'domain'
+    grouped_indicators = indicators_df.groupby('domain_name')
+
+    # Create a dictionary to store each group as a DataFrame
+    grouped_indicators_dfs = {group: data for group, data in grouped_indicators}
+    
+    matches_df = pd.DataFrame()
+    for group, grouped_indicators_df in grouped_indicators_dfs.items():
+        grouped_matches_df = find_matches(grouped_indicators_df, comparison=comparison_indicators)
+        matches_df = pd.concat([matches_df, grouped_matches_df])
+    matches_df.reset_index(drop=True, inplace=True)
+    matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
+
+    return indicators_df, matches_df, indicator_summary, matches_summary
 
 @app.route('/content', methods=['GET', 'POST'])
 def content():
@@ -220,7 +229,6 @@ def parse_url():
 
         return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
 
-
     except Exception as e:
         response = requests.get(url)
         if response.status_code == 200:
@@ -257,7 +265,7 @@ def upload_file():
                     #todo: add language and country from csv
 
                     results, csv_data = fetch_content_results(
-                        title_query, content_query, "OR", "pl", "pl", engines=['google'])
+                        title_query, content_query, "OR", "en","us")
 
                 if 'Urls' in row:
                     searched_url = row['Urls']
@@ -268,7 +276,7 @@ def upload_file():
 
                     #todo: add language and country from csv
                     results, csv_data = fetch_content_results(
-                        article.title, article.text, "OR", "pl", "pl", engines=['google'])
+                        article.title, article.text, "OR", "en","us")
             
                 # Write the results to the output CSV
                 for result in results:
@@ -300,6 +308,42 @@ def upload_file():
 
 @app.route('/fingerprint-csv', methods=['POST'])
 def fingerprint_file():
+    file = request.files['fingerprint-file']
+    if file:
+        df_urls = pd.read_csv(StringIO(file.read().decode('utf-8')))
+        urls = df_urls['Urls'].tolist()  # Assuming 'Urls' is the column name
+
+        # The find_indicators_and_matches function should be defined elsewhere
+        indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls)
+
+        # Save dataframes as csv in memory
+        indicators_csv = StringIO()
+        matches_csv = StringIO()
+        indicators_df.to_csv(indicators_csv, index=False)
+        matches_df.to_csv(matches_csv, index=False)
+        
+        # Reset the pointer of StringIO objects
+        indicators_csv.seek(0)
+        matches_csv.seek(0)
+
+        # Create a zip file in memory
+        mem_zip = BytesIO()
+        with zipfile.ZipFile(mem_zip, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr('indicators.csv', indicators_csv.getvalue())
+            zf.writestr('matches.csv', matches_csv.getvalue())
+
+        print('Zipped - downloading...')
+        # Prepare the zip file to send to client
+        mem_zip.seek(0)
+        return send_file(
+            mem_zip,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name='indicators_and_matches.zip'
+        )
+
+    # If no file, render the index template
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():

@@ -1050,6 +1050,7 @@ def crawl_one_or_more_urls(
 ):
     indicators = []
     for url in urls:
+        print('Fingerprinting:',url)
         indicators.extend(
             crawl(
                 url,

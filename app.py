@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for
+from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file
 from flask_bootstrap import Bootstrap
 import requests
 from io import StringIO
@@ -13,7 +13,8 @@ from flask_login import LoginManager, login_user, logout_user, login_required, U
 from flask_bcrypt import Bcrypt
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
-
+from collections import Counter
+import io
 
 
 # Paramaterizable Variables
@@ -150,6 +151,7 @@ def fingerprint():
         try:
             urls = url.split(',')
             indicators = crawl_one_or_more_urls(urls, set(), run_urlscan = run_urlscan)
+            indicator_summary = summarize_indicators(indicators)
             indicators_df = pd.DataFrame(
                 columns=["indicator_type", "indicator_content", "domain_name"],
                 data=indicators,
@@ -172,11 +174,12 @@ def fingerprint():
                 grouped_matches_df = find_matches(grouped_indicators_df, comparison=comparison_indicators)
                 matches_df = pd.concat([matches_df, grouped_matches_df])
             matches_df.reset_index(drop=True, inplace=True)
+            matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
 
-            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'))
+            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
 
         except Exception as e:
-            return render_template('error.html', error=e)
+            return render_template('error.html', errorx=e)
 
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
@@ -232,7 +235,73 @@ def parse_url():
         
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
-@app.route('/download_csv', methods=['POST2222'])
+@app.route('/content-csv', methods=['POST'])
+def upload_file():
+    file = request.files['file']
+    if file:
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline='')
+        csv_input = csv.DictReader(stream)
+
+        # Prepare to write to a new CSV file
+        output_stream = io.StringIO()
+        csv_output = csv.writer(output_stream)
+        csv_output.writerow(['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
+
+        # Process each URL in the CSV
+        for row in csv_input:
+            try:
+                if  'title' in row and 'content' in row:
+                    title_query = row['title']
+                    content_query = row['content']
+
+                    #todo: add language and country from csv
+
+                    results, csv_data = fetch_content_results(
+                        title_query, content_query, "OR", "pl", "pl", engines=['google'])
+
+                if 'Urls' in row:
+                    searched_url = row['Urls']
+                    
+                    article = Article(searched_url)
+                    article.download()
+                    article.parse()
+
+                    #todo: add language and country from csv
+                    results, csv_data = fetch_content_results(
+                        article.title, article.text, "OR", "pl", "pl", engines=['google'])
+            
+                # Write the results to the output CSV
+                for result in results:
+                    csv_output.writerow([
+                        searched_url,
+                        result['domain'],
+                        ', '.join(result['source']),
+                        result['url'],
+                        result['title'],
+                        result['snippet'],
+                        result['link_count'],
+                        ', '.join(result['engines']),
+                        result['domain_count'],
+                        result['score']
+                    ])
+
+            except Exception as e:
+                print(f"Error processing {searched_url}: {e}, continuing...")
+                continue
+
+        # Reset file pointer to the beginning
+        output_stream.seek(0)
+        # Save the in-memory file to the server
+        with open("output.csv", "w", encoding='utf-8') as f:
+            f.write(output_stream.getvalue())
+
+        return send_file("output.csv", as_attachment=True)
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+
+@app.route('/fingerprint-csv', methods=['POST'])
+def fingerprint_file():
+
+@app.route('/download_csv', methods=['POST'])
 def download_csv():
     csv_data = request.form.get('csv_data', '')
 
@@ -349,13 +418,13 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         return None
 
 
-def fetch_content_results(title_query, content_query, combineOperator, language, country):
+def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'GDELT', 'CopyScape']):
     title_query = truncate_text(title_query)
     content_query = truncate_text(content_query)
 
     # Parameters for SERPAPI Google integration
     results = fetch_serp_results(
-        title_query, content_query, combineOperator, language, country)
+        title_query, content_query, combineOperator, language, country, engines=engines)
 
     # Convert results to CSV
     csv_data = convert_results_to_csv(results)
@@ -429,13 +498,16 @@ def format_gdelt_output(data):
         })
     return output
 
-def fetch_serp_results(title_query, content_query, combineOperator, language, country):
+def fetch_serp_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'GDELT', 'CopyScape']):
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github(
         'https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
-    results_gdelt = fetch_gdelt_results(
-        title_query, content_query, combineOperator, language, country)
-    if COPYSCAPE_API_KEY and COPYSCAPE_USER:
+    results_gdelt = None
+    if 'GDELT' in engines:
+        results_gdelt = fetch_gdelt_results(
+            title_query, content_query, combineOperator, language, country)
+    results_cs = None
+    if COPYSCAPE_API_KEY and COPYSCAPE_USER and 'CopyScape' in engines:
         results_cs = fetch_copyscape_results(
             title_query, content_query, combineOperator, language, country)
 
@@ -444,6 +516,9 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
     aggregated_results = {}
     for params in paramsList:
         search_engine = params["engine"]
+        if search_engine not in engines:
+            continue
+
         base_url = "https://serpapi.com/search"  # base url of the API
         response = requests.get(base_url, params=params)
         data = response.json()
@@ -470,7 +545,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
                 aggregated_results[domain]['links'].append(link_data)
 
             aggregated_results[domain]['count'] += 1
-    if results_gdelt is not None:
+    if results_gdelt and results_gdelt is not None:
         for key, value in results_gdelt.items():
             if key in aggregated_results:
                 # Sum the 'count' for overlapping keys
@@ -481,7 +556,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
                 # If the key is not in the first dictionary, add it
                 aggregated_results[key] = value
 
-    if COPYSCAPE_API_KEY and COPYSCAPE_USER and results_cs is not None:
+    if COPYSCAPE_API_KEY and COPYSCAPE_USER and results_cs and results_cs is not None:
         for key, value in results_cs.items():
             if key in aggregated_results:
                 # Sum the 'count' for overlapping keys
@@ -696,6 +771,27 @@ def sequence_match_score(title1, title2):
     score = matcher.ratio()
 
     return round(score*100,1)
+
+def summarize_indicators(results, column='indicator_type'):
+    """
+    Generate a summary of results with the number of occurrences for each tier.
+
+    Args:
+    results (list of dicts): List containing indicator data.
+
+    Returns:
+    str: A formatted summary string.
+    """
+    summary = []
+    tier_counts = Counter([item[column].split('-')[0] for item in results])
+
+    # sort the tier as 1, 2, 3
+    tier_counts = {k: v for k, v in sorted(tier_counts.items(), key=lambda item: int(item[0]))}    
+
+    for tier, count in tier_counts.items():
+        summary.append(f"| Tier {tier} - {count}")
+
+    return summary
 
 def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:

@@ -1007,12 +1007,11 @@ INDICATOR_FUNCTIONS = {
 }
 
 
-def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
+def crawl(url, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
     indicators = []
     url_submission = None
     # Add the URL to the set of visited URLs
     domain = get_domain_name(url)
-    visited_urls.add(domain)
 
     if run_urlscan:
         url_submission = start_urlscan(url)
@@ -1056,7 +1055,7 @@ def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=F
 
 
 def crawl_one_or_more_urls(
-    urls, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False
+    urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False
 ):
     indicators = []
     for url in urls:
@@ -1064,7 +1063,6 @@ def crawl_one_or_more_urls(
         indicators.extend(
             crawl(
                 url,
-                visited_urls,
                 functions_to_run=functions_to_run,
                 run_urlscan=run_urlscan,
             )
@@ -1098,7 +1096,6 @@ def write_indicators(indicators, output_file):
 
 
 if __name__ == "__main__":
-    visited_urls = set()
     parser = argparse.ArgumentParser(
         description="Match indicators across sites.", add_help=False
     )
@@ -1135,7 +1132,7 @@ if __name__ == "__main__":
         try:
             # time.sleep(1)
             indicators = crawl(
-                domain, visited_urls, INDICATOR_FUNCTIONS, run_urlscan=run_urlscan
+                domain, INDICATOR_FUNCTIONS, run_urlscan=run_urlscan
             )
             write_indicators(indicators, output_file=output_file)
         except Exception as e:

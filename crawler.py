@@ -450,12 +450,15 @@ def parse_shodan_json(shodan_json, domain):
 def get_shodan_indicators(url):
     shodan_indicators = []
     domain = get_domain_name(url)
-    ip = socket.gethostbyname(domain)
+    try:
+        ip = socket.gethostbyname(domain)
 
-    shodan_json = fetch_shodan_data(ip)
-    shodan_indicators = parse_shodan_json(shodan_json, domain)
-
-    return shodan_indicators
+        shodan_json = fetch_shodan_data(ip)
+        shodan_indicators = parse_shodan_json(shodan_json, domain)
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return shodan_indicators
 
 
 def get_ipms_indicators(url):
@@ -657,22 +660,26 @@ def find_wallet_transactions(url, wallet_type, wallet):
 
 
 def add_associated_domains_from_cert(url):
-    port = 443
-
-    cert = ssl.get_server_certificate((get_domain_name(url), port))
-    x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
-
-    sans = []
-    for i in range(x509.get_extension_count()):
-        ext = x509.get_extension(i)
-        if ext.get_short_name() == b"subjectAltName":
-            ext_val = ext.__str__()
-            sans = ext_val.replace("DNS:", "").split(",")
-
     tag_indicators = []
-    for san in sans:
-        tag_indicators.append(add_indicator(url, "1-cert-domain", san))
-    return tag_indicators
+    try:
+        port = 443
+
+        cert = ssl.get_server_certificate((get_domain_name(url), port))
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
+
+        sans = []
+        for i in range(x509.get_extension_count()):
+            ext = x509.get_extension(i)
+            if ext.get_short_name() == b"subjectAltName":
+                ext_val = ext.__str__()
+                sans = ext_val.replace("DNS:", "").split(",")
+
+        for san in sans:
+            tag_indicators.append(add_indicator(url, "1-cert-domain", san))
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return tag_indicators
 
 
 def find_google_analytics_id(url, text):
@@ -1121,7 +1128,7 @@ if __name__ == "__main__":
     run_urlscan = args.run_urlscan
     input_data = pd.read_csv(args.input_file)
     domains = input_data[domain_col]
-    for domain in domains[:2]:
+    for domain in domains:
         try:
             indicators = crawl(domain, run_urlscan=run_urlscan)
             write_indicators(indicators, output_file=output_file)

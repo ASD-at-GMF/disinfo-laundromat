@@ -25,6 +25,7 @@ import feedparser
 import hashlib
 import datetime
 import whois
+from id_patterns import TRACKING_IDS, SOCIAL_MEDIA_IDS
 from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY
 
 visited = set()
@@ -677,78 +678,21 @@ def add_associated_domains_from_cert(url):
         return tag_indicators
 
 
-def find_google_analytics_id(url, text):
-    ga_id_pattern = r"(UA-\d{6,}|UA-\d{6,}-\d{1})"
-    return find_with_regex(ga_id_pattern, text, url, "1-ga_id")
-
-def find_google_adsense_id(url, text):
-    adsense_id_pattern = r"pub-\d{10,20}"
-    return find_with_regex(adsense_id_pattern, text, url, "1-adsense_id")
-
-def find_google_tag_id(url, text):
-    ga_id_pattern = r"(G-([A-Za-z0-9]{6,16})|GTM-[A-Za-z0-9]{6,16}|AW-[A-Za-z0-9]{6,16}|GT-([A-Za-z0-9]{6,16}))"
-    return find_with_regex(ga_id_pattern, text, url, "1-ga_tag_id")
-
-
-def find_adobe_analytics_id(url, text):
-    pattern = r"s\.account\s*=\s*[\"']([^\"']+)[\"']"
-    return find_with_regex(pattern, text, url, "1-adobe_analytics_id")
-
-
-def find_facebook_pixel_id(url, text):
-    pattern = r"fbq\('init',\s*'(\d+)'\)"
-    return find_with_regex(pattern, text, url, "1-fb_pixel_id")
-
-
-def find_hotjar_id(url, text):
-    pattern = r"hjid\s*=\s*(\d+)"
-    return find_with_regex(pattern, text, url, "1-hotjar_id")
-
-
-def find_microsoft_clarity_id(url, text):
-    pattern = r"clarity\s*:\s*{.*?projectId\s*:\s*[\"']([^\"']+)[\"']"
-    return find_with_regex(pattern, text, url, "1-ms_clarity_id")
-
-
-def find_pinterest_tag_id(url, text):
-    pattern = r"pintrk\('load',\s*'([^']+)'\)"
-    return find_with_regex(pattern, text, url, "1-pinterest_tag_id")
-
-
-def find_linkedin_insight_id(url, text):
-    pattern = r"linkedin_insight\s*:\s*{.*?partnerId\s*:\s*(\d+)"
-    return find_with_regex(pattern, text, url, "1-linkedin_insight_id")
-
-
-def find_yandex_track_id(url, text):
-    ga_id_pattern = r"ym\(\d{8}"
-    return find_with_regex(ga_id_pattern, text, url, "1-yandex_tag_id")
-
-
-def find_mapbox_public_access_keys(url, text):
-    pk_pattern = r"pk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
-    return find_with_regex(pk_pattern, text, url, "2-mapbox_public_key")
-
-def find_mapbox_secret_access_keys(url, text):
-    sk_pattern = r"sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
-    return find_with_regex(sk_pattern, text, url, "1-mapbox_secret_key")
-
 def parse_tracking_ids(url, response):
-    text = response.text
     tag_indicators = []
-    tag_indicators.extend(find_google_analytics_id(url, text))
-    tag_indicators.extend(find_google_adsense_id(url, text))
-    tag_indicators.extend(find_mapbox_public_access_keys(url, text))
-    tag_indicators.extend(find_mapbox_secret_access_keys(url, text))
-    tag_indicators.extend(find_google_tag_id(url, text))
-    tag_indicators.extend(find_yandex_track_id(url, text))
-    tag_indicators.extend(find_adobe_analytics_id(url, text))
-    tag_indicators.extend(find_facebook_pixel_id(url, text))
-    tag_indicators.extend(find_hotjar_id(url, text))
-    tag_indicators.extend(find_linkedin_insight_id(url, text))
-    tag_indicators.extend(find_microsoft_clarity_id(url, text))
-    tag_indicators.extend(find_pinterest_tag_id(url, text))
+    for id_type, pattern in TRACKING_IDS.items():
+        id_indicators = find_with_regex(regex=pattern, text=response.text, url=url, indicator_type=id_type)
+        tag_indicators.extend(id_indicators)
     return tag_indicators
+
+
+def parse_social_media_ids(url, response):
+    text  = response.text # could be outbound links instead
+    social_indicators = []
+    for platform, pattern in SOCIAL_MEDIA_IDS.items():
+        platform_indicators = find_with_regex(pattern, text, url, indicator_type=platform)
+        social_indicators.extend(platform_indicators)
+    return social_indicators
 
 
 def add_cdn_domains(url, soup):

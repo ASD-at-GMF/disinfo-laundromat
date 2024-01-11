@@ -25,7 +25,7 @@ import feedparser
 import hashlib
 import datetime
 import whois
-from id_patterns import TRACKING_IDS, SOCIAL_MEDIA_IDS
+from id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY
 
 visited = set()
@@ -685,6 +685,13 @@ def parse_tracking_ids(url, response):
         tag_indicators.extend(id_indicators)
     return tag_indicators
 
+def parse_embedded_ids(url, response):
+    tag_indicators = []
+    for id_type, pattern in EMBEDDED_IDS.items():
+        id_indicators = find_with_regex(regex=pattern, text=response.text, url=url, indicator_type=id_type)
+        tag_indicators.extend(id_indicators)
+    return tag_indicators
+
 
 def parse_social_media_ids(url, response):
     text  = response.text # could be outbound links instead
@@ -851,7 +858,7 @@ def get_endpoints(url, endpoints):
     return ''
 
 
-def parse_cms(url, soup, response):
+def parse_cms(url):
     # TODO: add more CMSs
     cms_indicators = []
     cms = None
@@ -965,6 +972,7 @@ def crawl(url, run_urlscan=False):
     indicators.extend(parse_link_tags(url, soup))
     indicators.extend(parse_footer(url, soup))
     indicators.extend(parse_tracking_ids(url, response=response))
+    indicators.extend(parse_embedded_ids(url, response=response))
     indicators.extend(parse_social_media_ids(url, response=response))
     indicators.extend(add_cdn_domains(url, soup))
     indicators.extend(parse_domain_name(url))
@@ -977,7 +985,7 @@ def crawl(url, run_urlscan=False):
     # indicators.extend(parse_images(url, soup, response))
     # indicators.extend(parse_dom_tree(url, soup))
     # indicators.extend(detect_and_parse_feed_content(url))
-    # indicators.extend(parse_cms(url, soup, response))
+    # indicators.extend(parse_cms(url))
     # indicators.extend(parse_sitemaps(url))
 
     if run_urlscan and url_submission is not None:

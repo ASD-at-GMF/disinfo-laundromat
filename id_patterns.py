@@ -12,6 +12,9 @@ TRACKING_IDS = {
     "1-pinterest_tag_id": r"pintrk\('load',\s*'([^']+)'\)",
     "1-linkedin_insight_id": r"linkedin_insight\s*:\s*{.*?partnerId\s*:\s*(\d+)",
     "1-yandex_tag_id": r"ym\(\d{8}",
+}
+
+EMBEDDED_IDS = {
     "2-mapbox_public_key": r"pk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}",
     "1-mapbox_secret_key": r"sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}",
 }

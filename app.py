@@ -1,13 +1,16 @@
 
 from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file
 from flask_bootstrap import Bootstrap
+import json
+import re
+from io import BytesIO
+import pandas as pd
 import requests
 from io import StringIO
 from urllib.parse import urlparse
 import csv
 import sys
 from newspaper import Article
-import string
 import sqlite3
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
 from flask_bcrypt import Bcrypt
@@ -21,7 +24,7 @@ import zipfile
 from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER
 from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE
 # Import all your functions here
-from crawler import *
+from crawler import crawl_one_or_more_urls
 from matcher import find_matches
 
 app = Flask(__name__)
@@ -161,7 +164,7 @@ def fingerprint():
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
 def find_indicators_and_matches(urls, run_urlscan = False):
-    indicators = crawl_one_or_more_urls(urls, set(), run_urlscan = run_urlscan)
+    indicators = crawl_one_or_more_urls(urls, run_urlscan = run_urlscan)
     indicator_summary = summarize_indicators(indicators)
     indicators_df = pd.DataFrame(
         columns=["indicator_type", "indicator_content", "domain_name"],
@@ -195,6 +198,7 @@ def find_indicators_and_matches(urls, run_urlscan = False):
 @app.route('/content', methods=['GET', 'POST'])
 def content():
     results = None
+    csv_data = None
 
     if request.method == 'POST':
         title_query = request.form.get('titleQuery')
@@ -236,7 +240,7 @@ def parse_url():
             soup = BeautifulSoup(response.text, 'html.parser')
             meta_title = soup.title.string or soup.find('meta', attrs={'name': 'title'})['content'] if soup.title else "" 
             meta_description = soup.find('meta', attrs={'name': 'description'})['content'] if soup.find('meta', attrs={'name': 'description'}) else ""
-            flash("This page could not automatically be parsed for content, but a potential title and first paragraph have been extracted, copy and paste those below if correct: " + meta_title + ' : ' + meta_description)
+            flash(f"This page could not automatically be parsed for content, but a potential title and first paragraph have been extracted, copy and paste those below if correct: {meta_title} : {meta_description}")
 
         else:
             flash("This page could not automatically be parsed for content. Please enter a title and/or content query manually.")
@@ -257,6 +261,7 @@ def upload_file():
 
         # Process each URL in the CSV
         for row in csv_input:
+            searched_url = row.get("Urls")
             try:
                 if  'title' in row and 'content' in row:
                     title_query = row['title']
@@ -267,8 +272,7 @@ def upload_file():
                     results, csv_data = fetch_content_results(
                         title_query, content_query, "OR", "en","us")
 
-                if 'Urls' in row:
-                    searched_url = row['Urls']
+                if searched_url:
                     
                     article = Article(searched_url)
                     article.download()
@@ -278,20 +282,20 @@ def upload_file():
                     results, csv_data = fetch_content_results(
                         article.title, article.text, "OR", "en","us")
             
-                # Write the results to the output CSV
-                for result in results:
-                    csv_output.writerow([
-                        searched_url,
-                        result['domain'],
-                        ', '.join(result['source']),
-                        result['url'],
-                        result['title'],
-                        result['snippet'],
-                        result['link_count'],
-                        ', '.join(result['engines']),
-                        result['domain_count'],
-                        result['score']
-                    ])
+                    # Write the results to the output CSV
+                    for result in results:
+                        csv_output.writerow([
+                            searched_url,
+                            result['domain'],
+                            ', '.join(result['source']),
+                            result['url'],
+                            result['title'],
+                            result['snippet'],
+                            result['link_count'],
+                            ', '.join(result['engines']),
+                            result['domain_count'],
+                            result['score']
+                        ])
 
             except Exception as e:
                 print(f"Error processing {searched_url}: {e}, continuing...")

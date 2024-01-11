@@ -17,7 +17,6 @@ INDICATOR = "indicator_content"
 def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
     df = df[["domain_name", feature]]
     df = df[~df[feature].isna() & ~df[feature].isnull()]
-    df = df[~df['A'].apply(tuple).duplicated()]
 
     return df
 

@@ -992,8 +992,13 @@ def detect_and_parse_feed_content(url):
 def scrape_url(url):
     # Send a GET request to the specified URL, ignoring bad SSL certificates]
     if len(SCRAPER_API_KEY) > 0:
-        payload = {"api_key": SCRAPER_API_KEY, "url": url}
-        return requests.get("https://api.scraperapi.com/", params=payload)
+        try:
+            payload = {"api_key": SCRAPER_API_KEY, "url": url}
+            return requests.get("https://api.scraperapi.com/", params=payload)
+        except requests.exceptions.ConnectionError:
+            print("Unable to use scraper, will use vanilla requests.get")
+            traceback.print_exc()
+            return requests.get(url, verify=False)
     else:
         return requests.get(url, verify=False)
 

@@ -980,34 +980,16 @@ def detect_and_parse_feed_content(url, soup, response):
     return feed_indicators
 
 
-INDICATOR_FUNCTIONS = {
-    'add_response_headers': add_response_headers,
-    'add_ip_address': add_ip_address,
-    ##'add_who_is': add_who_is,
-    'parse_meta_tags': parse_meta_tags,
-    'parse_script_tags': parse_script_tags,
-    'parse_iframe_ids': parse_iframe_ids,
-    'parse_id_attributes': parse_id_attributes,
-    'parse_link_tags': parse_link_tags,
-    'parse_body': parse_body,
-    'parse_footer': parse_footer,
-    'parse_google_ids': parse_tracking_ids,
-    'add_cdn_domains': add_cdn_domains,
-    'parse_domain_name': parse_domain_name,
-    'parse_classes': parse_classes,
-    #'detect_and_parse_feed_content': detect_and_parse_feed_content,
-    'get_ipms_indicators': get_ipms_indicators,
-    'get_shodan_indicators': get_shodan_indicators,
-    #'parse_cms': parse_cms,
-    #'parse_sitemaps': parse_sitemaps,
-    'add_associated_domains_from_cert': add_associated_domains_from_cert,
-    # Uncomment the following if needed
-    # 'parse_images': parse_images,
-    # 'parse_dom_tree': parse_dom_tree,
-}
+def scrape_url(url):
+    # Send a GET request to the specified URL, ignoring bad SSL certificates]
+    if len(SCRAPER_API_KEY) > 0:
+        payload = {"api_key": SCRAPER_API_KEY, "url": url}
+        return requests.get("https://api.scraperapi.com/", params=payload)
+    else:
+        return requests.get(url, verify=False)
 
 
-def crawl(url, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
+def crawl(url, run_urlscan=False):
     indicators = []
     url_submission = None
     # Add the URL to the set of visited URLs
@@ -1016,23 +998,33 @@ def crawl(url, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
     if run_urlscan:
         url_submission = start_urlscan(url)
 
-    # Send a GET request to the specified URL, ignoring bad SSL certificates]
-    if len(SCRAPER_API_KEY) > 0:
-        payload = {"api_key": SCRAPER_API_KEY, "url": url}
-        response = requests.get("https://api.scraperapi.com/", params=payload)
-    else:
-        response = requests.get(url, verify=False)
     # Parse the HTML content of the page
+    response = scrape_url(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Run only the functions that are specified
-    for function_name in functions_to_run:
-        try:
-            function_to_run = INDICATOR_FUNCTIONS.get(function_name)
-            if function_to_run:
-                indicators.extend(function_to_run(url, soup, response))
-        except Exception as e:
-            print(f"Exception occurred while running {function_name}: {e}")
+    # Run indicators
+    indicators.extend(add_response_headers(url, soup, response))
+    indicators.extend(add_ip_address(url, soup, response))
+    indicators.extend(parse_meta_tags(url, soup, response))
+    indicators.extend(parse_script_tags(url, soup, response))
+    indicators.extend(parse_iframe_ids(url, soup, response))
+    indicators.extend(parse_id_attributes(url, soup, response))
+    indicators.extend(parse_link_tags(url, soup, response))
+    indicators.extend(parse_footer(url, soup, response))
+    indicators.extend(parse_tracking_ids(url, soup, response))
+    indicators.extend(add_cdn_domains(url, soup, response))
+    indicators.extend(parse_domain_name(url, soup, response))
+    indicators.extend(parse_classes(url, soup, response))
+    indicators.extend(get_ipms_indicators(url, soup, response))
+    indicators.extend(get_shodan_indicators(url, soup, response))
+    indicators.extend(add_associated_domains_from_cert(url, soup, response))
+    ## Uncomment the following if needed
+    # indicators.extend(add_who_is(url, soup, response))
+    # indicators.extend(parse_images(url, soup, response))
+    # indicators.extend(parse_dom_tree(url, soup, response))
+    # indicators.extend(detect_and_parse_feed_content(url, soup, response))
+    # indicators.extend(parse_cms(url, soup, response))
+    # indicators.extend(parse_sitemaps(url, soup, response))
 
     if run_urlscan and url_submission is not None:
         start_time = time.time()  # Record the start time
@@ -1055,7 +1047,7 @@ def crawl(url, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
 
 
 def crawl_one_or_more_urls(
-    urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False
+    urls, run_urlscan=False
 ):
     indicators = []
     for url in urls:
@@ -1063,7 +1055,6 @@ def crawl_one_or_more_urls(
         indicators.extend(
             crawl(
                 url,
-                functions_to_run=functions_to_run,
                 run_urlscan=run_urlscan,
             )
         )
@@ -1128,12 +1119,9 @@ if __name__ == "__main__":
     run_urlscan = args.run_urlscan
     input_data = pd.read_csv(args.input_file)
     domains = input_data[domain_col]
-    for domain in domains:
+    for domain in domains[:2]:
         try:
-            # time.sleep(1)
-            indicators = crawl(
-                domain, INDICATOR_FUNCTIONS, run_urlscan=run_urlscan
-            )
+            indicators = crawl(domain, run_urlscan=run_urlscan)
             write_indicators(indicators, output_file=output_file)
         except Exception as e:
             print(f"Failing error on {domain}. See traceback below. Soldiering on...")

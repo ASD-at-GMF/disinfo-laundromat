@@ -721,11 +721,21 @@ def find_yandex_track_id(url, text):
     return find_with_regex(ga_id_pattern, text, url, "1-yandex_tag_id")
 
 
+def find_mapbox_public_access_keys(url, text):
+    pk_pattern = "pk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
+    return find_with_regex(pk_pattern, text, url, "2-mapbox_public_key")
+
+def find_mapbox_secret_access_keys(url, text):
+    sk_pattern = "sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
+    return find_with_regex(sk_pattern, text, url, "1-mapbox_secret_key")
+
 def parse_tracking_ids(url, soup, response):
     text = response.text
     tag_indicators = []
     tag_indicators.extend(find_google_analytics_id(url, text))
     tag_indicators.extend(find_google_adsense_id(url, text))
+    tag_indicators.extend(find_mapbox_public_access_keys(url, text))
+    tag_indicators.extend(find_mapbox_secret_access_keys(url, text))
     tag_indicators.extend(find_google_tag_id(url, text))
     tag_indicators.extend(find_yandex_track_id(url, text))
     tag_indicators.extend(find_adobe_analytics_id(url, text))

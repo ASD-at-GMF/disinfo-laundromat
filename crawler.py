@@ -1017,7 +1017,7 @@ def crawl(url, run_urlscan=False):
     soup = BeautifulSoup(response.text, "html.parser")
 
     # Run indicators
-    indicators.extend(add_response_headers(url, soup))
+    indicators.extend(add_response_headers(url, response=response))
     indicators.extend(add_ip_address(url))
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_script_tags(url, soup))
@@ -1025,7 +1025,7 @@ def crawl(url, run_urlscan=False):
     indicators.extend(parse_id_attributes(url, soup))
     indicators.extend(parse_link_tags(url, soup))
     indicators.extend(parse_footer(url, soup))
-    indicators.extend(parse_tracking_ids(url, soup))
+    indicators.extend(parse_tracking_ids(url, response=response))
     indicators.extend(add_cdn_domains(url, soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))

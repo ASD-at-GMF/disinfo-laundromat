@@ -61,6 +61,8 @@ def get_domain_name(url):
 
 def add_response_headers(url, response):
     header_indicators = []
+    if not response.headers:
+        return header_indicators
     for header, value in response.headers.items():
         try:
             if header.startswith("Server"):

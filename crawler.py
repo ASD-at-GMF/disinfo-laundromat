@@ -59,8 +59,10 @@ def get_domain_name(url):
     return domain_name
 
 
-def add_response_headers(url, soup, response):
+def add_response_headers(url, response):
     header_indicators = []
+    if not response.headers:
+        return header_indicators
     for header, value in response.headers.items():
         try:
             if header.startswith("Server"):
@@ -95,7 +97,7 @@ def add_indicator(url, indicator_type, indicator_content):
     }
 
 
-def add_ip_address(domain_name, soup, response):
+def add_ip_address(domain_name):
     ip_indicators = []
     if domain_name.startswith("https://"):
         host_name = domain_name[8:]
@@ -116,7 +118,7 @@ def add_ip_address(domain_name, soup, response):
         return ip_indicators
 
 
-def add_who_is(url, soup, response):
+def add_who_is(url):
     whois_indicators = []
     try:
         result = whois.whois(url)
@@ -174,7 +176,7 @@ def get_tracert(ip_address):
     return output.decode().strip().split("\n")
 
 
-def parse_classes(url, soup, response):
+def parse_classes(url, soup):
     tag_indicators = []
     used_classes = set()
     for elem in soup.select("[class]"):
@@ -184,7 +186,7 @@ def parse_classes(url, soup, response):
     return tag_indicators
 
 
-def parse_sitemaps(url, soup, response):
+def parse_sitemaps(url):
     tag_indicators = []
     tree = sitemap_tree_for_homepage(url)
     print(tree)
@@ -195,7 +197,7 @@ def parse_sitemaps(url, soup, response):
     return tag_indicators
 
 
-def parse_dom_tree(url, soup, response):
+def parse_dom_tree(url, soup):
     tag_indicators = []
     for text in soup.find_all(text=True):
         text.replace_with("")
@@ -241,7 +243,7 @@ def add_link_tags(url, href):
     return add_indicator(url, "3-link_href", href)
 
 
-def parse_meta_tags(url, soup, response):
+def parse_meta_tags(url, soup):
     meta_tags = soup.find_all("meta")
     tag_indicators = []
     # Iterate over the meta tags
@@ -260,7 +262,7 @@ def parse_meta_tags(url, soup, response):
     return tag_indicators
 
 
-def parse_script_tags(url, soup, response):
+def parse_script_tags(url, soup):
     script_tags = soup.find_all("script")
     tag_indicators = []
     # Iterate over the meta tags
@@ -274,13 +276,13 @@ def parse_script_tags(url, soup, response):
     return tag_indicators
 
 
-def parse_id_attributes(url, soup, response):
+def parse_id_attributes(url, soup):
     ids = [element["id"] for element in soup.find_all(id=True)]
     id_indicators = [add_indicator(url, "3-id_tags", ids)]
     return id_indicators
 
 
-def parse_iframe_ids(url, soup, response):
+def parse_iframe_ids(url, soup):
     iframe_ids = [
         iframe["id"] for iframe in soup.find_all("iframe") if "id" in iframe.attrs
     ]
@@ -290,7 +292,7 @@ def parse_iframe_ids(url, soup, response):
     return iframe_indicators
 
 
-def parse_link_tags(url, soup, response):
+def parse_link_tags(url, soup):
     link_tags = soup.find_all("link")
     href_links = [link["href"] for link in link_tags if link.has_attr("href")]
     tag_indicators = []
@@ -445,18 +447,21 @@ def parse_shodan_json(shodan_json, domain):
     return shodan_indicators
 
 
-def get_shodan_indicators(url, soup, response):
+def get_shodan_indicators(url):
     shodan_indicators = []
     domain = get_domain_name(url)
-    ip = socket.gethostbyname(domain)
+    try:
+        ip = socket.gethostbyname(domain)
 
-    shodan_json = fetch_shodan_data(ip)
-    shodan_indicators = parse_shodan_json(shodan_json, domain)
+        shodan_json = fetch_shodan_data(ip)
+        shodan_indicators = parse_shodan_json(shodan_json, domain)
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return shodan_indicators
 
-    return shodan_indicators
 
-
-def get_ipms_indicators(url, soup, response):
+def get_ipms_indicators(url):
     ipms_indicators = []
     try:
         if len(MYIPMS_API_PATH) > 0:
@@ -582,7 +587,7 @@ def add_meta_generic_tags(url, name, content):
     }
 
 
-def parse_body(url, soup, response):
+def parse_body(url, response):
     text = response.text
     tag_indicators = []
     tag_indicators.extend(find_uuids(url, text))
@@ -591,7 +596,7 @@ def parse_body(url, soup, response):
     return tag_indicators
 
 
-def parse_footer(url, soup, response):
+def parse_footer(url, soup):
     tag_indicators = []
 
     footer = soup.find("footer")
@@ -654,23 +659,27 @@ def find_wallet_transactions(url, wallet_type, wallet):
     return tag_indicators
 
 
-def add_associated_domains_from_cert(url, soup, response):
-    port = 443
-
-    cert = ssl.get_server_certificate((get_domain_name(url), port))
-    x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
-
-    sans = []
-    for i in range(x509.get_extension_count()):
-        ext = x509.get_extension(i)
-        if ext.get_short_name() == b"subjectAltName":
-            ext_val = ext.__str__()
-            sans = ext_val.replace("DNS:", "").split(",")
-
+def add_associated_domains_from_cert(url):
     tag_indicators = []
-    for san in sans:
-        tag_indicators.append(add_indicator(url, "1-cert-domain", san))
-    return tag_indicators
+    try:
+        port = 443
+
+        cert = ssl.get_server_certificate((get_domain_name(url), port))
+        x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
+
+        sans = []
+        for i in range(x509.get_extension_count()):
+            ext = x509.get_extension(i)
+            if ext.get_short_name() == b"subjectAltName":
+                ext_val = ext.__str__()
+                sans = ext_val.replace("DNS:", "").split(",")
+
+        for san in sans:
+            tag_indicators.append(add_indicator(url, "1-cert-domain", san))
+    except Exception as e:
+        traceback.print_exc()
+    finally:
+        return tag_indicators
 
 
 def find_google_analytics_id(url, text):
@@ -729,7 +738,7 @@ def find_mapbox_secret_access_keys(url, text):
     sk_pattern = "sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
     return find_with_regex(sk_pattern, text, url, "1-mapbox_secret_key")
 
-def parse_tracking_ids(url, soup, response):
+def parse_tracking_ids(url, response):
     text = response.text
     tag_indicators = []
     tag_indicators.extend(find_google_analytics_id(url, text))
@@ -747,7 +756,7 @@ def parse_tracking_ids(url, soup, response):
     return tag_indicators
 
 
-def add_cdn_domains(url, soup, response):
+def add_cdn_domains(url, soup):
     tag_indicators = []
 
     img_tags = soup.find_all("img")
@@ -795,7 +804,7 @@ def find_second_level_domain(url):
     return tag_indicators
 
 
-def parse_domain_name(url, soup, response):
+def parse_domain_name(url):
     tag_indicators = []
     tag_indicators.extend(find_domain_suffix(url))
     tag_indicators.extend(find_second_level_domain(url))
@@ -956,7 +965,7 @@ def parse_wordpress(url):
     return wp_indicators
 
 
-def detect_and_parse_feed_content(url, soup, response):
+def detect_and_parse_feed_content(url):
     feed_indicators = []
     feed = None
 
@@ -980,60 +989,56 @@ def detect_and_parse_feed_content(url, soup, response):
     return feed_indicators
 
 
-INDICATOR_FUNCTIONS = {
-    'add_response_headers': add_response_headers,
-    'add_ip_address': add_ip_address,
-    ##'add_who_is': add_who_is,
-    'parse_meta_tags': parse_meta_tags,
-    'parse_script_tags': parse_script_tags,
-    'parse_iframe_ids': parse_iframe_ids,
-    'parse_id_attributes': parse_id_attributes,
-    'parse_link_tags': parse_link_tags,
-    'parse_body': parse_body,
-    'parse_footer': parse_footer,
-    'parse_google_ids': parse_tracking_ids,
-    'add_cdn_domains': add_cdn_domains,
-    'parse_domain_name': parse_domain_name,
-    'parse_classes': parse_classes,
-    #'detect_and_parse_feed_content': detect_and_parse_feed_content,
-    'get_ipms_indicators': get_ipms_indicators,
-    'get_shodan_indicators': get_shodan_indicators,
-    #'parse_cms': parse_cms,
-    #'parse_sitemaps': parse_sitemaps,
-    'add_associated_domains_from_cert': add_associated_domains_from_cert,
-    # Uncomment the following if needed
-    # 'parse_images': parse_images,
-    # 'parse_dom_tree': parse_dom_tree,
-}
+def scrape_url(url):
+    # Send a GET request to the specified URL, ignoring bad SSL certificates]
+    if len(SCRAPER_API_KEY) > 0:
+        try:
+            payload = {"api_key": SCRAPER_API_KEY, "url": url}
+            return requests.get("https://api.scraperapi.com/", params=payload)
+        except requests.exceptions.ConnectionError:
+            print("Unable to use scraper, will use vanilla requests.get")
+            traceback.print_exc()
+            return requests.get(url, verify=False)
+    else:
+        return requests.get(url, verify=False)
 
 
-def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False):
+def crawl(url, run_urlscan=False):
     indicators = []
     url_submission = None
     # Add the URL to the set of visited URLs
     domain = get_domain_name(url)
-    visited_urls.add(domain)
 
     if run_urlscan:
         url_submission = start_urlscan(url)
 
-    # Send a GET request to the specified URL, ignoring bad SSL certificates]
-    if len(SCRAPER_API_KEY) > 0:
-        payload = {"api_key": SCRAPER_API_KEY, "url": url}
-        response = requests.get("https://api.scraperapi.com/", params=payload)
-    else:
-        response = requests.get(url, verify=False)
     # Parse the HTML content of the page
+    response = scrape_url(url)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Run only the functions that are specified
-    for function_name in functions_to_run:
-        try:
-            function_to_run = INDICATOR_FUNCTIONS.get(function_name)
-            if function_to_run:
-                indicators.extend(function_to_run(url, soup, response))
-        except Exception as e:
-            print(f"Exception occurred while running {function_name}: {e}")
+    # Run indicators
+    indicators.extend(add_response_headers(url, soup))
+    indicators.extend(add_ip_address(url))
+    indicators.extend(parse_meta_tags(url, soup))
+    indicators.extend(parse_script_tags(url, soup))
+    indicators.extend(parse_iframe_ids(url, soup))
+    indicators.extend(parse_id_attributes(url, soup))
+    indicators.extend(parse_link_tags(url, soup))
+    indicators.extend(parse_footer(url, soup))
+    indicators.extend(parse_tracking_ids(url, soup))
+    indicators.extend(add_cdn_domains(url, soup))
+    indicators.extend(parse_domain_name(url))
+    indicators.extend(parse_classes(url, soup))
+    indicators.extend(get_ipms_indicators(url))
+    indicators.extend(get_shodan_indicators(url))
+    indicators.extend(add_associated_domains_from_cert(url))
+    ## Uncomment the following if needed
+    # indicators.extend(add_who_is(url))
+    # indicators.extend(parse_images(url, soup, response))
+    # indicators.extend(parse_dom_tree(url, soup))
+    # indicators.extend(detect_and_parse_feed_content(url))
+    # indicators.extend(parse_cms(url, soup, response))
+    # indicators.extend(parse_sitemaps(url))
 
     if run_urlscan and url_submission is not None:
         start_time = time.time()  # Record the start time
@@ -1056,7 +1061,7 @@ def crawl(url, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=F
 
 
 def crawl_one_or_more_urls(
-    urls, visited_urls, functions_to_run=INDICATOR_FUNCTIONS, run_urlscan=False
+    urls, run_urlscan=False
 ):
     indicators = []
     for url in urls:
@@ -1064,8 +1069,6 @@ def crawl_one_or_more_urls(
         indicators.extend(
             crawl(
                 url,
-                visited_urls,
-                functions_to_run=functions_to_run,
                 run_urlscan=run_urlscan,
             )
         )
@@ -1098,7 +1101,6 @@ def write_indicators(indicators, output_file):
 
 
 if __name__ == "__main__":
-    visited_urls = set()
     parser = argparse.ArgumentParser(
         description="Match indicators across sites.", add_help=False
     )
@@ -1133,10 +1135,7 @@ if __name__ == "__main__":
     domains = input_data[domain_col]
     for domain in domains:
         try:
-            # time.sleep(1)
-            indicators = crawl(
-                domain, visited_urls, INDICATOR_FUNCTIONS, run_urlscan=run_urlscan
-            )
+            indicators = crawl(domain, run_urlscan=run_urlscan)
             write_indicators(indicators, output_file=output_file)
         except Exception as e:
             print(f"Failing error on {domain}. See traceback below. Soldiering on...")

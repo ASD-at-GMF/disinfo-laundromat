@@ -13,7 +13,7 @@ from OpenSSL import crypto
 import traceback
 import yaml
 import json
-import tldextract
+from tldextract import tldextract
 import imagehash
 import subprocess
 import blockcypher
@@ -25,6 +25,7 @@ import feedparser
 import hashlib
 import datetime
 import whois
+from id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY
 
 visited = set()
@@ -617,13 +618,13 @@ def find_with_regex(regex, text, url, indicator_type):
 
 
 def find_uuids(url, text):
-    uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    uuid_pattern = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     return find_with_regex(uuid_pattern, text, url, "3-uuid")
 
 
 def find_wallets(url, text):
     tag_indicators = []
-    crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
+    crypto_wallet_pattern = r"[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
 
     btc_address_regex = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
     btc_matches = set(re.findall(btc_address_regex, text))
@@ -677,83 +678,34 @@ def add_associated_domains_from_cert(url):
         for san in sans:
             tag_indicators.append(add_indicator(url, "1-cert-domain", san))
     except Exception as e:
+        print(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
         traceback.print_exc()
     finally:
         return tag_indicators
 
 
-def find_google_analytics_id(url, text):
-    ga_id_pattern = "(UA-\d{6,}|UA-\d{6,}-\d{1})"
-    return find_with_regex(ga_id_pattern, text, url, "1-ga_id")
-
-def find_google_adsense_id(url, text):
-    adsense_id_pattern = "pub-\d{10,20}"
-    return find_with_regex(adsense_id_pattern, text, url, "1-adsense_id")
-
-def find_google_tag_id(url, text):
-    ga_id_pattern = "(G-([A-Za-z0-9]{6,16})|GTM-[A-Za-z0-9]{6,16}|AW-[A-Za-z0-9]{6,16}|GT-([A-Za-z0-9]{6,16}))"
-    return find_with_regex(ga_id_pattern, text, url, "1-ga_tag_id")
-
-
-def find_adobe_analytics_id(url, text):
-    pattern = "s\.account\s*=\s*[\"']([^\"']+)[\"']"
-    return find_with_regex(pattern, text, url, "1-adobe_analytics_id")
-
-
-def find_facebook_pixel_id(url, text):
-    pattern = "fbq\('init',\s*'(\d+)'\)"
-    return find_with_regex(pattern, text, url, "1-fb_pixel_id")
-
-
-def find_hotjar_id(url, text):
-    pattern = "hjid\s*=\s*(\d+)"
-    return find_with_regex(pattern, text, url, "1-hotjar_id")
-
-
-def find_microsoft_clarity_id(url, text):
-    pattern = "clarity\s*:\s*{.*?projectId\s*:\s*[\"']([^\"']+)[\"']"
-    return find_with_regex(pattern, text, url, "1-ms_clarity_id")
-
-
-def find_pinterest_tag_id(url, text):
-    pattern = "pintrk\('load',\s*'([^']+)'\)"
-    return find_with_regex(pattern, text, url, "1-pinterest_tag_id")
-
-
-def find_linkedin_insight_id(url, text):
-    pattern = "linkedin_insight\s*:\s*{.*?partnerId\s*:\s*(\d+)"
-    return find_with_regex(pattern, text, url, "1-linkedin_insight_id")
-
-
-def find_yandex_track_id(url, text):
-    ga_id_pattern = "ym\(\d{8}"
-    return find_with_regex(ga_id_pattern, text, url, "1-yandex_tag_id")
-
-
-def find_mapbox_public_access_keys(url, text):
-    pk_pattern = "pk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
-    return find_with_regex(pk_pattern, text, url, "2-mapbox_public_key")
-
-def find_mapbox_secret_access_keys(url, text):
-    sk_pattern = "sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
-    return find_with_regex(sk_pattern, text, url, "1-mapbox_secret_key")
-
 def parse_tracking_ids(url, response):
-    text = response.text
     tag_indicators = []
-    tag_indicators.extend(find_google_analytics_id(url, text))
-    tag_indicators.extend(find_google_adsense_id(url, text))
-    tag_indicators.extend(find_mapbox_public_access_keys(url, text))
-    tag_indicators.extend(find_mapbox_secret_access_keys(url, text))
-    tag_indicators.extend(find_google_tag_id(url, text))
-    tag_indicators.extend(find_yandex_track_id(url, text))
-    tag_indicators.extend(find_adobe_analytics_id(url, text))
-    tag_indicators.extend(find_facebook_pixel_id(url, text))
-    tag_indicators.extend(find_hotjar_id(url, text))
-    tag_indicators.extend(find_linkedin_insight_id(url, text))
-    tag_indicators.extend(find_microsoft_clarity_id(url, text))
-    tag_indicators.extend(find_pinterest_tag_id(url, text))
+    for id_type, pattern in TRACKING_IDS.items():
+        id_indicators = find_with_regex(regex=pattern, text=response.text, url=url, indicator_type=id_type)
+        tag_indicators.extend(id_indicators)
     return tag_indicators
+
+def parse_embedded_ids(url, response):
+    tag_indicators = []
+    for id_type, pattern in EMBEDDED_IDS.items():
+        id_indicators = find_with_regex(regex=pattern, text=response.text, url=url, indicator_type=id_type)
+        tag_indicators.extend(id_indicators)
+    return tag_indicators
+
+
+def parse_social_media_ids(url, response):
+    text  = response.text
+    social_indicators = []
+    for platform, pattern in SOCIAL_MEDIA_IDS.items():
+        platform_indicators = find_with_regex(pattern, text, url, indicator_type=platform)
+        social_indicators.extend(platform_indicators)
+    return social_indicators
 
 
 def add_cdn_domains(url, soup):
@@ -912,7 +864,7 @@ def get_endpoints(url, endpoints):
     return ''
 
 
-def parse_cms(url, soup, response):
+def parse_cms(url):
     # TODO: add more CMSs
     cms_indicators = []
     cms = None
@@ -1018,7 +970,7 @@ def crawl(url, run_urlscan=False):
 
     # Run indicators
     indicators.extend(add_response_headers(url, response=response))
-    indicators.extend(add_ip_address(url))
+    indicators.extend(add_ip_address(domain_name=url))
     indicators.extend(parse_meta_tags(url, soup))
     indicators.extend(parse_script_tags(url, soup))
     indicators.extend(parse_iframe_ids(url, soup))
@@ -1026,6 +978,8 @@ def crawl(url, run_urlscan=False):
     indicators.extend(parse_link_tags(url, soup))
     indicators.extend(parse_footer(url, soup))
     indicators.extend(parse_tracking_ids(url, response=response))
+    indicators.extend(parse_embedded_ids(url, response=response))
+    indicators.extend(parse_social_media_ids(url, response=response))
     indicators.extend(add_cdn_domains(url, soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(url, soup))
@@ -1037,7 +991,7 @@ def crawl(url, run_urlscan=False):
     # indicators.extend(parse_images(url, soup, response))
     # indicators.extend(parse_dom_tree(url, soup))
     # indicators.extend(detect_and_parse_feed_content(url))
-    # indicators.extend(parse_cms(url, soup, response))
+    # indicators.extend(parse_cms(url))
     # indicators.extend(parse_sitemaps(url))
 
     if run_urlscan and url_submission is not None:

@@ -13,7 +13,7 @@ from OpenSSL import crypto
 import traceback
 import yaml
 import json
-import tldextract
+from tldextract import tldextract
 import imagehash
 import subprocess
 import blockcypher
@@ -46,17 +46,11 @@ def valid_url(url):
 
 
 def get_domain_name(url):
-    # Parse the URL using urlparse
-    parsed_url = urlparse(url)
-
-    # Get the domain name from the netloc attribute
-    domain_name = parsed_url.netloc
-
-    # Remove the www. prefix from the domain name
-    if domain_name.startswith("www."):
-        domain_name = domain_name[4:]
-
-    return domain_name
+    tsd, td, tsu = tldextract.extract(url)
+    if not tsd or tsd == 'www':
+        return f"{td}.{tsu}"
+    else:
+        return f"{tsd}.{td}.{tsu}"
 
 
 def add_response_headers(url, response):
@@ -617,13 +611,13 @@ def find_with_regex(regex, text, url, indicator_type):
 
 
 def find_uuids(url, text):
-    uuid_pattern = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    uuid_pattern = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     return find_with_regex(uuid_pattern, text, url, "3-uuid")
 
 
 def find_wallets(url, text):
     tag_indicators = []
-    crypto_wallet_pattern = "[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
+    crypto_wallet_pattern = r"[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
 
     btc_address_regex = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
     btc_matches = set(re.findall(btc_address_regex, text))
@@ -677,65 +671,66 @@ def add_associated_domains_from_cert(url):
         for san in sans:
             tag_indicators.append(add_indicator(url, "1-cert-domain", san))
     except Exception as e:
+        print(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
         traceback.print_exc()
     finally:
         return tag_indicators
 
 
 def find_google_analytics_id(url, text):
-    ga_id_pattern = "(UA-\d{6,}|UA-\d{6,}-\d{1})"
+    ga_id_pattern = r"(UA-\d{6,}|UA-\d{6,}-\d{1})"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_id")
 
 def find_google_adsense_id(url, text):
-    adsense_id_pattern = "pub-\d{10,20}"
+    adsense_id_pattern = r"pub-\d{10,20}"
     return find_with_regex(adsense_id_pattern, text, url, "1-adsense_id")
 
 def find_google_tag_id(url, text):
-    ga_id_pattern = "(G-([A-Za-z0-9]{6,16})|GTM-[A-Za-z0-9]{6,16}|AW-[A-Za-z0-9]{6,16}|GT-([A-Za-z0-9]{6,16}))"
+    ga_id_pattern = r"(G-([A-Za-z0-9]{6,16})|GTM-[A-Za-z0-9]{6,16}|AW-[A-Za-z0-9]{6,16}|GT-([A-Za-z0-9]{6,16}))"
     return find_with_regex(ga_id_pattern, text, url, "1-ga_tag_id")
 
 
 def find_adobe_analytics_id(url, text):
-    pattern = "s\.account\s*=\s*[\"']([^\"']+)[\"']"
+    pattern = r"s\.account\s*=\s*[\"']([^\"']+)[\"']"
     return find_with_regex(pattern, text, url, "1-adobe_analytics_id")
 
 
 def find_facebook_pixel_id(url, text):
-    pattern = "fbq\('init',\s*'(\d+)'\)"
+    pattern = r"fbq\('init',\s*'(\d+)'\)"
     return find_with_regex(pattern, text, url, "1-fb_pixel_id")
 
 
 def find_hotjar_id(url, text):
-    pattern = "hjid\s*=\s*(\d+)"
+    pattern = r"hjid\s*=\s*(\d+)"
     return find_with_regex(pattern, text, url, "1-hotjar_id")
 
 
 def find_microsoft_clarity_id(url, text):
-    pattern = "clarity\s*:\s*{.*?projectId\s*:\s*[\"']([^\"']+)[\"']"
+    pattern = r"clarity\s*:\s*{.*?projectId\s*:\s*[\"']([^\"']+)[\"']"
     return find_with_regex(pattern, text, url, "1-ms_clarity_id")
 
 
 def find_pinterest_tag_id(url, text):
-    pattern = "pintrk\('load',\s*'([^']+)'\)"
+    pattern = r"pintrk\('load',\s*'([^']+)'\)"
     return find_with_regex(pattern, text, url, "1-pinterest_tag_id")
 
 
 def find_linkedin_insight_id(url, text):
-    pattern = "linkedin_insight\s*:\s*{.*?partnerId\s*:\s*(\d+)"
+    pattern = r"linkedin_insight\s*:\s*{.*?partnerId\s*:\s*(\d+)"
     return find_with_regex(pattern, text, url, "1-linkedin_insight_id")
 
 
 def find_yandex_track_id(url, text):
-    ga_id_pattern = "ym\(\d{8}"
+    ga_id_pattern = r"ym\(\d{8}"
     return find_with_regex(ga_id_pattern, text, url, "1-yandex_tag_id")
 
 
 def find_mapbox_public_access_keys(url, text):
-    pk_pattern = "pk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
+    pk_pattern = r"pk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
     return find_with_regex(pk_pattern, text, url, "2-mapbox_public_key")
 
 def find_mapbox_secret_access_keys(url, text):
-    sk_pattern = "sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
+    sk_pattern = r"sk\.ey[a-zA-Z0-9]{50,90}\.[a-zA-Z0-9\-]{10,30}"
     return find_with_regex(sk_pattern, text, url, "1-mapbox_secret_key")
 
 def parse_tracking_ids(url, response):

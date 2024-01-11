@@ -1,6 +1,3 @@
-import re
-
-
 TRACKING_IDS = {
     "1-ga_id": r"(UA-\d{6,}|UA-\d{6,}-\d{1})",
     "1-adsense_id": r"pub-\d{10,20}",

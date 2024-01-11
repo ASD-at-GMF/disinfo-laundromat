@@ -47,11 +47,17 @@ def valid_url(url):
 
 
 def get_domain_name(url):
-    tsd, td, tsu = tldextract.extract(url)
-    if not tsd or tsd == 'www':
-        return f"{td}.{tsu}"
-    else:
-        return f"{tsd}.{td}.{tsu}"
+    # Parse the URL using urlparse
+    parsed_url = urlparse(url)
+
+    # Get the domain name from the netloc attribute
+    domain_name = parsed_url.netloc
+
+    # Remove the www. prefix from the domain name
+    if domain_name.startswith("www."):
+        domain_name = domain_name[4:]
+
+    return domain_name
 
 
 def add_response_headers(url, response):
@@ -694,7 +700,7 @@ def parse_embedded_ids(url, response):
 
 
 def parse_social_media_ids(url, response):
-    text  = response.text # could be outbound links instead
+    text  = response.text
     social_indicators = []
     for platform, pattern in SOCIAL_MEDIA_IDS.items():
         platform_indicators = find_with_regex(pattern, text, url, indicator_type=platform)

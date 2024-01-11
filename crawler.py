@@ -47,17 +47,11 @@ def valid_url(url):
 
 
 def get_domain_name(url):
-    # Parse the URL using urlparse
-    parsed_url = urlparse(url)
-
-    # Get the domain name from the netloc attribute
-    domain_name = parsed_url.netloc
-
-    # Remove the www. prefix from the domain name
-    if domain_name.startswith("www."):
-        domain_name = domain_name[4:]
-
-    return domain_name
+    sd, d, su = tldextract.extract(url)
+    if not sd or sd == 'www':
+        return f"{d}.{su}"
+    else:
+        return f"{sd}.{d}.{su}"
 
 
 def add_response_headers(response):
@@ -935,7 +929,7 @@ def get_outbound_domains(url, soup):
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
                 outbound_domains.add(link_domain)
-    return [add_indicator(url=url, indicator_content=domain, indicator_type="4-outbound-domain") for domain in outbound_domains]
+    return [add_indicator(indicator_content=domain, indicator_type="4-outbound-domain") for domain in outbound_domains]
 
 
 def scrape_url(url):

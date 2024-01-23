@@ -47,17 +47,11 @@ def valid_url(url):
 
 
 def get_domain_name(url):
-    # Parse the URL using urlparse
-    parsed_url = urlparse(url)
-
-    # Get the domain name from the netloc attribute
-    domain_name = parsed_url.netloc
-
-    # Remove the www. prefix from the domain name
-    if domain_name.startswith("www."):
-        domain_name = domain_name[4:]
-
-    return domain_name
+    sd, d, su = tldextract.extract(url)
+    if not sd or sd == 'www':
+        return f"{d}.{su}"
+    else:
+        return f"{sd}.{d}.{su}"
 
 
 def add_response_headers(response):
@@ -922,6 +916,21 @@ def detect_and_parse_feed_content(url):
 
     return feed_indicators
 
+def get_outbound_domains(url, soup):
+    outbound_domains = set()
+    _, od, osu = get_domain_name(url)
+    a_tags = soup.find_all("a")
+    for a_tag in a_tags:
+        link_url = a_tag.get('href', '').lower()
+        if not link_url or link_url.startswith('tel') or link_url.startswith('mail'):
+            continue
+        _, td, tsu = tldextract.extract(link_url)
+        if tsu and td:
+            link_domain = f"{td}.{tsu}"
+            if link_domain != f"{od}.{osu}":
+                outbound_domains.add(link_domain)
+    return [add_indicator(indicator_content=domain, indicator_type="4-outbound-domain") for domain in outbound_domains]
+
 
 def scrape_url(url):
     # Send a GET request to the specified URL, ignoring bad SSL certificates]
@@ -966,6 +975,7 @@ def crawl(url, run_urlscan=False):
     indicators.extend(get_ipms_indicators(url))
     indicators.extend(get_shodan_indicators(url))
     indicators.extend(add_associated_domains_from_cert(url))
+    indicators.extend(get_outbound_domains(url, soup))
     ## Uncomment the following if needed
     # indicators.extend(add_who_is(url))
     # indicators.extend(parse_images(url, soup, response))

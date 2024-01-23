@@ -25,7 +25,7 @@ import feedparser
 import hashlib
 import datetime
 import whois
-from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY
+from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY, PATH_TO_OUTPUT_CSV
 
 visited = set()
 

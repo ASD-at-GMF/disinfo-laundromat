@@ -21,11 +21,12 @@ import io
 import zipfile
 
 # Paramaterizable Variables
-from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER
+from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER, PATH_TO_OUTPUT_CSV, MATCH_VALUES_TO_IGNORE
 from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE
 # Import all your functions here
 from crawler import crawl_one_or_more_urls
 from matcher import find_matches
+from modules.email import send_results_email
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -150,11 +151,12 @@ def fingerprint():
     if request.method == 'POST':
         url = request.form['url']
         run_urlscan =  'run_urlscan' in request.form
+        internal_only = 'internal_only' in request.form
         # Do something with the url using your functions
         try:
             urls = url.split(',')
             
-            indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, run_urlscan = run_urlscan)
+            indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, run_urlscan = run_urlscan, internal_only = internal_only)
 
             return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
 
@@ -163,21 +165,28 @@ def fingerprint():
 
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
 
-def find_indicators_and_matches(urls, run_urlscan = False):
+
+def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False):
     indicators = crawl_one_or_more_urls(urls, run_urlscan = run_urlscan)
     indicator_summary = summarize_indicators(indicators)
     indicators_df = pd.DataFrame(
         columns=["indicator_type", "indicator_content", "domain_name"],
         data=indicators,
     )
+    filter_mask = ~indicators_df['indicator_content'].isin(MATCH_VALUES_TO_IGNORE)
+    indicators_df = indicators_df[filter_mask]
 
     insert_indicators(indicators)
 
-
-    comparison_indicators = pd.read_csv(
-        KNOWN_INDICATORS)  # read the csv file
-    
-    comparison_indicators = pd.concat([indicators_df, comparison_indicators])
+    if internal_only:
+        comparison_indicators = indicators_df
+    else:
+        comparison_indicators = pd.read_csv(
+            KNOWN_INDICATORS)  # read the csv file
+        
+        comparison_indicators = pd.concat([indicators_df, comparison_indicators])
+    filter_mask = ~comparison_indicators['indicator_content'].isin(MATCH_VALUES_TO_IGNORE)
+    comparison_indicators = comparison_indicators[filter_mask]
     # print(indicators_df.head(), comparison_indicators.head())
     # Find matches
     # Split DataFrame into smaller DataFrames based on 'domain'
@@ -206,13 +215,17 @@ def content():
         combineOperator = request.form.get('combineOperator')
         language = request.form.get('language')
         country = request.form.get('country')
+        engines = request.form.getlist('search_engines')
+
+        if engines == ['all'] or engines == []:
+            engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
 
         if not title_query and not content_query:
             # Error message if neither is provided
             flash("Please provide at least a title or content query.")
         else:
             results, csv_data = fetch_content_results(
-                title_query, content_query, combineOperator, language, country)
+                title_query, content_query, combineOperator, language, country, engines=engines)
 
     return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
 
@@ -220,6 +233,11 @@ def content():
 @app.route('/parse-url', methods=['POST'])
 def parse_url():
     url = request.form['url']
+    engines = request.form.getlist('search_engines')
+
+    if engines == ['all'] or engines == []:
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+
     if not url:
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
     try:
@@ -229,7 +247,7 @@ def parse_url():
         article.parse()
 
         results, csv_data = fetch_content_results(
-                article.title, article.text, "OR", "en", "us")
+                article.title, article.text, "OR", "en", "us", engines=engines)
 
         return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
 
@@ -250,6 +268,7 @@ def parse_url():
 @app.route('/content-csv', methods=['POST'])
 def upload_file():
     file = request.files['file']
+    email_recipient = request.form.get('email')
     if file:
         stream = io.StringIO(file.stream.read().decode("UTF8"), newline='')
         csv_input = csv.DictReader(stream)
@@ -259,18 +278,19 @@ def upload_file():
         csv_output = csv.writer(output_stream)
         csv_output.writerow(['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
 
+        results_df = pd.DataFrame(columns=['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
         # Process each URL in the CSV
         for row in csv_input:
             searched_url = row.get("Urls")
             try:
-                if  'title' in row and 'content' in row:
-                    title_query = row['title']
-                    content_query = row['content']
+                # if  'title' in row and 'content' in row:
+                #     title_query = row['title']
+                #     content_query = row['content']
 
-                    #todo: add language and country from csv
+                #     #todo: add language and country from csv
 
-                    results, csv_data = fetch_content_results(
-                        title_query, content_query, "OR", "en","us")
+                #     results, csv_data = fetch_content_results(
+                #         title_query, content_query, "OR", "en","us", engines=['google', 'google_news', 'bing', 'bing_news', 'yahoo', 'yandex'])
 
                 if searched_url:
                     
@@ -280,12 +300,14 @@ def upload_file():
 
                     #todo: add language and country from csv
                     results, csv_data = fetch_content_results(
-                        article.title, article.text, "OR", "en","us")
-            
-                    # Write the results to the output CSV
-                    for result in results:
-                        csv_output.writerow([
-                            searched_url,
+                        article.title, article.text, "OR", "en","us", engines=['google', 'bing',  'yandex'])
+                # Initialize an empty list to hold all the new rows
+                all_new_rows = []
+
+                # Loop through the results and create a list of new rows
+                for result in results:
+                    new_row = [searched_url,
+
                             result['domain'],
                             ', '.join(result['source']),
                             result['url'],
@@ -294,37 +316,51 @@ def upload_file():
                             result['link_count'],
                             ', '.join(result['engines']),
                             result['domain_count'],
-                            result['score']
-                        ])
+                            result['score']]
+                    
+                    all_new_rows.append(new_row)
+
+                # Create a DataFrame from the list of new rows
+                new_rows_df = pd.DataFrame(all_new_rows, columns=results_df.columns)
+
+                # Concatenate this new DataFrame with the existing one
+                results_df = pd.concat([results_df, new_rows_df], ignore_index=True)
 
             except Exception as e:
                 print(f"Error processing {searched_url}: {e}, continuing...")
+                        # Reset file pointer to the beginning
+                results_df.to_csv('out_partial.csv', index=False)
+
                 continue
 
         # Reset file pointer to the beginning
-        output_stream.seek(0)
-        # Save the in-memory file to the server
-        with open("output.csv", "w", encoding='utf-8') as f:
-            f.write(output_stream.getvalue())
-
-        return send_file("output.csv", as_attachment=True)
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+        results_df.to_csv(PATH_TO_OUTPUT_CSV, index=False)
+        try:
+            send_results_email(
+             email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", PATH_TO_OUTPUT_CSV)
+        except Exception as e:
+            print(f"Error sending email: {e}, continuing...")
+        finally:
+            return send_file( PATH_TO_OUTPUT_CSV, as_attachment=True)
 
 @app.route('/fingerprint-csv', methods=['POST'])
 def fingerprint_file():
     file = request.files['fingerprint-file']
-    if file:
+    internal_only = 'internal_only' in request.form
+    if file:    
         df_urls = pd.read_csv(StringIO(file.read().decode('utf-8')))
         urls = df_urls['Urls'].tolist()  # Assuming 'Urls' is the column name
 
         # The find_indicators_and_matches function should be defined elsewhere
-        indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls)
+        indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, internal_only = internal_only)
 
         # Save dataframes as csv in memory
         indicators_csv = StringIO()
         matches_csv = StringIO()
         indicators_df.to_csv(indicators_csv, index=False)
         matches_df.to_csv(matches_csv, index=False)
+
+        indicators_df.to_csv('indicators_partial.csv', index=False)
         
         # Reset the pointer of StringIO objects
         indicators_csv.seek(0)
@@ -429,7 +465,6 @@ def fetch_copyscape_results(title_query, content_query, combineOperator, languag
             print("No matches in CopyScape data or an error occurred")
             return None
 
-
     except requests.RequestException as e:
         print(f"Error during request: {e}")
         return None
@@ -466,7 +501,7 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         return None
 
 
-def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'GDELT', 'CopyScape']):
+def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
     title_query = truncate_text(title_query)
     content_query = truncate_text(content_query)
 
@@ -546,16 +581,16 @@ def format_gdelt_output(data):
         })
     return output
 
-def fetch_serp_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'GDELT', 'CopyScape']):
+def fetch_serp_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github(
         'https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
     results_gdelt = None
-    if 'GDELT' in engines:
+    if 'gdelt' in engines:
         results_gdelt = fetch_gdelt_results(
             title_query, content_query, combineOperator, language, country)
     results_cs = None
-    if COPYSCAPE_API_KEY and COPYSCAPE_USER and 'CopyScape' in engines:
+    if COPYSCAPE_API_KEY and COPYSCAPE_USER and 'copyscape' in engines:
         results_cs = fetch_copyscape_results(
             title_query, content_query, combineOperator, language, country)
 
@@ -862,3 +897,4 @@ def fetch_domains_from_github(url):
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
+ 

@@ -19,6 +19,7 @@ from difflib import SequenceMatcher
 from collections import Counter
 import io
 import zipfile
+import numpy as np
 
 # Paramaterizable Variables
 from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER, PATH_TO_OUTPUT_CSV, MATCH_VALUES_TO_IGNORE
@@ -200,6 +201,7 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
         grouped_matches_df = find_matches(grouped_indicators_df, comparison=comparison_indicators)
         matches_df = pd.concat([matches_df, grouped_matches_df])
     matches_df.reset_index(drop=True, inplace=True)
+    matches_df = matches_df.replace({np.nan: None})
     matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
 
     return indicators_df, matches_df, indicator_summary, matches_summary

@@ -69,6 +69,44 @@
             $('#indicators_table').DataTable();
             $('#matches_table').DataTable();
         });
+        function openTabContent(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Open the default tab (e.g., 'URLSearch')
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelector('.tablinks').click();
+        });
+
+        function openTabFingerprint(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent-fingerprint");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks-fingerprint");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Open the default tab (e.g., 'URLSearch')
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelector('.tablinks-fingerprint').click();
+        });
+
     </script>
 </head>
 
@@ -102,69 +140,82 @@
             database, and copyscape for text that closely match your
             query. Searching by URL attempts to automatically parses the title and content, but will not be successful
             for all articles</p>
-        <h4 class="mt-3">By URL</h4>
-        <div class="row">
-            <div class="col-md-12">
-                <form method="POST" action="/parse-url">
-                    <div class="form-group">
-                        <label for="url"><strong>Enter Article URL:</strong> (Enter the full url, e.g.
-                            https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a
-                            title/content query if prompted) </label>
-                        <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </form>
-            </div>
+        <div class="tab">
+            <button class="tablinks" onclick="openTabContent(event, 'URLSearch')">By URL</button>
+            <button class="tablinks" onclick="openTabContent(event, 'TitleContentSearch')">By Title and/or
+                Content</button>
+            <button class="tablinks" onclick="openTabContent(event, 'BatchSearch')">Batch Content Search</button>
         </div>
-        <hr />
-        <h4 class="mt-3">By Title and/or Content</h4>
-        <form method="post" action="/content">
+        <div id="URLSearch" class="tabcontent">
+            <h4 class="mt-3">By URL</h4>
             <div class="row">
-                <div class="form-group col-md-5">
-                    <label for="titleQuery"><strong>Title Query:</strong> Enter all or part of a title of an article or
-                        content</label>
-                    <textarea type="text" class="form-control" id="titleQuery" name="titleQuery"
-                        placeholder="Enter title query"></textarea>
-                </div>
-                <div class="form-group col-md-2">
-                    <label for="combineOperator">AND/OR:</label>
-                    <select class="form-control" id="combineOperator" name="combineOperator">
-                        <option value="AND">AND</option>
-                        <option value="OR">OR</option>
-                    </select>
-                </div>
-                <div class="form-group col-md-5">
-                    <label for="contentQuery"><strong>Content Query:</strong> Enter all or part of the body of an
-                        article or piece of content</label>
-                    <textarea type="text" class="form-control" id="contentQuery" name="contentQuery"
-                        placeholder="Enter content query"></textarea>
+                <div class="col-md-12">
+                    <form method="POST" action="/parse-url">
+                        <div class="form-group">
+                            <label for="url"><strong>Enter Article URL:</strong> (Enter the full url, e.g.
+                                https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a
+                                title/content query if prompted) </label>
+                            <input type="url" class="form-control" id="url" name="url"
+                                placeholder="https://example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
                 </div>
             </div>
-            <div class="row">
-                <div class="form-group col-md-4">
-                    <!-- Country Dropdown -->
-                    <label for="country"><strong>Country:</strong> Select a country to search. Not all countries are
-                        served by all services, and will fall back to the USA if unsupported</label>
-                    <select class="form-control" name="country" id="country">
-                        {% for code, name in countries.items() %}
-                        <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
-                        {% endfor %}
-                    </select>
+            <hr />
+        </div>
+        <div id="TitleContentSearch" class="tabcontent">
+            <h4 class="mt-3">By Title and/or Content</h4>
+            <form method="post" action="/content">
+                <div class="row">
+                    <div class="form-group col-md-5">
+                        <label for="titleQuery"><strong>Title Query:</strong> Enter all or part of a title of an article
+                            or
+                            content</label>
+                        <textarea type="text" class="form-control" id="titleQuery" name="titleQuery"
+                            placeholder="Enter title query"></textarea>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="combineOperator">AND/OR:</label>
+                        <select class="form-control" id="combineOperator" name="combineOperator">
+                            <option value="AND">AND</option>
+                            <option value="OR">OR</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-5">
+                        <label for="contentQuery"><strong>Content Query:</strong> Enter all or part of the body of an
+                            article or piece of content</label>
+                        <textarea type="text" class="form-control" id="contentQuery" name="contentQuery"
+                            placeholder="Enter content query"></textarea>
+                    </div>
                 </div>
+                <div class="row">
+                    <div class="form-group col-md-4">
+                        <!-- Country Dropdown -->
+                        <label for="country"><strong>Country:</strong> Select a country to search. Not all countries are
+                            served by all services, and will fall back to the USA if unsupported</label>
+                        <select class="form-control" name="country" id="country">
+                            {% for code, name in countries.items() %}
+                            <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-                <div class="form-group  col-md-4">
-                    <!-- Language Dropdown -->
-                    <label for="language"><strong>Language:</strong> Select a language to search. Not all languages are
-                        served by all services, and will fall back to the english if unsupported</label>
-                    <select class="form-control" name="language" id="language">
-                        {% for code, name in languages.items() %}
-                        <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group  col-md-4">
-                    <!-- Language Dropdown -->
-                    <label for="language"><strong>Search Engine:</strong> Select databases and search engines to search on </label>
+                    <div class="form-group  col-md-4">
+                        <!-- Language Dropdown -->
+                        <label for="language"><strong>Language:</strong> Select a language to search. Not all languages
+                            are
+                            served by all services, and will fall back to the english if unsupported</label>
+                        <select class="form-control" name="language" id="language">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group  col-md-4">
+                        <!-- Language Dropdown -->
+                        <label for="language"><strong>Search Engine:</strong> Select databases and search engines to
+                            search on </label>
                         <select name="search_engines" multiple>
                             <option selected="selected" value="all">All</option>
                             <option value="google">Google</option>
@@ -176,27 +227,35 @@
                             <option value="copyscape">Copyscape</option>
                             <option value="gdelt">GDELT</option>
                         </select>
+                    </div>
+
                 </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
 
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+            <hr />
+        </div>
+        <div id="BatchSearch" class="tabcontent">
+            <h4 class="mt-3">Batch Content Search By CSV</h4>
+            <form method="POST" action="/content-csv" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled URLs; if
+                        title and content, must be two columns 'title' and column. MUST BE CSV) </label>
+                    <input type="file" class="form-control" id="file" name="file">
+                </div>
+                <!-- Email Address-->
+                <div class="form-group">
+                    <label for="email"><strong>Email Address:</strong> Enter your email address to receive a
+                        notification
+                        when the batch job is complete</label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+            <hr />
+        </div>
 
-        <hr />
-        <h4 class="mt-3">Batch Content Search By CSV</h4>
-        <form method="POST" action="/content-csv" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled URLs; if title and content, must be two columns 'title' and column. MUST BE CSV) </label>
-                <input type="file" class="form-control" id="file" name="file" >
-            </div>
-            <!-- Email Address-->
-            <div class="form-group">
-                <label for="email"><strong>Email Address:</strong> Enter your email address to receive a notification when the batch job is complete</label>
-                <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address">
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-        <hr />
+
 
         <h2 class="mt-3">Website Fingerprinting</h2>
         <p>Website fingerprinting is a technique that allows you to identify websites that are likely to be owned by the
@@ -209,12 +268,22 @@
             Add a list of indicators and how they should be interpreted
         -->
         {% if current_user.is_authenticated %}
-        <div class="row">
+        <div class="tab">
+            <button class="tablinks-fingerprint" onclick="openTabFingerprint(event, 'WebsiteFingerprinting')">Website
+                Fingerprinting</button>
+            <button class="tablinks-fingerprint" onclick="openTabFingerprint(event, 'BatchFingerprinting')">Batch
+                Fingerprinting</button>
+        </div>
+
+        <!-- Website Fingerprinting Tab content -->
+        <div id="WebsiteFingerprinting" class="tabcontent-fingerprint">
             <div class="col-md-12">
                 <form method="POST" id='fingerprint' action="/fingerprint">
                     <div class="form-group">
-                        <label for="url"><strong>Enter Domain:</strong> Ensure you include https:// and any subdomain
-                            you're interested in (e.g. https://tech.cnn.com). Multiple sites can be specified, seperated
+                        <label for="url"><strong>Enter Domain:</strong> Ensure you include https:// and any
+                            subdomain
+                            you're interested in (e.g. https://tech.cnn.com). Multiple sites can be specified,
+                            seperated
                             by a comma</label>
                         <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
                     </div>
@@ -226,60 +295,72 @@
                     </div>
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
-                        <label class="form-check-label" for="internal_only">In-group matching only (for multiple URLS)</label>
+                        <label class="form-check-label" for="internal_only">In-group matching only (for multiple
+                            URLS)</label>
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button> or
                     <a href="{{ url_for('indicators') }}" class="btn btn-secondary">View All Indicators by Type</a>
                 </form>
-                 <hr />
-                <h4 class="mt-3">Batch Fingerprint By CSV</h4>
-                    <form method="POST" action="/fingerprint-csv" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled URLs; if title and content, must be two columns 'title' and column. MUST BE CSV) </label>
-                            <input type="file" class="form-control" id="fingerprint-file" name="fingerprint-file" >
-                        </div>
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
-                            <label class="form-check-label" for="internal_only">In-group matching only (for multiple URLS)</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
+                <hr />
             </div>
-            
-
-            <div class="container mt-4">
-                <h2>How indicators should be used</h2>
-                <ul class="list-group">
-                    <li class="list-group-item">
-                        <strong class=" text-success">Tier 1: Conclusive Indicators</strong>
-                        <p>Tier 1 offers high-confidence evidence of a link between websites. Key indicators
-                            include shared domain names, identical IDs for web services, multi-domain certificates, and
-                            matching WHOIS information (when visible). However, misleading tier 1 indicators may occur when sites are using shared hosting or DDOS protection services.</p>
-                    </li>
-                    <li class="list-group-item">
-                        <strong class=" text-warning">Tier 2: Associative Indicators</strong>
-                        <p>Tier 2 indicators suggest a a possibility of a shared link between sites, but they are
-                            less definitive than Tier 1. They include the use of the same Content Delivery Network
-                            (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in
-                            standard and custom response headers. These elements indicate the possibility of association
-                            but require further corroboration.</p>
-                    </li>
-                    <li class="list-group-item">
-                        <strong class="text-danger">Tier 3: Tertiary Indicators</strong>
-                        <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation.
-                            They encompass shared architectural aspects like operating systems, Content Management
-                            Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services,
-                            shared unique identifiers, highly similar images, extensive overlap in CSS classes, HTML ID
-                            tags and iFrame ID tags. These indicators alone are not conclusive but can support stronger
-                            evidence from Tier 1 and Tier 2.</p>
-                    </li>
-                </ul>
-            </div>
-
-            {% else %}
-            <p>Please log in to access allow website fingerprinting</p>
-            <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
         </div>
+
+        <!-- Batch Fingerprinting Tab content -->
+        <div id="BatchFingerprinting" class="tabcontent-fingerprint">
+            <div class="col-md-12">
+
+                <h4 class="mt-3">Batch Fingerprint By CSV</h4>
+                <form method="POST" action="/fingerprint-csv" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled
+                            URLs; if title and content, must be two columns 'title' and column. MUST BE CSV)
+                        </label>
+                        <input type="file" class="form-control" id="fingerprint-file" name="fingerprint-file">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
+                        <label class="form-check-label" for="internal_only">In-group matching only (for multiple
+                            URLS)</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+
+        </div>
+
+        <div class="container mt-4">
+            <h2>How indicators should be used</h2>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <strong class=" text-success">Tier 1: Conclusive Indicators</strong>
+                    <p>Tier 1 offers high-confidence evidence of a link between websites. Key indicators
+                        include shared domain names, identical IDs for web services, multi-domain certificates, and
+                        matching WHOIS information (when visible). However, misleading tier 1 indicators may occur
+                        when sites are using shared hosting or DDOS protection services.</p>
+                </li>
+                <li class="list-group-item">
+                    <strong class=" text-warning">Tier 2: Associative Indicators</strong>
+                    <p>Tier 2 indicators suggest a a possibility of a shared link between sites, but they are
+                        less definitive than Tier 1. They include the use of the same Content Delivery Network
+                        (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in
+                        standard and custom response headers. These elements indicate the possibility of association
+                        but require further corroboration.</p>
+                </li>
+                <li class="list-group-item">
+                    <strong class="text-danger">Tier 3: Tertiary Indicators</strong>
+                    <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation.
+                        They encompass shared architectural aspects like operating systems, Content Management
+                        Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services,
+                        shared unique identifiers, highly similar images, extensive overlap in CSS classes, HTML ID
+                        tags and iFrame ID tags. These indicators alone are not conclusive but can support stronger
+                        evidence from Tier 1 and Tier 2.</p>
+                </li>
+            </ul>
+        </div>
+
+        {% else %}
+        <p>Please log in to access allow website fingerprinting</p>
+        <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
 
         {% endif %}
 
@@ -416,7 +497,9 @@
                             <td>{{ row['domain_name_x'] }}</td>
                             <td>{{ row['domain_name_y'] }}</td>
                             <td>{{ row['match_type'] }}</td>
-                            <td>{{ row['match_value'] }}</td>
+                            <td>{{ row['match_value'] }} 
+                                 {% if row['matched_on'] and row['matched_on'] is not none %} | {{ row['matched_on'] }}{% endif %} 
+                                </td>
                         </tr>
                         {% endfor %}
 
@@ -460,6 +543,56 @@
 
     .highlight-gdelt {
         background-color: lightgreen;
+    }
+
+    /* Style the tab */
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    /* Style the buttons inside the tab */
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+        background-color: #ddd;
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    /* Style the tab content */
+    .tabcontent {
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
+    }
+
+    .tabcontent-fingerprint {
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
     }
 </style>
 

@@ -25,6 +25,7 @@ import feedparser
 import hashlib
 import datetime
 import whois
+
 from id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY, PATH_TO_OUTPUT_CSV
 
@@ -47,7 +48,10 @@ def valid_url(url):
 
 
 def get_domain_name(url):
-    sd, d, su = tldextract.extract(url)
+    domain_extract = tldextract.extract(url)
+    sd = domain_extract.subdomain
+    d = domain_extract.domain
+    su = domain_extract.suffix
     if not sd or sd == 'www':
         return f"{d}.{su}"
     else:
@@ -239,6 +243,7 @@ def add_link_tags(href):
 def parse_meta_tags(url, soup):
     meta_tags = soup.find_all("meta")
     tag_indicators = []
+    generic_metas = []
     # Iterate over the meta tags
     for meta_tag in meta_tags:
         # Get the name and content attributes of the meta tags
@@ -251,21 +256,24 @@ def parse_meta_tags(url, soup):
             tag_indicators.append(add_meta_social_tags(name, content))
         elif (name or prop) and content:
             name = name or prop
-            tag_indicators.append(add_meta_generic_tags(url, name, content))
+            generic_metas.append(name + "|" + content)
+    tag_indicators.append(add_indicator("3-meta_generic", generic_metas))
     return tag_indicators
 
 
 def parse_script_tags(url, soup):
     script_tags = soup.find_all("script")
     tag_indicators = []
+    script_tags = []
     # Iterate over the meta tags
     for script_tag in script_tags:
         # Get the name and content attributes of the meta tags
         source = script_tag.get("src")
         if source:
             match = re.search(r"/([^/]+)$", source)
-            if match:
-                tag_indicators.append(add_script_src_tags(match.group(1)))
+            if match and match.group(1) not in script_tags:
+                script_tags.append(match.group(1))
+    tag_indicators = [add_indicator("3-script_src", script_tags)]
     return tag_indicators
 
 
@@ -810,14 +818,14 @@ def add_urlscan_indicators(data):
     )
 
     links = data["data"]["links"]
-    urlscan_indicators.extend(
-        [
-            {
-                "indicator_type": "3-urlscanhrefs",
-                "indicator_content": link["href"] + "|" + link["text"],
-            }
-            for link in links
-        ]
+    hrefs = []
+    for link in links:
+        hrefs.append(link["href"] + "|" + link["text"])
+    urlscan_indicators.append(
+        {
+            "indicator_type": "2-urlscanhrefs",
+            "indicator_content": hrefs,
+        }
     )
 
     # wappalyzer is used to detect tech used in the website
@@ -918,13 +926,19 @@ def detect_and_parse_feed_content(url):
 
 def get_outbound_domains(url, soup):
     outbound_domains = set()
-    _, od, osu = get_domain_name(url)
+    domain_extract = tldextract.extract(url)
+    _ = domain_extract.subdomain
+    od = domain_extract.domain
+    osu = domain_extract.suffix
     a_tags = soup.find_all("a")
     for a_tag in a_tags:
         link_url = a_tag.get('href', '').lower()
         if not link_url or link_url.startswith('tel') or link_url.startswith('mail'):
             continue
-        _, td, tsu = tldextract.extract(link_url)
+        link_extract = tldextract.extract(link_url)
+        _ = domain_extract.subdomain
+        td = domain_extract.domain
+        tsu = domain_extract.suffix
         if tsu and td:
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
@@ -1010,12 +1024,16 @@ def crawl_one_or_more_urls(
     indicators = []
     for url in urls:
         print('Fingerprinting:',url)
-        indicators.extend(
-            crawl(
-                url,
-                run_urlscan=run_urlscan,
-            )
+        url_indicators = crawl(
+            url,
+            run_urlscan=run_urlscan,
         )
+        domain_name = get_domain_name(url)
+        
+        for indicator in url_indicators:
+            indicator['domain_name'] = domain_name
+        
+        indicators.extend(url_indicators)
     return indicators
 
 

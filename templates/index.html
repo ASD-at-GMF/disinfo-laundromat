@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,7 +6,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disinformation Laundromat</title>
+    <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"></script>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <script>
         // This function is triggered when the "View Links" button is clicked
@@ -61,6 +65,53 @@
                 }
             });
         });
+        $(document).ready(function () {
+            $('#content_table').DataTable();
+            $('#indicators_table').DataTable();
+            $('#matches_table').DataTable();
+            $('[data-toggle="popover"]').popover({
+                placement: 'top',
+                html: true
+            });
+        });
+        function openTabContent(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Open the default tab (e.g., 'URLSearch')
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelector('.tablinks').click();
+        });
+
+        function openTabFingerprint(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent-fingerprint");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks-fingerprint");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Open the default tab (e.g., 'URLSearch')
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelector('.tablinks-fingerprint').click();
+        });
+
     </script>
 </head>
 
@@ -80,29 +131,7 @@
             <h1>Disinformation Laundromat</h1>
         </div>
 
-        <hr />
-        <h2>Content Search</h2>
-        <form method="post" action="/content">
-            <div class="form-group">
-                <label for="titleQuery">Title Query:</label>
-                <input type="text" class="form-control" id="titleQuery" name="titleQuery"
-                    placeholder="Enter title query">
-            </div>
-            <div class="form-group">
-                <label for="combineOperator">AND/OR:</label>
-                <select class="form-control" id="combineOperator" name="combineOperator">
-                    <option value="AND">AND</option>
-                    <option value="OR">OR</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="contentQuery">Content Query:</label>
-                <input type="text" class="form-control" id="contentQuery" name="contentQuery"
-                    placeholder="Enter content query">
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
-        {% with messages = get_flashed_messages() %}
+        <hr /> {% with messages = get_flashed_messages() %}
         {% if messages %}
         <div class="alert alert-warning">
             {% for message in messages %}
@@ -111,108 +140,527 @@
         </div>
         {% endif %}
         {% endwith %}
-        <hr />
-
-        <h2>Website Fingerprinting</h2>
-        <form method="POST" action="/fingerprint">
-            <div class="form-group">
-                <label for="url">Enter URL:</label>
-                <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
+        <h2 class="mt-3">Content Search</h2>
+        <p>Search for instances of reposted content by title and/or content. This will search search services, the GDELT
+            database, and copyscape for text that closely match your
+            query. Searching by URL attempts to automatically parses the title and content, but will not be successful
+            for all articles</p>
+        <div class="tab">
+            <button class="tablinks" onclick="openTabContent(event, 'URLSearch')">By URL</button>
+            <button class="tablinks" onclick="openTabContent(event, 'TitleContentSearch')">By Title and/or
+                Content</button>
+            <button class="tablinks" onclick="openTabContent(event, 'BatchSearch')">Batch Content Search</button>
+        </div>
+        <div id="URLSearch" class="tabcontent">
+            <h4 class="mt-3">By URL</h4>
+            <div class="row">
+                <div class="col-md-12">
+                    <form method="POST" action="/parse-url">
+                        <div class="form-group">
+                            <label for="url"><strong>Enter Article URL:</strong> (Enter the full url, e.g.
+                                https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a
+                                title/content query if prompted) </label>
+                            <input type="url" class="form-control" id="url" name="url"
+                                placeholder="https://example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-        </form>
+            <hr />
+        </div>
+        <div id="TitleContentSearch" class="tabcontent">
+            <h4 class="mt-3">By Title and/or Content</h4>
+            <form method="post" action="/content">
+                <div class="row">
+                    <div class="form-group col-md-5">
+                        <label for="titleQuery"><strong>Title Query:</strong> Enter all or part of a title of an article
+                            or
+                            content</label>
+                        <textarea type="text" class="form-control" id="titleQuery" name="titleQuery"
+                            placeholder="Enter title query"></textarea>
+                    </div>
+                    <div class="form-group col-md-2">
+                        <label for="combineOperator">AND/OR:</label>
+                        <select class="form-control" id="combineOperator" name="combineOperator">
+                            <option value="AND">AND</option>
+                            <option value="OR">OR</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-5">
+                        <label for="contentQuery"><strong>Content Query:</strong> Enter all or part of the body of an
+                            article or piece of content</label>
+                        <textarea type="text" class="form-control" id="contentQuery" name="contentQuery"
+                            placeholder="Enter content query"></textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group col-md-4">
+                        <!-- Country Dropdown -->
+                        <label for="country"><strong>Country:</strong> Select a country to search. Not all countries are
+                            served by all services, and will fall back to the USA if unsupported</label>
+                        <select class="form-control" name="country" id="country">
+                            {% for code, name in countries.items() %}
+                            <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group  col-md-4">
+                        <!-- Language Dropdown -->
+                        <label for="language"><strong>Language:</strong> Select a language to search. Not all languages
+                            are
+                            served by all services, and will fall back to the english if unsupported</label>
+                        <select class="form-control" name="language" id="language">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group  col-md-4">
+                        <!-- Language Dropdown -->
+                        <label for="language"><strong>Search Engine:</strong> Select databases and search engines to
+                            search on </label>
+                        <select name="search_engines" multiple>
+                            <option selected="selected" value="all">All</option>
+                            <option value="google">Google</option>
+                            <option value="bing">Bing</option>
+                            <option value="google_news">Google News</option>
+                            <option value="bing_news">Bing News</option>
+                            <option value="yandex">Yandex</option>
+                            <option value="yahoo">Yahoo</option>
+                            <option value="copyscape">Copyscape</option>
+                            <option value="gdelt">GDELT</option>
+                        </select>
+                    </div>
+
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+
+            <hr />
+        </div>
+        <div id="BatchSearch" class="tabcontent">
+            <h4 class="mt-3">Batch Content Search By CSV</h4>
+            <form method="POST" action="/content-csv" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled URLs; if
+                        title and content, must be two columns 'title' and column. MUST BE CSV) </label>
+                    <input type="file" class="form-control" id="file" name="file">
+                </div>
+                <!-- Email Address-->
+                <div class="form-group">
+                    <label for="email"><strong>Email Address:</strong> Enter your email address to receive a
+                        notification
+                        when the batch job is complete</label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+            <hr />
+        </div>
 
 
 
-        {% if results %}
-        <h3 class="mt-5">Results</h3>
-        <form method="post" action="/download_csv">
-            <!-- Hidden input containing the CSV data -->
-            <input type="hidden" name="csv_data" value="{{ csv_data|safe }}">
-            <button type="submit" class="btn btn-secondary mb-3">Download Results as CSV</button>
-        </form>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Associations</th>
-                    <th>Domain</th>
-                    <th>Occurrences</th>
-                    <th>Links</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for domain, data in results.items() %}
-                <tr>
-                    <td> {% if "EuVsDisinfo" in data['source'] %}
-                        <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
-                        {% endif %}
-                        {% if "statemedia" in data['source'] %}
-                        <i class="fas fa-globe text-primary" title="State Media Domain"></i>
-                        {% endif %}
-                        {% if "Pink Slime" in data['source'] %}
-                        <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
-                        {% endif %}
-                        {% if "Newsguard AI" in data['source'] %}
-                        <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
-                        {% endif %}
-                    </td>
-                    <td>{{ domain }}</td>
-                    <td>{{ data['count'] }}</td>
-                    <td>
-                        <button class="btn btn-link toggle-links">View Links</button>
-                        <button class="btn btn-primary submit-fingerprint"
-                            data-url="https://{{domain}}">Fingerprint</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="4">
-                        <table class="table table-sm link-list" style="display: none;">
-                            <thead>
-                                <tr>
-                                    <th>Title</th>
-                                    <th>Link</th>
-                                    <th>Occurrences</th>
-                                    <th>Engines</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for link_data in data['links'] %}
-                                <tr>
-                                    <td>{{ link_data['title'] }}</td>
-                                    <td><a href="{{ link_data['link'] }}" target="_blank">{{ link_data['link'] }}</a>
-                                    </td>
-                                    <td>{{ link_data['count'] }}</td>
-                                    <td>{{ link_data['engines']|join(', ') }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <h2 class="mt-3">Website Fingerprinting</h2>
+        <p>Website fingerprinting is a technique that allows you to identify websites that are likely to be owned by the
+            same entity. This is done by looking for commonalities in the underlying code of the website, such as shared
+            HTML, CSS, and Javascript.
+            This tool will allow you to enter a domain name and will return a list of technical indicators associated
+            with this site. It will also return a list of other domains that are likely to be owned by the same entity.
+        </p>
+        <!--
+            Add a list of indicators and how they should be interpreted
+        -->
+        {% if current_user.is_authenticated %}
+        <div class="tab">
+            <button class="tablinks-fingerprint" onclick="openTabFingerprint(event, 'WebsiteFingerprinting')">Website
+                Fingerprinting</button>
+            <button class="tablinks-fingerprint" onclick="openTabFingerprint(event, 'BatchFingerprinting')">Batch
+                Fingerprinting</button>
+        </div>
+
+        <!-- Website Fingerprinting Tab content -->
+        <div id="WebsiteFingerprinting" class="tabcontent-fingerprint">
+            <div class="col-md-12">
+                <form method="POST" id='fingerprint' action="/fingerprint">
+                    <div class="form-group">
+                        <label for="url"><strong>Enter Domain:</strong> Ensure you include https:// and any
+                            subdomain
+                            you're interested in (e.g. https://tech.cnn.com). Multiple sites can be specified,
+                            seperated
+                            by a comma</label>
+                        <input type="url" class="form-control" id="url" name="url" placeholder="https://example.com">
+                    </div>
+                    <!-- Checkbox for URLSCAN -->
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="run_urlscan" name="run_urlscan">
+                        <label class="form-check-label" for="run_urlscan">Run <a href="https://urlscan.io/"
+                                target="_blank">URLSCAN</a> (may take up to 2 minutes)</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
+                        <label class="form-check-label" for="internal_only">In-group matching only (for multiple
+                            URLS)</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button> or
+                    <a href="{{ url_for('indicators') }}" class="btn btn-secondary">View All Indicators by Type</a>
+                </form>
+                <hr />
+            </div>
+        </div>
+
+        <!-- Batch Fingerprinting Tab content -->
+        <div id="BatchFingerprinting" class="tabcontent-fingerprint">
+            <div class="col-md-12">
+
+                <h4 class="mt-3">Batch Fingerprint By CSV</h4>
+                <form method="POST" action="/fingerprint-csv" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled
+                            URLs; if title and content, must be two columns 'title' and column. MUST BE CSV)
+                        </label>
+                        <input type="file" class="form-control" id="fingerprint-file" name="fingerprint-file">
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
+                        <label class="form-check-label" for="internal_only">In-group matching only (for multiple
+                            URLS)</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+
+        </div>
+
+        <div class="container mt-4">
+            <h2>How indicators should be used</h2>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <strong class="alert-success">Tier 1: Conclusive Indicators</strong>
+                    <p>Tier 1 offers high-confidence evidence of a link between websites. Key indicators
+                        include shared domain names, identical IDs for web services, multi-domain certificates, and
+                        matching WHOIS information (when visible). However, misleading tier 1 indicators may occur
+                        when sites are using shared hosting or DDOS protection services.</p>
+                </li>
+                <li class="list-group-item">
+                    <strong class="alert-warning">Tier 2: Associative Indicators</strong>
+                    <p>Tier 2 indicators suggest a a possibility of a shared link between sites, but they are
+                        less definitive than Tier 1. They include the use of the same Content Delivery Network
+                        (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in
+                        standard and custom response headers. These elements indicate the possibility of association
+                        but require further corroboration.</p>
+                </li>
+                <li class="list-group-item">
+                    <strong class="alert-dark">Tier 3: Tertiary Indicators</strong>
+                    <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation.
+                        They encompass shared architectural aspects like operating systems, Content Management
+                        Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services,
+                        shared unique identifiers, highly similar images, extensive overlap in CSS classes, HTML ID
+                        tags and iFrame ID tags. These indicators alone are not conclusive but can support stronger
+                        evidence from Tier 1 and Tier 2.</p>
+                </li>
+            </ul>
+        </div>
+
+        {% else %}
+        <p>Please log in to access allow website fingerprinting</p>
+        <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
+
         {% endif %}
+
+
+        <div class="container mt-3">
+            <hr />
+            {% if results %}
+            <div class="row mb-3">
+                <h2 class="mt-3 mr-3">Title & Content Match Results</h2>
+                <p>While the results show near text matches from across the web, this does necessarily not indicate a
+                    relationship or deliberate plagiarism between entities, as content may be licensed or quoted</p>
+
+                <form method="post" action="/download_csv" class="mt-3 mr-3">
+                    <button class="btn btn-primary mr-3" type="button" data-toggle="collapse"
+                        data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
+                        Show/Hide Table
+                    </button>
+                    <!-- Hidden input containing the CSV data -->
+                    <input type="hidden" name="csv_data" value="{{ csv_data|safe }}">
+                    <button type="submit" class="btn btn-secondary mr-3">Download Results as CSV</button>
+                </form>
+            </div>
+
+            <div class="collapse show" id="collapsibleTable">
+                <div class="col-md-12">
+                    <table id="content_table" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Domain</th>
+                                <th>Associations</th>
+                                <th>Title</th>
+                                <th>Snippet</th>
+                                <!--<th>Vol (Link)</th>-->
+                                <th>Engines</th>
+                                <!-- <th>Vol (Domain)</th>-->
+                                <th>Match Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for link_data in results %}
+                            <tr>
+                                <td>{{ link_data['domain'] }}</td>
+                                <td>
+                                    <!-- Display source with icon based on conditions -->
+                                    {% if "EuVsDisinfo" in link_data['source'] %}
+                                    <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                                    {% elif "statemedia" in link_data['source'] %}
+                                    <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                                    {% elif "Pink Slime" in link_data['source'] %}
+                                    <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                                    {% elif "Newsguard AI" in link_data['source'] %}
+                                    <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
+                                    {% elif link_data['source'] %}
+                                    <i class="fas fa-bell" title="{{ link_data['source'] }}"></i>
+                                    {% endif %}
+                                </td>
+                                <td><a href="{{ link_data['url'] }}" target="_blank">{{ link_data['title'] }}</a></td>
+                                <td>{{ link_data['snippet'] }}</td>
+                                <!-- <td>{{ link_data['link_count'] }}</td>-->
+                                <td>{{ link_data['engines']|join(', ') }}</td>
+                                <!--<td>{{ link_data['domain_count'] }}</td>-->
+                                <td>{{ link_data['score'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            <!-- Section for Indicators and Matches Tables -->
+            {% if indicators_df %}
+            <h2 class="mt-3">Indicators</h2>
+            <p>Indicators are technical elements that can be used to identify relationships between websites. The table
+                below shows all indicators for the specified domain(s). </p>
+            <p>{% for tier, count in indicator_summary.items() %}
+                
+                {% if tier == '1' %}
+                <span class="alert-success"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% elif tier == '2' %}
+                <span class="alert-warning"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% else %}
+                <span class="alert-dark"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% endif %}                            
+                &nbsp;
+                {% endfor %}               
+            </p>
+            <button class="btn btn-primary" type="button" data-toggle="collapse"
+                data-target="#collapsibleIndicatorTable" aria-expanded="false"
+                aria-controls="collapsibleIndicatorTable">
+                Show/Hide Table
+            </button>
+            <div class="mt-3 collapse show" id="collapsibleIndicatorTable">
+                <table id="indicators_table" class="table table-striped table-bordered" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Indicator Type</th>
+                            <th>Indicator Content</th>
+                            <th>Domain Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+
+                        {% for row in indicators_df %}
+                        {% if row['indicator_type'][0] == '1' %}
+                        <tr class="table-success">
+                        {% elif row['indicator_type'][0] == '2' %}
+                        <tr class="table-warning">
+                        {% else %}
+                        <tr class="table-light">
+                        {% endif %}                            
+                            <td>
+                                {% if row['indicator_type'] in indicator_metadata %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    title="{{ indicator_metadata[row['indicator_type']].name }}"
+                                    data-content="{{ indicator_metadata[row['indicator_type']].description }} {{ indicator_metadata[row['indicator_type']].interpretation }}"
+                                    tabindex="0" role="button">
+                                    <strong>{{ row['indicator_type'] }} ({{ indicator_metadata[row['indicator_type']].name }})  
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                                      </svg>
+                                    </strong>
+                                </div>
+                                {% else %}
+                                {{ row['indicator_type'] }}
+                                {% endif %}
+                            </td>
+                            <td>{{ row['indicator_content'] }}</td>
+                            <td>{{ row['domain_name'] }}</td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% if matches_df %}
+            <h2 class="mt-3">Matches</h2>
+            <p>Matches are pairs of domain names that have been identified as having identical or > 90% matches where an
+                indicator is a list. The table below shows all matches for the specified domain(s).</p>
+            <p>{% for tier, count in matches_summary.items() %}
+                
+                {% if tier == '1' %}
+                <span class="alert-success"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% elif tier == '2' %}
+                <span class="alert-warning"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% else %}
+                <span class="alert-dark"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% endif %}                            
+                &nbsp;
+                {% endfor %}
+            </p>
+            <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapsibleMatchesTable"
+                aria-expanded="false" aria-controls="collapsibleMatchesTable">
+                Show/Hide Table
+            </button>
+
+            <div class="mt-3 collapse show" id="collapsibleMatchesTable">
+                <table id="matches_table" class="table table-striped table-bordered" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Primary Domain Name</th>
+                            <th>Matching Domain Name</th>
+                            <th>Match Type</th>
+                            <th>Match Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for row in matches_df %}
+                        {% if row['match_type'][0] == '1' %}
+                        <tr class="table-success">
+                        {% elif row['match_type'][0] == '2' %}
+                        <tr class="table-warning">
+                        {% else %}
+                        <tr class="table-light">
+                        {% endif %}                
+                            <td>{{ row['domain_name_x'] }}</td>
+                            <td>{{ row['domain_name_y'] }}</td>
+                            <td>
+                                {% if row['match_type'] in indicator_metadata %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    title="{{ indicator_metadata[row['match_type']].name }}"
+                                    data-content="{{ indicator_metadata[row['match_type']].description }} {{ indicator_metadata[row['match_type']].interpretation }}"
+                                    tabindex="0" role="button">
+                                    <strong>{{ row['match_type'] }} ({{ indicator_metadata[row['match_type']].name }})  
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                                      </svg>
+                                    </strong>
+                                </div>
+                                {% else %}
+                                {{ row['indicator_type'] }}
+                                {% endif %}
+                            </td>
+                            <td>{{ row['match_value'] }}
+                                {% if row['matched_on'] and row['matched_on'] is not none %} | {{ row['matched_on'] }}{%
+                                endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+            </div>
+            {% endif %}
+        </div>
     </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 </body>
 <style>
     .loading-overlay {
-        position: fixed; /* Use fixed positioning */
-        top: 20%;
+        position: fixed;
+        top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(128, 128, 128, 0.5); /* Gray background with opacity */
+        background: rgba(128, 128, 128, 0.5);
         display: flex;
-        justify-content: center; /* Center horizontally */
-        align-items: center; /* Center vertically */
-        z-index: 9999; /* Make sure it's on top of other content */
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
     }
-    
+
     .loading-spinner {
+        top: 25%;
         text-align: center;
     }
-    </style>
+
+    table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    td {
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+    .highlight-gdelt {
+        background-color: lightgreen;
+    }
+
+    /* Style the tab */
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    /* Style the buttons inside the tab */
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+        background-color: #ddd;
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    /* Style the tab content */
+    .tabcontent {
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
+    }
+
+    .tabcontent-fingerprint {
+        display: none;
+        padding: 6px 12px;
+        border: 1px solid #ccc;
+        border-top: none;
+    }
+</style>
+
 </html>

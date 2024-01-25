@@ -1,4 +1,3 @@
-import sys
 import argparse
 import json
 import ast
@@ -17,7 +16,9 @@ INDICATOR = "indicator_content"
 
 def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
     df = df[["domain_name", feature]]
-    return df[~df[feature].isna() & ~df[feature].isnull()].drop_duplicates()
+    df = df[~df[feature].isna() & ~df[feature].isnull()]
+
+    return df
 
 
 # whois data
@@ -105,46 +106,51 @@ def find_iou_matches(
     comparison_df: Optional[pd.DataFrame] = None,
     threshold: float = 0.9,
 ) -> pd.DataFrame:
-    # the better way to do this is to map the unique features to integers, e.g. with pandas indexing
-    # and do this work in numpy/scipy
+    # Define IOU function
     def iou(set1, set2):
-        return len(set1.intersection(set2)) / len(set1.union(set2))
+        return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
-    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(set)
+    # Convert feature data to sets
+    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+
     if comparison_df is not None:
-        comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(set)
-        f_index = feature_sets.index.values
-        c_index = comparison_sets.index.values
+        # Convert comparison data to sets
+        comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+
+        # Generate IOU data
         iou_data = [
             {
                 "domain_name_x": f_domain,
                 "domain_name_y": c_domain,
-                "match_value": round(
-                    iou(feature_sets.loc[f_domain], comparison_sets.loc[c_domain]), 3
-                ),
+                "match_value": round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
+                "matched_on": feature_sets[f_domain]
+
             }
-            for f_domain in f_index
-            for c_domain in c_index
+            for f_domain in feature_sets
+            for c_domain in comparison_sets
         ]
     else:
-        domain_index = feature_sets.index.values
-        iou_data = []
-        for indx1, domain1 in enumerate(domain_index[:-1]):
-            for indx2, domain2 in enumerate(domain_index[indx1 + 1 :]):
-                iou_data.append(
-                    {
-                        "domain_name_x": domain1,
-                        "domain_name_y": domain2,
-                        "match_value": round(
-                            iou(feature_sets.loc[domain1], feature_sets.loc[domain2]), 3
-                        ),
-                    }
-                )
+        # Generate IOU data for self-comparison
+        iou_data = [
+            {
+                "domain_name_x": domain1,
+                "domain_name_y": domain2,
+                "match_value": round(iou(feature_sets[domain1], feature_sets[domain2]), 3),
+                "matched_on": feature_sets[domain1]
+
+            }
+            for idx, domain1 in enumerate(feature_sets)
+            for domain2 in list(feature_sets)[idx + 1:]
+        ]
+
+    # Create DataFrame from IOU data
     result = pd.DataFrame(iou_data)
+    if result.empty:
+        return result
     result["match_type"] = feature
     result = result[result["match_value"] >= threshold]
-    return result
 
+    return result
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
@@ -209,10 +215,26 @@ def parse_certificate_matches(
 
 ## Main program
 FEATURE_MATCHING: Dict[str, str] = {
-    "1-cert-domain" : "direct",
+"1-cert-domain" : "direct",
 "1-crypto-wallet" : "direct",
 "1-domain" : "direct",
 "1-domain_suffix" : "direct",
+"1-fb_pixel_id" : "direct",
+"1-adobe_analytics_id" : "direct",
+"3-sitemap_entries" : "direct",
+"3-ipms_domain_iprangeowner_cidr" : "direct",
+"3-ipms_domain_iprangeowner_ownerName" : "direct",
+"3-ipms_domain_iprangeowner_address" : "direct",
+"3-ipms_domain_nameserver" : "direct",
+"3-ipms_domain_otheripused" : "direct",
+"3-ipms_siteonthisip_now" : "direct",
+"3-ipms_siteonthisip_before" : "direct",
+"3-ipms_siteonthisip_broken" : "direct",
+"3-ipms_useragents" : "direct",
+"1-ip_shodan_hostnames" : "direct",
+"3-ip_shodan_ports" : "iou",
+"2-ip_shodan_vuln" : "iou",
+"3-ip_shodan_cpe" : "iou",
 "1-ga_id" : "direct",
 "1-ga_tag_id" : "direct",
 "1-ip" : "direct",
@@ -221,15 +243,15 @@ FEATURE_MATCHING: Dict[str, str] = {
 "2-subnet" : "direct",
 "3-cdn-domain" : "direct",
 "3-cms" : "direct",
-"3-css-classes" : "iou",
+"3-css_classes" : "iou",
 "3-header-nonstd-value" : "direct",
 "3-header-server" : "direct",
 "3-id_tags" : "iou",
 "3-iframe_id_tags" : "iou",
-"3-link_href" : "direct",
-"3-meta_generic" : "direct",
+"3-link_href" : "iou",
+"3-meta_generic" : "iou",
 "3-meta_social" : "direct",
-"3-script_src" : "direct",
+"3-script_src" : "iou",
 "3-uuid" : "direct",
 "3-whois_creation_date" : "direct",
 "3-whois_server" : "direct",
@@ -240,7 +262,14 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-wp-posts" : "iou",
 "3-wp-tags" : "iou",
 "3-wp-users" : "iou",
-
+"2-urlscan_globalvariable": "iou",
+"2-urlscan_cookies": "iou",
+"2-urlscan_consolemessages": "iou",
+"2-urlscan_asn": "direct",
+"2-urlscan_domainsonpage": "iou",
+"2-urlscan_urlssonpage" : "iou",
+"2-urlscanhrefs" : "iou",
+"2-techstack" : "iou"
 }
 
 WHOIS_FEATURES = [
@@ -277,13 +306,21 @@ methods = {
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     matches_per_feature = []
+    # Get unique values from 'column_name'
+    unique_values = data['indicator_type'].unique()
+    for value in unique_values:
+        if value not in FEATURE_MATCHING.keys():
+            print("MISSING FEATURE MATCHING METHOD FOR: ", value)
+
     for feature, method in FEATURE_MATCHING.items():
+        print(f"Matching {feature} with method: {method}")
         feature_df = data[data[INDICATOR_TYPE] == feature]
-        if feature_df.shape[0] > 1:
-            if comparison is not None:
-                comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
-            else:
-                comparison_df = None
+        if comparison is not None:
+            comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
+        else:
+            comparison_df = None
+        #TODO FIX BAD MATCHES FOR SOME IOU FEATURES
+        try:
             feature_matches = methods[method](
                 feature_df=feature_df, feature=feature, comparison_df=comparison_df
             )
@@ -292,6 +329,8 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                 feature_matches.to_csv(
                     f"{result_dir}/{feature}_matches.csv", index=False
                 )
+        except:
+            print(f"Error matching feature: {feature}")
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 

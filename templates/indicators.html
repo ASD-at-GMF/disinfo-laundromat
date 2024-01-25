@@ -11,7 +11,29 @@
     <script>
         $(document).ready(function () {
             $('#indicatorsTable').DataTable();
+            populateAllExplanations();
+            var selectedType = $('#indicatorTypeSelect').val();
+            var explainerText = indicatorMetadata[selectedType] ? '<div class="alert alert-info" role="alert"><h6><strong>' + indicatorMetadata[selectedType].name + ' (' + selectedType + ')</strong>: ' + indicatorMetadata[selectedType]['description'] +
+             '</h6>' + indicatorMetadata[selectedType].interpretation + '</div>': 'Select an indicator type to see its description.';
+            $('#indicatorExplainer').html(explainerText);
         });
+
+        // JSON containing the indicator metadata
+        var indicatorMetadata = {{ indicator_metadata | tojson }};
+
+        function populateAllExplanations() {
+            var allExplanations = '';
+            for (var key in indicatorMetadata) {
+                if (indicatorMetadata.hasOwnProperty(key)) {
+                    allExplanations += '<h5>' + indicatorMetadata[key].name + ' (' + key + ')</h5>';
+                    allExplanations += '<p>' + indicatorMetadata[key].description + '</p>';
+                    allExplanations += '<p><strong>Interpretation:</strong> ' + indicatorMetadata[key].interpretation + '</p>';
+                    allExplanations += '<hr>';
+                }
+            }
+            $('#allExplanations').html(allExplanations);
+        }
+
     </script>
 </head>
 
@@ -22,13 +44,22 @@
 
         <!-- Dropdown for selecting indicator type -->
         <form method="get" action="{{ url_for('indicators') }}">
-            <select name="type" onchange="this.form.submit()">
+            <label for="indicatorTypeSelect" class="form-label">Select an indicator type:</label>
+            <select id="indicatorTypeSelect" name="type" onchange="this.form.submit(); updateExplainer();">
                 <option value="">All Types</option>
-                {% for type in unique_types %}
-                <option value="{{ type }}" {% if selected_type==type %} selected {% endif %}>{{ type }}</option>
+                {% for code, details in indicator_metadata.items() %}
+                <option value="{{ code }}" {% if selected_type == code %} selected {% endif %}>
+                    {{ code }} ({{ details.name }})
+                </option>
                 {% endfor %}
             </select>
         </form>
+
+        <!-- Explainer section -->
+        <div id="indicatorExplainer" class="mt-3 mb-3">
+            Select an indicator type to see its description.
+        </div>
+
         <table id="indicatorsTable" class="table table-striped table-bordered" style="width:100%">
             <thead>
                 <tr>
@@ -40,14 +71,22 @@
             <tbody>
                 {% for row in data %}
                 <tr>
-                    <td>{{ row['indicator_type'] }}</td>
+                    <td>
+                        {% if row['indicator_type'] in indicator_metadata %}
+                        {{ row['indicator_type'] }} ({{ indicator_metadata[row['indicator_type']].name }})
+                        {% else %}
+                            {{ row['indicator_type'] }}
+                        {% endif %}
+                    </td>
                     <td>{{ row['indicator_content'] }}</td>
                     <td>{{ row['domain_name'] }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+        <!-- Section to display all explanations -->
+        <div id="allExplanations" class="mt-5"></div>
     </div>
 </body>
 
-</html>
+</html> 

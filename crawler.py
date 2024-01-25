@@ -659,6 +659,7 @@ def add_associated_domains_from_cert(url):
     try:
         port = 443
 
+
         cert = ssl.get_server_certificate((get_domain_name(url), port))
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
 
@@ -687,6 +688,7 @@ def parse_tracking_ids(response):
 
 def parse_embedded_ids(response):
     tag_indicators = []
+
     for id_type, pattern in EMBEDDED_IDS.items():
         id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
         tag_indicators.extend(id_indicators)

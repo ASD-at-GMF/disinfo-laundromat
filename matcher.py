@@ -220,7 +220,6 @@ FEATURE_MATCHING: Dict[str, str] = {
 "1-domain" : "direct",
 "1-domain_suffix" : "direct",
 "1-fb_pixel_id" : "direct",
-"1-fb_pixel_id" : "direct",
 "1-adobe_analytics_id" : "direct",
 "3-sitemap_entries" : "direct",
 "3-ipms_domain_iprangeowner_cidr" : "direct",
@@ -320,14 +319,18 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
             comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
         else:
             comparison_df = None
-        feature_matches = methods[method](
-            feature_df=feature_df, feature=feature, comparison_df=comparison_df
-        )
-        matches_per_feature.append(feature_matches)
-        if result_dir:
-            feature_matches.to_csv(
-                f"{result_dir}/{feature}_matches.csv", index=False
+        #TODO FIX BAD MATCHES FOR SOME IOU FEATURES
+        try:
+            feature_matches = methods[method](
+                feature_df=feature_df, feature=feature, comparison_df=comparison_df
             )
+            matches_per_feature.append(feature_matches)
+            if result_dir:
+                feature_matches.to_csv(
+                    f"{result_dir}/{feature}_matches.csv", index=False
+                )
+        except:
+            print(f"Error matching feature: {feature}")
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 

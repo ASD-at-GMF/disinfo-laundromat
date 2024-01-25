@@ -179,7 +179,7 @@ def parse_classes(soup):
     for elem in soup.select("[class]"):
         classes = elem["class"]
         used_classes.update(classes)
-    tag_indicators.append(add_indicator("3-css_classes", used_classes))
+    tag_indicators.append(add_indicator("3-css_classes", list(used_classes)))
     return tag_indicators
 
 

@@ -20,10 +20,11 @@ from collections import Counter
 import io
 import zipfile
 import numpy as np
+import traceback
 
 # Paramaterizable Variables
 from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER, PATH_TO_OUTPUT_CSV, MATCH_VALUES_TO_IGNORE
-from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE
+from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA
 # Import all your functions here
 from crawler import crawl_one_or_more_urls
 from matcher import find_matches
@@ -115,7 +116,7 @@ def insert_indicators(indicators):
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -159,12 +160,12 @@ def fingerprint():
             
             indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, run_urlscan = run_urlscan, internal_only = internal_only)
 
-            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
+            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
 
         except Exception as e:
-            return render_template('error.html', errorx=e)
+            return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
 
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 
 def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False):
@@ -229,7 +230,7 @@ def content():
             results, csv_data = fetch_content_results(
                 title_query, content_query, combineOperator, language, country, engines=engines)
 
-    return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
+    return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 
 @app.route('/parse-url', methods=['POST'])
@@ -241,7 +242,7 @@ def parse_url():
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
 
     if not url:
-        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     try:
         # Extracting article data-
         article = Article(url)
@@ -251,7 +252,7 @@ def parse_url():
         results, csv_data = fetch_content_results(
                 article.title, article.text, "OR", "en", "us", engines=engines)
 
-        return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES)
+        return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
     except Exception as e:
         response = requests.get(url)
@@ -265,7 +266,7 @@ def parse_url():
         else:
             flash("This page could not automatically be parsed for content. Please enter a title and/or content query manually.")
         
-        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/content-csv', methods=['POST'])
 def upload_file():
@@ -385,7 +386,7 @@ def fingerprint_file():
         )
 
     # If no file, render the index template
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES)
+    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
@@ -424,7 +425,7 @@ def indicators():
                 data.append(truncated_row)
         unique_types = sorted(set(unique_types_list))
 
-    return render_template('indicators.html', data=data, unique_types=unique_types, selected_type=selected_type)
+    return render_template('indicators.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
 
 
 def filter_gdelt_query(query):
@@ -873,10 +874,7 @@ def summarize_indicators(results, column='indicator_type'):
     # sort the tier as 1, 2, 3
     tier_counts = {k: v for k, v in sorted(tier_counts.items(), key=lambda item: int(item[0]))}    
 
-    for tier, count in tier_counts.items():
-        summary.append(f"| Tier {tier} - {count}")
-
-    return summary
+    return tier_counts
 
 def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:

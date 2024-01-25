@@ -10,6 +10,7 @@
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"></script>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <link href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <script>
@@ -68,6 +69,10 @@
             $('#content_table').DataTable();
             $('#indicators_table').DataTable();
             $('#matches_table').DataTable();
+            $('[data-toggle="popover"]').popover({
+                placement: 'top',
+                html: true
+            });
         });
         function openTabContent(evt, tabName) {
             var i, tabcontent, tablinks;
@@ -332,14 +337,14 @@
             <h2>How indicators should be used</h2>
             <ul class="list-group">
                 <li class="list-group-item">
-                    <strong class=" text-success">Tier 1: Conclusive Indicators</strong>
+                    <strong class="alert-success">Tier 1: Conclusive Indicators</strong>
                     <p>Tier 1 offers high-confidence evidence of a link between websites. Key indicators
                         include shared domain names, identical IDs for web services, multi-domain certificates, and
                         matching WHOIS information (when visible). However, misleading tier 1 indicators may occur
                         when sites are using shared hosting or DDOS protection services.</p>
                 </li>
                 <li class="list-group-item">
-                    <strong class=" text-warning">Tier 2: Associative Indicators</strong>
+                    <strong class="alert-warning">Tier 2: Associative Indicators</strong>
                     <p>Tier 2 indicators suggest a a possibility of a shared link between sites, but they are
                         less definitive than Tier 1. They include the use of the same Content Delivery Network
                         (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in
@@ -347,7 +352,7 @@
                         but require further corroboration.</p>
                 </li>
                 <li class="list-group-item">
-                    <strong class="text-danger">Tier 3: Tertiary Indicators</strong>
+                    <strong class="alert-dark">Tier 3: Tertiary Indicators</strong>
                     <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation.
                         They encompass shared architectural aspects like operating systems, Content Management
                         Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services,
@@ -435,9 +440,17 @@
             <h2 class="mt-3">Indicators</h2>
             <p>Indicators are technical elements that can be used to identify relationships between websites. The table
                 below shows all indicators for the specified domain(s). </p>
-            <p>{% for row in indicator_summary %}
-                {{row}}
-                {% endfor %}
+            <p>{% for tier, count in indicator_summary.items() %}
+                
+                {% if tier == '1' %}
+                <span class="alert-success"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% elif tier == '2' %}
+                <span class="alert-warning"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% else %}
+                <span class="alert-dark"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% endif %}                            
+                &nbsp;
+                {% endfor %}               
             </p>
             <button class="btn btn-primary" type="button" data-toggle="collapse"
                 data-target="#collapsibleIndicatorTable" aria-expanded="false"
@@ -455,9 +468,32 @@
                     </thead>
                     <tbody>
 
+
                         {% for row in indicators_df %}
-                        <tr>
-                            <td>{{ row['indicator_type'] }}</td>
+                        {% if row['indicator_type'][0] == '1' %}
+                        <tr class="table-success">
+                        {% elif row['indicator_type'][0] == '2' %}
+                        <tr class="table-warning">
+                        {% else %}
+                        <tr class="table-light">
+                        {% endif %}                            
+                            <td>
+                                {% if row['indicator_type'] in indicator_metadata %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    title="{{ indicator_metadata[row['indicator_type']].name }}"
+                                    data-content="{{ indicator_metadata[row['indicator_type']].description }} {{ indicator_metadata[row['indicator_type']].interpretation }}"
+                                    tabindex="0" role="button">
+                                    <strong>{{ row['indicator_type'] }} ({{ indicator_metadata[row['indicator_type']].name }})  
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                                      </svg>
+                                    </strong>
+                                </div>
+                                {% else %}
+                                {{ row['indicator_type'] }}
+                                {% endif %}
+                            </td>
                             <td>{{ row['indicator_content'] }}</td>
                             <td>{{ row['domain_name'] }}</td>
                         </tr>
@@ -471,8 +507,16 @@
             <h2 class="mt-3">Matches</h2>
             <p>Matches are pairs of domain names that have been identified as having identical or > 90% matches where an
                 indicator is a list. The table below shows all matches for the specified domain(s).</p>
-            <p>{% for row in indicator_summary %}
-                {{row}}
+            <p>{% for tier, count in matches_summary.items() %}
+                
+                {% if tier == '1' %}
+                <span class="alert-success"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% elif tier == '2' %}
+                <span class="alert-warning"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% else %}
+                <span class="alert-dark"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                {% endif %}                            
+                &nbsp;
                 {% endfor %}
             </p>
             <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapsibleMatchesTable"
@@ -493,13 +537,36 @@
                     <tbody>
 
                         {% for row in matches_df %}
-                        <tr>
+                        {% if row['match_type'][0] == '1' %}
+                        <tr class="table-success">
+                        {% elif row['match_type'][0] == '2' %}
+                        <tr class="table-warning">
+                        {% else %}
+                        <tr class="table-light">
+                        {% endif %}                
                             <td>{{ row['domain_name_x'] }}</td>
                             <td>{{ row['domain_name_y'] }}</td>
-                            <td>{{ row['match_type'] }}</td>
-                            <td>{{ row['match_value'] }} 
-                                 {% if row['matched_on'] and row['matched_on'] is not none %} | {{ row['matched_on'] }}{% endif %} 
-                                </td>
+                            <td>
+                                {% if row['match_type'] in indicator_metadata %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    title="{{ indicator_metadata[row['match_type']].name }}"
+                                    data-content="{{ indicator_metadata[row['match_type']].description }} {{ indicator_metadata[row['match_type']].interpretation }}"
+                                    tabindex="0" role="button">
+                                    <strong>{{ row['match_type'] }} ({{ indicator_metadata[row['match_type']].name }})  
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                                        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                                      </svg>
+                                    </strong>
+                                </div>
+                                {% else %}
+                                {{ row['indicator_type'] }}
+                                {% endif %}
+                            </td>
+                            <td>{{ row['match_value'] }}
+                                {% if row['matched_on'] and row['matched_on'] is not none %} | {{ row['matched_on'] }}{%
+                                endif %}
+                            </td>
                         </tr>
                         {% endfor %}
 

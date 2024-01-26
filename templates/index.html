@@ -67,12 +67,40 @@
         });
         $(document).ready(function () {
             $('#content_table').DataTable();
-            $('#indicators_table').DataTable();
+            var indicatorsTable = $('#indicators_table').DataTable();
             $('#matches_table').DataTable();
             $('[data-toggle="popover"]').popover({
                 placement: 'top',
                 html: true
             });
+            $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                var tier = $('#indicators_table').attr('data-tier-filter');
+                if (!tier) return true; // no filter applied
+
+                // Assuming the indicator type is in the first column
+                var cellHtml = data[0];
+                var matches = cellHtml.match(/(\d+)-[a-z]+/i); // Regex to extract the tier indicator
+                if (!matches) return false; // If no match is found, don't display the row
+
+                var type = matches[0];
+                return type.startsWith(tier + '-');
+                }
+            );
+
+            // Tier filter buttons event
+            $('.indicators-tier-filter').on('click', function() {
+                var tier = $(this).data('tier');
+                $('#indicators_table').attr('data-tier-filter', tier);
+                indicatorsTable.draw();
+            });
+
+            // Event handler for the "Clear Filters" button
+            $('#indicatorsClearFilters').on('click', function() {
+                $('#indicators_table').removeAttr('data-tier-filter'); // Remove the filter attribute
+                indicatorsTable.search('').columns().search('').draw(); // Clear search on all columns and redraw
+            });
+            
         });
         function openTabContent(evt, tabName) {
             var i, tabcontent, tablinks;
@@ -438,26 +466,26 @@
             {% endif %}
             <!-- Section for Indicators and Matches Tables -->
             {% if indicators_df %}
-            <h2 class="mt-3">Indicators</h2>
-            <p>Indicators are technical elements that can be used to identify relationships between websites. The table
-                below shows all indicators for the specified domain(s). </p>
-            <p>{% for tier, count in indicator_summary.items() %}
-                
-                {% if tier == '1' %}
-                <span class="alert-success"> Tier {{tier}}: <strong>{{count}}</strong> </span>
-                {% elif tier == '2' %}
-                <span class="alert-warning"> Tier {{tier}}: <strong>{{count}}</strong> </span>
-                {% else %}
-                <span class="alert-dark"> Tier {{tier}}: <strong>{{count}}</strong> </span>
-                {% endif %}                            
-                &nbsp;
-                {% endfor %}               
-            </p>
-            <button class="btn btn-primary" type="button" data-toggle="collapse"
+            <h2 class="mt-3">Indicators             <button class="btn btn-primary" type="button" data-toggle="collapse"
                 data-target="#collapsibleIndicatorTable" aria-expanded="false"
                 aria-controls="collapsibleIndicatorTable">
                 Show/Hide Table
-            </button>
+            </button></h2>
+            <p>Indicators are technical elements that can be used to identify relationships between websites. The table
+                below shows all indicators for the specified domain(s). </p>
+            <p>{% for tier, count in indicator_summary.items() %}
+                {% if tier == '1' %}
+                <button class="btn btn-success indicators-tier-filter" data-tier="1"> Tier {{tier}}: <strong>{{count}}</strong> </button>
+                {% elif tier == '2' %}
+                <button class="btn btn-warning indicators-tier-filter" data-tier="2"> Tier {{tier}}: <strong>{{count}}</strong> </button>
+                {% else %}
+                <button class="btn btn-dark indicators-tier-filter" data-tier="3"> Tier {{tier}}: <strong>{{count}}</strong> </button>
+                {% endif %}                            
+                &nbsp;
+                {% endfor %}
+                <button id="indicatorsClearFilters" class="btn btn-secondary">Clear</button>
+               
+            </p>
             <div class="mt-3 collapse show" id="collapsibleIndicatorTable">
                 <table id="indicators_table" class="table table-striped table-bordered" style="width:100%">
                     <thead>
@@ -505,25 +533,25 @@
             </div>
             {% endif %}
             {% if matches_df %}
-            <h2 class="mt-3">Matches</h2>
+            <h2 class="mt-3">Matches             <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapsibleMatchesTable"
+                aria-expanded="false" aria-controls="collapsibleMatchesTable">
+                Show/Hide Table
+            </button>
+</h2>
             <p>Matches are pairs of domain names that have been identified as having identical or > 90% matches where an
                 indicator is a list. The table below shows all matches for the specified domain(s).</p>
             <p>{% for tier, count in matches_summary.items() %}
                 
                 {% if tier == '1' %}
-                <span class="alert-success"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                <span class="alert-success" data-tier="1"> Tier {{tier}}: <strong>{{count}}</strong> </span>
                 {% elif tier == '2' %}
-                <span class="alert-warning"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                <span class="alert-warning" data-tier="2"> Tier {{tier}}: <strong>{{count}}</strong> </span>
                 {% else %}
-                <span class="alert-dark"> Tier {{tier}}: <strong>{{count}}</strong> </span>
+                <span class="alert-dark" data-tier="3"> Tier {{tier}}: <strong>{{count}}</strong> </span>
                 {% endif %}                            
                 &nbsp;
                 {% endfor %}
             </p>
-            <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapsibleMatchesTable"
-                aria-expanded="false" aria-controls="collapsibleMatchesTable">
-                Show/Hide Table
-            </button>
 
             <div class="mt-3 collapse show" id="collapsibleMatchesTable">
                 <table id="matches_table" class="table table-striped table-bordered" style="width:100%">

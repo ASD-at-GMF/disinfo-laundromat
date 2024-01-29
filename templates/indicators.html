@@ -43,7 +43,7 @@
         <h2>Website Indicators</h2>
 
         <!-- Dropdown for selecting indicator type -->
-        <form method="get" action="{{ url_for('indicators') }}">
+        <form method="get" action="{{ url_for('indicators_gui') }}">
             <label for="indicatorTypeSelect" class="form-label">Select an indicator type:</label>
             <select id="indicatorTypeSelect" name="type" onchange="this.form.submit(); updateExplainer();">
                 <option value="">All Types</option>

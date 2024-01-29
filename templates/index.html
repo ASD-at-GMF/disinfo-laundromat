@@ -332,7 +332,7 @@
                             URLS)</label>
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button> or
-                    <a href="{{ url_for('indicators') }}" class="btn btn-secondary">View All Indicators by Type</a>
+                    <a href="{{ url_for('indicators_gui') }}" class="btn btn-secondary">View All Indicators by Type</a>
                 </form>
                 <hr />
             </div>
@@ -362,7 +362,7 @@
         </div>
 
         <div class="container mt-4">
-            <h2>How indicators should be used <a href="{{ url_for('indicators') }}" class="btn btn-secondary ">View All Indicators + Descriptions</a></h2>
+            <h2>How indicators should be used <a href="{{ url_for('indicators_gui') }}" class="btn btn-secondary ">View All Indicators + Descriptions</a></h2>
             
             <ul class="list-group">
                 <li class="list-group-item">
@@ -394,7 +394,7 @@
 
         {% else %}
         <p>Please log in to access allow website fingerprinting</p>
-        <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
+        <a href="{{ url_for('login_gui') }}" class="btn btn-primary">Login</a>
 
         {% endif %}
 

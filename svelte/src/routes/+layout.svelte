@@ -4,8 +4,8 @@
 	import Footer from '$components/Footer.svelte';
 </script>
 
-<div class="w-full min-h-screen bg-red-500 px-3 md:px-16 flex flex-col">
+<div class="flex min-h-screen w-full flex-col bg-red-500 px-3 md:px-16">
 	<Header />
 	<slot />
-	<Footer className="mt-auto"/>
+	<Footer className="mt-auto" />
 </div>

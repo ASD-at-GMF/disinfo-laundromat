@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { Tabs } from 'bits-ui';
+	import { Tabs} from 'bits-ui';
+	import type { TabsContentProps } from 'bits-ui';
 	import { cn } from '$utils';
-	export let value: string;
-	export let className: string | undefined = undefined;
-</script>
+	const restProps = $$restProps as TabsContentProps;
+	let className: TabsContentProps["class"] = undefined;
+	export {className as class};
+	</script>
 
-<Tabs.Content {value} class={cn('', className)}>
+<Tabs.Content {...restProps} class={cn('', className)} >
 	<slot />
 </Tabs.Content>

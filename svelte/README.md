@@ -1,6 +1,6 @@
 # Disinformation Laundromat Sveltekit frontend
 
-## installation 
+## installation
 
 ```bash
 npm install
@@ -13,6 +13,7 @@ npm run dev
 ```
 
 ### type checking
+
 ```bash
 npm run check:watch
 ```

@@ -1,16 +1,17 @@
 <script lang="ts">
-	import { Tabs } from 'bits-ui';
+	import { Tabs, type TabsTriggerProps } from 'bits-ui';
 	import { cn } from '$utils';
-	export let value: string;
-	export let className: string | undefined = undefined;
-</script>
 
+  const restProps = $$restProps as TabsTriggerProps;
+	const className: TabsTriggerProps["class"] = undefined;
+	export { className as class };
+
+</script>
 <Tabs.Trigger
-	{value}
-	class={cn(
-		'data-[state=active]:shadow-mini dark:data-[state=active]:bg-background flex-1 data-[state=active]:bg-white',
-		className
-	)}
->
+	 class={cn('', className)}
+	 {...restProps} >
 	<slot />
 </Tabs.Trigger>
+
+
+

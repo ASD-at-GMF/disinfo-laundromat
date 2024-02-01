@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { APP_TITLE } from '$config';
 	import { cn } from '$utils';
-	export let className: string | undefined = undefined;
+	let className: string | undefined = undefined;
+	export { className as class };
 </script>
 
 <header class={cn('w-100 flex justify-between py-1', className)}>

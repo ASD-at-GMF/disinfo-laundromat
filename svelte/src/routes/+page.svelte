@@ -3,14 +3,22 @@
 	import TabsList from '$components/TabsList.svelte';
 	import TabsTrigger from '$components/TabsTrigger.svelte';
 	import TabsContent from '$components/TabsContent.svelte';
-	
+	import DropdownSelect from '$components/DropdownSelect.svelte';
 	import { Label, Select } from 'bits-ui';
-	const themes = [
-		{ value: 'light-monochrome', label: 'Light Monochrome' },
-		{ value: 'dark-green', label: 'Dark Green' },
-		{ value: 'svelte-orange', label: 'Svelte Orange' },
-		{ value: 'punk-pink', label: 'Punk Pink' }
+	import type { LabeledValue } from '$types';
+
+	const dropdown_dummy_items: LabeledValue[] = [
+		{ label: 'Google', value: 'Google' },
+		{ label: 'Bing', value: 'Bing' }
 	];
+
+	let formData = {
+		data: '',
+	}
+
+  function handleSubmit(event : any) {
+    console.log('Form data submitted:', event);
+  }
 </script>
 
 <main class="w-100">
@@ -29,30 +37,15 @@
 							engines to find related websites. Discover networks of malicious actors/websites
 							collectively sharing disinformation.
 						</p>
-						<Select.Root items={themes}>
-							<Select.Trigger
-								class="h-input rounded-9px border-border-input bg-background placeholder:text-foreground-alt/50 focus:ring-foreground focus:ring-offset-background inline-flex w-[296px] items-center border px-[11px]  text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
-								aria-label="Select a theme"
-							>
-								<Select.Value class="text-sm" placeholder="Select a theme" />
-							</Select.Trigger>
-							<Select.Content
-								class="border-muted bg-background shadow-popover w-full rounded-xl border px-1 py-3 outline-none"
-								sideOffset={8}
-							>
-								{#each themes as theme}
-									<Select.Item
-										class="rounded-button data-[highlighted]:bg-muted flex h-10 w-full select-none items-center py-3 pl-5 pr-1.5 text-sm outline-none transition-all duration-75"
-										value={theme.value}
-										label={theme.label}
-									>
-										{theme.label}
-										<Select.ItemIndicator class="ml-auto" asChild={false}></Select.ItemIndicator>
-									</Select.Item>
-								{/each}
-							</Select.Content>
-							<Select.Input name="favoriteFruit" />
-						</Select.Root>
+						<form>
+							<Label.Root for="browsers"> browsers </Label.Root>
+							<DropdownSelect
+								id="browers"
+								name ="browsers" 
+								items={dropdown_dummy_items}
+								onSelectedChange={handleSubmit}/>
+								<button type="submit">Submit</button>
+						<form>
 					</TabsContent>
 					<TabsContent value="metadata similarity">test 2 test 2</TabsContent>
 				</TabsRoot>

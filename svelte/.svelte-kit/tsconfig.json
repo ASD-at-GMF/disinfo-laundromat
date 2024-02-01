@@ -10,8 +10,11 @@
 			"$utils": [
 				"../src/lib/utils.ts"
 			],
+			"$types": [
+				"../src/lib/types.ts"
+			],
 			"$config": [
-				"../config.js"
+				"../src/lib/config.ts"
 			],
 			"$lib": [
 				"../src/lib"

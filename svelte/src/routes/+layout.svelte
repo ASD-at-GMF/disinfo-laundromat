@@ -7,5 +7,5 @@
 <div class="flex min-h-screen w-full flex-col bg-red-500 px-3 md:px-16">
 	<Header />
 	<slot />
-	<Footer className="mt-auto" />
+	<Footer class="mt-auto" />
 </div>

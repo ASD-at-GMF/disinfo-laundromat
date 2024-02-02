@@ -30,12 +30,12 @@
 	};
 
 	function handleSelectedChange(value: string, name: string) {
-		console.log(value);
 		if (inputData.hasOwnProperty(name)) {
 			inputData[name] = value;
 		} else {
 			console.error(`Unknown property: ${name}`);
 		}
+		console.log(inputData);
 	}
 </script>
 
@@ -61,7 +61,6 @@
 								id="region_selector"
 								name="region"
 								selected={dropdown_dummy_region[0]}
-								items={dropdown_dummy_region}
 								onSelectedChange={handleSelectedChange}>
 									{#each dropdown_dummy_region as item}
 										<DropdownSelectItem 

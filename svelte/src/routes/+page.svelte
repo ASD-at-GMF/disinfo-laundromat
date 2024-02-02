@@ -7,18 +7,35 @@
 	import { Label, Select } from 'bits-ui';
 	import type { LabeledValue } from '$types';
 
-	const dropdown_dummy_items: LabeledValue[] = [
-		{ label: 'Google', value: 'Google' },
-		{ label: 'Bing', value: 'Bing' }
+	const dropdown_dummy_region: LabeledValue[] = [
+		{ label: 'US', value: 'US' },
+		{ label: 'EU', value: 'EU' }
 	];
 
-	let formData = {
-		data: '',
+	const dropdown_dummy_language: LabeledValue[] = [
+		{ label: 'english', value: 'english' },
+		{ label: 'dutch', value: 'dutch' }
+	];
+
+	interface InputData {
+		region: LabeledValue,
+		language: LabeledValue,
+		[index: string]: LabeledValue;
 	}
 
-  function handleSubmit(event : any) {
-    console.log('Form data submitted:', event);
-  }
+	let inputData : InputData = {
+		region: '',
+		language: '',
+	};
+
+	function handleSelectedChanged({value, kind} {value: LabeledValue, kind: string}) {
+		if (inputData.hasOwnProperty(value.label)) {
+			inputData[value.label] = value.value;
+			console.log(inputData);
+		} else {
+			console.log(`Unknown property: ${value.label}`);
+		}
+	}
 </script>
 
 <main class="w-100">
@@ -38,15 +55,27 @@
 							collectively sharing disinformation.
 						</p>
 						<form>
-							<Label.Root for="browsers"> browsers </Label.Root>
+							<Label.Root for="browsers">browsers</Label.Root>
 							<DropdownSelect
-								id="browers"
-								name ="browsers" 
-								items={dropdown_dummy_items}
-								onSelectedChange={handleSubmit}/>
-								<button type="submit">Submit</button>
-						<form>
-					</TabsContent>
+								id="region_selector"
+								name="region"
+								kind="region"
+								selected={dropdown_dummy_region[0]}
+								items={dropdown_dummy_region}
+								onSelectedChange={handleSelectedChanged}
+							/>
+							<DropdownSelect
+								id="language_selector"
+								name="language"
+								kind="lagnuage"
+								selected={dropdown_dummy_language[0]}
+								items={dropdown_dummy_language}
+								onSelectedChange={handleSelectedChanged}
+							/>
+							<button type="submit">Submit</button>
+							<form></form>
+						</form></TabsContent
+					>
 					<TabsContent value="metadata similarity">test 2 test 2</TabsContent>
 				</TabsRoot>
 			</div>

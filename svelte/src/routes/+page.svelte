@@ -4,6 +4,7 @@
 	import TabsTrigger from '$components/TabsTrigger.svelte';
 	import TabsContent from '$components/TabsContent.svelte';
 	import DropdownSelect from '$components/DropdownSelect.svelte';
+	import DropdownSelectItem from '$components/DropdownSelectItem.svelte';
 	import { Label, Select } from 'bits-ui';
 	import type { LabeledValue } from '$types';
 
@@ -29,6 +30,7 @@
 	};
 
 	function handleSelectedChange(value: string, name: string) {
+		console.log(value);
 		if (inputData.hasOwnProperty(name)) {
 			inputData[name] = value;
 		} else {
@@ -60,15 +62,15 @@
 								name="region"
 								selected={dropdown_dummy_region[0]}
 								items={dropdown_dummy_region}
-								onSelectedChange={handleSelectedChange}
-							/>
-							<DropdownSelect
-								id="language_selector"
-								name="language"
-								selected={dropdown_dummy_language[0]}
-								items={dropdown_dummy_language}
-								onSelectedChange={handleSelectedChange}
-							/>
+								onSelectedChange={handleSelectedChange}>
+									{#each dropdown_dummy_region as item}
+										<DropdownSelectItem 
+										  value={item.value}
+											label={item.label}>
+										</DropdownSelectItem>
+									{/each}
+							</DropdownSelect>
+
 							<button type="submit">Submit</button>
 							<form></form>
 						</form></TabsContent

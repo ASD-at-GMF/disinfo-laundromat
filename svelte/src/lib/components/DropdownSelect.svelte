@@ -30,18 +30,8 @@
 		</Select.Trigger>
 		<Select.Content
 			class="border-muted bg-background shadow-popover w-full border px-1 py-3 outline-none"
-			sideOffset={8}
-		>
-			{#each items as item}
-				<Select.Item
-					class="rounded-button data-[highlighted]:bg-muted flex h-10 w-full select-none items-center py-3 pl-5 pr-1.5 text-sm outline-none transition-all duration-75"
-					value={item.value}
-					label={item.label}
-				>
-					{item.label}
-					<Select.ItemIndicator class="ml-auto" asChild={false}></Select.ItemIndicator>
-				</Select.Item>
-			{/each}
+			sideOffset={8}>
+		<slot/>
 		</Select.Content>
 		<select.input />
 	</Select.Root>

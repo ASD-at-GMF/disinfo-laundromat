@@ -18,14 +18,14 @@
 	];
 
 	interface InputData {
-		region: string,
-		language: string,
+		region: string;
+		language: string;
 		[index: string]: string;
 	}
 
-	let inputData : InputData = {
+	let inputData: InputData = {
 		region: '',
-		language: '',
+		language: ''
 	};
 
 	function handleSelectedChange(value: string, name: string) {

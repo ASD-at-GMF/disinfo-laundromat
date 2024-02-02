@@ -1,29 +1,33 @@
 <!-- Wrapper component based on https://www.bits-ui.com/docs/components/select -->
 <script lang="ts">
-	import { Select, type SelectProps, Label } from 'bits-ui';
+	import { Select, type Selected, type SelectProps } from 'bits-ui';
 	import type { LabeledValue } from '$types';
-  import { createEventDispatcher } from 'svelte';
+  //import { createEventDispatcher } from 'svelte';
 
-  const dispatch = createEventDispatcher();
+  //const dispatch = createEventDispatcher();
 	let id: string;
 	let items: LabeledValue[];
-	let kind: string;
+	let name: string;
+	let onSelectedChange: (value: any, name: string) => void;
 	let className: string | undefined = undefined;
 
-  function handleSelectedChange(value : LabeledValue) {
-    dispatch('onSelectedChange', { value : LabeledValue, kind: kind } );
-  }
+	function handleSelectedChange(value: Selected<unknown> | undefined) {
+		if (value && value.value !== null) {
+			onSelectedChange(value.value, name);
+		}
+	}
 
 	export {
-		id,
-		kind,
+		id,	
 		items,
-		className as class 	
+		name,
+		onSelectedChange,
+		className as class,
 	};
 </script>
 
-<div {id} onSelectedChange={handleSelectedChange} class={className}>
-	<Select.Root {...$$restProps}>
+<div {id} class={className}>
+	<Select.Root {name} onSelectedChange={handleSelectedChange} {...$$restProps}>
 		<Select.Trigger
 			class="h-input border-border-input bg-background placeholder:text-foreground-alt/50 focus:ring-foreground focus:ring-offset-background inline-flex items-center border px-[11px]  text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
 			aria-label="Select a item"
@@ -44,6 +48,6 @@
 				</Select.Item>
 			{/each}
 		</Select.Content>
-		<Select.Input bind:value={inputValue} />
+		<select.input/>
 	</Select.Root>
 </div>

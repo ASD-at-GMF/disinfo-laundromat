@@ -18,9 +18,9 @@
 	];
 
 	interface InputData {
-		region: LabeledValue,
-		language: LabeledValue,
-		[index: string]: LabeledValue;
+		region: string,
+		language: string,
+		[index: string]: string;
 	}
 
 	let inputData : InputData = {
@@ -28,12 +28,11 @@
 		language: '',
 	};
 
-	function handleSelectedChanged({value, kind} {value: LabeledValue, kind: string}) {
-		if (inputData.hasOwnProperty(value.label)) {
-			inputData[value.label] = value.value;
-			console.log(inputData);
+	function handleSelectedChange(value: string, name: string) {
+		if (inputData.hasOwnProperty(name)) {
+			inputData[name] = value;
 		} else {
-			console.log(`Unknown property: ${value.label}`);
+			console.error(`Unknown property: ${name}`);
 		}
 	}
 </script>
@@ -59,18 +58,16 @@
 							<DropdownSelect
 								id="region_selector"
 								name="region"
-								kind="region"
 								selected={dropdown_dummy_region[0]}
 								items={dropdown_dummy_region}
-								onSelectedChange={handleSelectedChanged}
+								onSelectedChange={handleSelectedChange}
 							/>
 							<DropdownSelect
 								id="language_selector"
 								name="language"
-								kind="lagnuage"
 								selected={dropdown_dummy_language[0]}
 								items={dropdown_dummy_language}
-								onSelectedChange={handleSelectedChanged}
+								onSelectedChange={handleSelectedChange}
 							/>
 							<button type="submit">Submit</button>
 							<form></form>

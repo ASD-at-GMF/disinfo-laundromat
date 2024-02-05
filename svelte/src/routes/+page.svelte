@@ -40,16 +40,6 @@
 		content: '',
 	};
 
-
-
-//	function handleInputChange(value: string, inputName: string) {
-//		if (inputData.hasOwnProperty(inputName)) {
-//			inputData[inputName] = value;
-//		} else {
-//			console.warn(`Unknown property: ${inputName}`);
-//		}
-//	}
-
 	function handleSubmit() {
 		console.log(formData);
 		
@@ -72,13 +62,16 @@
 							engines to find related websites. Discover networks of malicious actors/websites
 							collectively sharing disinformation.
 						</p>
-						<form>
+						<form on:submit|preventDefault={handleSubmit}>
 							<div class="flex">
 								<div> 
 									<Label.Root for="content">Content</Label.Root>
-									<TextArea name="content" bind:value={formData.content}/>
+									<TextArea 
+										name="content" 
+										bind:value={formData.content}
+										required/>
 								</div>
-								<button type="submit" on:click|preventDefault={handleSubmit}>Submit</button>
+								<button type="submit">Submit</button>
 							</div>
 
 							<Label.Root for="region">region</Label.Root>
@@ -86,7 +79,7 @@
 								name="region"
 								items={dropdown_dummy_region}
 								bind:value={formData.region}
-								required={true}>
+								required>
 								{#each dropdown_dummy_region as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
@@ -96,7 +89,7 @@
 							<DropdownSelect
 								name="language"
 								bind:value={formData.language}
-								required={true}
+								required
 							>
 								{#each dropdown_dummy_language as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
@@ -104,7 +97,16 @@
 							</DropdownSelect>
 
 							<Label.Root for="browser">browser</Label.Root>
-
+							<DropdownSelect
+								name="browser"
+								bind:value={formData.browser}
+								multiple={true}
+								required
+							>
+								{#each dropdown_dummy_browser as item}
+									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
+								{/each}
+							</DropdownSelect>
 
 							<form></form>
 						</form>

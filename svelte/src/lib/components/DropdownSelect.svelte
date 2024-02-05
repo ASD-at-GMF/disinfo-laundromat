@@ -1,38 +1,39 @@
 <!-- Wrapper component based on https://www.bits-ui.com/docs/components/select -->
 <script lang="ts">
 	import { Select, type Selected, type SelectProps } from 'bits-ui';
-	import { onMount } from 'svelte';
+	import type { LabeledValue } from "$types";
 
+	//import { onMount } from 'svelte';
 	export let name: string;
-	export let selected: Selected<unknown>;
-	export let onSelectedChange: (value: string, name: string) => void;
+	export let selected: LabeledValue;
+	//export let onSelectedChange: (value: string, name: string) => void;
 	let className: string | undefined = undefined;
 	export { className as class };
 
-	function handleSelectedChange(value: Selected<unknown> | undefined) {
-		if (value  && onSelectedChange) {
-			if (Array.isArray(value)) {
-				let str = value
-					.filter((v: Selected<unknown>) => v.value)
-					.map((v: Selected<unknown>) => v.value)
-					.join(',');
-				onSelectedChange(str, name);
-			} else if (value.value) {
-				onSelectedChange(value.value as string, name);
-			} else {
-				console.warn('Dropdown value(s) are undefined');
-			}
-		}
-	}
+//	function handleSelectedChange(value: Selected<unknown> | undefined) {
+//		if (value  && onSelectedChange) {
+//			if (Array.isArray(value)) {
+//				let str = value
+//					.filter((v: Selected<unknown>) => v.value)
+//					.map((v: Selected<unknown>) => v.value)
+//					.join(',');
+//				onSelectedChange(str, name);
+//			} else if (value.value) {
+//				onSelectedChange(value.value as string, name);
+//			} else {
+//				console.warn('Dropdown value(s) are undefined');
+//			}
+//		}
+//	}
 
-	onMount(() => {
-		// update parent with default selected value
-		handleSelectedChange(selected);
-	});
+//	onMount(() => {
+//		// update parent with default selected value
+//		handleSelectedChange(selected);
+//	});
 </script>
 
 <div id={name} class={className}>
-	<Select.Root {name} {selected} onSelectedChange={handleSelectedChange} {...$$restProps}>
+	<Select.Root {name} {selected} {...$$restProps}>
 		<Select.Trigger
 			class="h-input border-border-input bg-background placeholder:text-foreground-alt/50 focus:ring-foreground focus:ring-offset-background inline-flex items-center border px-[11px]  text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
 			aria-label="Select a item"

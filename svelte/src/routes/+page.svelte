@@ -25,31 +25,35 @@
 		{ label: 'Bing', value: 'Bing' }
 	];
 
-	interface InputData {
-		region: string;
-		language: string;
-		browser: string;
+	interface FormData {
+		region: LabeledValue;
+		language: LabeledValue;
+		browser: LabeledValue;
 		content: string;
-		[index: string]: string;
+		[index: string]: string | LabeledValue;
 	}
 
-	let inputData: InputData = {
-		region: '',
-		language: '',
-		browser: '',
+	let formData: FormData = {
+		region: dropdown_dummy_region[0],
+		language: dropdown_dummy_language[0],
+		browser: dropdown_dummy_browser[0],
 		content: '',
 	};
 
-	function handleInputChange(value: string, inputName: string) {
-		if (inputData.hasOwnProperty(inputName)) {
-			inputData[inputName] = value;
-		} else {
-			console.error(`Unknown property: ${inputName}`);
-		}
-		console.log(inputData);
-	}
 
-	function handleFormSubmit() {}
+
+//	function handleInputChange(value: string, inputName: string) {
+//		if (inputData.hasOwnProperty(inputName)) {
+//			inputData[inputName] = value;
+//		} else {
+//			console.warn(`Unknown property: ${inputName}`);
+//		}
+//	}
+
+	function handleSubmit() {
+		console.log(formData);
+		
+	}
 </script>
 
 <main class="w-100">
@@ -72,16 +76,17 @@
 							<div class="flex">
 								<div> 
 									<Label.Root for="content">Content</Label.Root>
-									<TextArea name="content" onInputChange={handleInputChange}/>
+									<TextArea name="content" bind:value={formData.content}/>
 								</div>
-								<button type="submit">Submit</button>
+								<button type="submit" on:click|preventDefault={handleSubmit}>Submit</button>
 							</div>
 
-							<Label.Root for="region">browsers</Label.Root>
+							<Label.Root for="region">region</Label.Root>
 							<DropdownSelect
 								name="region"
-								selected={dropdown_dummy_region[0]}
-								onSelectedChange={handleInputChange}>
+								items={dropdown_dummy_region}
+								bind:selected={formData["region"]}
+								required={true}>
 								{#each dropdown_dummy_region as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
@@ -90,23 +95,10 @@
 							<Label.Root for="language">language</Label.Root>
 							<DropdownSelect
 								name="language"
-								multiple={true}
-								selected={dropdown_dummy_language[0]}
-								onSelectedChange={handleInputChange}
+								bind:selected={formData.language}
+								required={true}
 							>
 								{#each dropdown_dummy_language as item}
-									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
-								{/each}
-							</DropdownSelect>
-
-							<Label.Root for="browser">browser</Label.Root>
-							<DropdownSelect
-								name="browser"
-								multiple={true}
-								selected={dropdown_dummy_browser[0]}
-								onSelectedChange={handleInputChange}
-							>
-								{#each dropdown_dummy_browser as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>

@@ -3,7 +3,6 @@
 	import { Select, type Selected, type SelectProps } from 'bits-ui';
 	import { onMount } from 'svelte';
 
-	export let id: string;
 	export let name: string;
 	export let selected: Selected<unknown>;
 	export let onSelectedChange: (value: string, name: string) => void;
@@ -32,7 +31,7 @@
 	});
 </script>
 
-<div {id} class={className}>
+<div id={name} class={className}>
 	<Select.Root {name} {selected} onSelectedChange={handleSelectedChange} {...$$restProps}>
 		<Select.Trigger
 			class="h-input border-border-input bg-background placeholder:text-foreground-alt/50 focus:ring-foreground focus:ring-offset-background inline-flex items-center border px-[11px]  text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"

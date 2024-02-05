@@ -5,6 +5,7 @@
 	import TabsContent from '$components/TabsContent.svelte';
 	import DropdownSelect from '$components/DropdownSelect.svelte';
 	import DropdownSelectItem from '$components/DropdownSelectItem.svelte';
+	import TextArea from '$components/TextArea.svelte';
 	import { Label, Select } from 'bits-ui';
 	import type { LabeledValue } from '$types';
 
@@ -19,7 +20,7 @@
 	];
 
 	const dropdown_dummy_browser: LabeledValue[] = [
-		{ label: 'all browsers', value: 'all_browsers'},
+		{ label: 'all browsers', value: 'all'},
 		{ label: 'Google', value: 'Google' },
 		{ label: 'Bing', value: 'Bing' }
 	];
@@ -27,19 +28,23 @@
 	interface InputData {
 		region: string;
 		language: string;
+		browser: string;
+		content: string;
 		[index: string]: string;
 	}
 
 	let inputData: InputData = {
 		region: '',
-		language: ''
+		language: '',
+		browser: '',
+		content: '',
 	};
 
-	function handleDropdownSelectedChange(value: string, name: string) {
-		if (inputData.hasOwnProperty(name)) {
-			inputData[name] = value;
+	function handleInputChange(value: string, inputName: string) {
+		if (inputData.hasOwnProperty(inputName)) {
+			inputData[inputName] = value;
 		} else {
-			console.error(`Unknown property: ${name}`);
+			console.error(`Unknown property: ${inputName}`);
 		}
 		console.log(inputData);
 	}
@@ -66,60 +71,49 @@
 						<form>
 							<div class="flex">
 								<div> 
-									<Label.Root for="content_search">language</Label.Root>
-									<textarea 
-										id="content_search"
-										name="content search" 
-										rows="4"
-										cols="50"
-										class="w-full resize-none"/>
+									<Label.Root for="content">Content</Label.Root>
+									<TextArea name="content" onInputChange={handleInputChange}/>
 								</div>
 								<button type="submit">Submit</button>
 							</div>
 
-							<Label.Root for="region_input">browsers</Label.Root>
+							<Label.Root for="region">browsers</Label.Root>
 							<DropdownSelect
-								id="region_input"
 								name="region"
 								selected={dropdown_dummy_region[0]}
-								onSelectedChange={handleDropdownSelectedChange}
-							>
+								onSelectedChange={handleInputChange}>
 								{#each dropdown_dummy_region as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>
 
-
-							<Label.Root for="language_input">language</Label.Root>
+							<Label.Root for="language">language</Label.Root>
 							<DropdownSelect
-								id="language_input"
 								name="language"
 								multiple={true}
 								selected={dropdown_dummy_language[0]}
-								onSelectedChange={handleDropdownSelectedChange}
+								onSelectedChange={handleInputChange}
 							>
 								{#each dropdown_dummy_language as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>
 
-							<Label.Root for="browser_input">browser</Label.Root>
+							<Label.Root for="browser">browser</Label.Root>
 							<DropdownSelect
-								id="browser_input"
 								name="browser"
 								multiple={true}
 								selected={dropdown_dummy_browser[0]}
-								onSelectedChange={handleDropdownSelectedChange}
+								onSelectedChange={handleInputChange}
 							>
 								{#each dropdown_dummy_browser as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>
-
-
 							<form></form>
-						</form></TabsContent
-					>
+						</form>
+						<a href="search"> advanced search </a>
+						</TabsContent>
 					<TabsContent value="metadata similarity">test 2 test 2</TabsContent>
 				</TabsRoot>
 			</div>

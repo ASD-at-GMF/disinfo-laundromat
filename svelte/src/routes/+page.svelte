@@ -37,6 +37,8 @@
 		}
 		console.log(inputData);
 	}
+
+	function handleFormSubmit() {}
 </script>
 
 <main class="w-100">
@@ -56,18 +58,29 @@
 							collectively sharing disinformation.
 						</p>
 						<form>
-							<Label.Root for="browsers">browsers</Label.Root>
+							<Label.Root for="region_selector">browsers</Label.Root>
 							<DropdownSelect
 								id="region_selector"
 								name="region"
 								selected={dropdown_dummy_region[0]}
-								onSelectedChange={handleSelectedChange}>
-									{#each dropdown_dummy_region as item}
-										<DropdownSelectItem 
-										  value={item.value}
-											label={item.label}>
-										</DropdownSelectItem>
-									{/each}
+								onSelectedChange={handleSelectedChange}
+							>
+								{#each dropdown_dummy_region as item}
+									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
+								{/each}
+							</DropdownSelect>
+
+							<Label.Root for="language_selector">language</Label.Root>
+							<DropdownSelect
+								id="language_selector"
+								name="language"
+								multiple={true}
+								selected={dropdown_dummy_language[0]}
+								onSelectedChange={handleSelectedChange}
+							>
+								{#each dropdown_dummy_language as item}
+									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
+								{/each}
 							</DropdownSelect>
 
 							<button type="submit">Submit</button>

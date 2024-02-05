@@ -1,27 +1,35 @@
 <!-- Wrapper component based on https://www.bits-ui.com/docs/components/select -->
 <script lang="ts">
 	import { Select, type Selected, type SelectProps } from 'bits-ui';
-  import { onMount } from 'svelte';
-	import type { LabeledValue } from '$types';
+	import { onMount } from 'svelte';
 
 	export let id: string;
 	export let name: string;
-	export let selected: Selected<unknown>; 
+	export let selected: Selected<unknown>;
 	export let onSelectedChange: (value: string, name: string) => void;
 	let className: string | undefined = undefined;
 	export { className as class };
 
 	function handleSelectedChange(value: Selected<unknown> | undefined) {
-		if (value && value.value !== null) {
-			onSelectedChange(value.value as string, name);
-		}
+	  if (value) {
+	    if (Array.isArray(value)) {
+	      let str = value
+		.filter((v: Selected<unknown>) => v.value)
+		.map((v: Selected<unknown>) => v.value)
+		.join(',');
+	      onSelectedChange(str, name);
+	    } else if (value.value) {
+	      onSelectedChange(value.value as string, name);
+	    } else {
+	      console.warn('Dropdown value(s) are undefined');
+	    }
+	  }
 	}
 
- onMount(() => {
+	onMount(() => {
 		// update parent with default selected value
-		handleSelectedChange(selected); 
- });
-
+		handleSelectedChange(selected);
+	});
 </script>
 
 <div {id} class={className}>
@@ -34,8 +42,9 @@
 		</Select.Trigger>
 		<Select.Content
 			class="border-muted bg-background shadow-popover w-full border px-1 py-3 outline-none"
-			sideOffset={8}>
-		<slot/>
+			sideOffset={8}
+		>
+			<slot />
 		</Select.Content>
 		<select.input />
 	</Select.Root>

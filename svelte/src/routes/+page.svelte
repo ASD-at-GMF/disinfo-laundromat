@@ -10,12 +10,18 @@
 
 	const dropdown_dummy_region: LabeledValue[] = [
 		{ label: 'US', value: 'US' },
-		{ label: 'EU', value: 'EU' }
+		{ label: 'NL', value: 'NL' }
 	];
 
 	const dropdown_dummy_language: LabeledValue[] = [
 		{ label: 'english', value: 'english' },
 		{ label: 'dutch', value: 'dutch' }
+	];
+
+	const dropdown_dummy_browser: LabeledValue[] = [
+		{ label: 'all browsers', value: 'all_browsers'},
+		{ label: 'Google', value: 'Google' },
+		{ label: 'Bing', value: 'Bing' }
 	];
 
 	interface InputData {
@@ -29,7 +35,7 @@
 		language: ''
 	};
 
-	function handleSelectedChange(value: string, name: string) {
+	function handleDropdownSelectedChange(value: string, name: string) {
 		if (inputData.hasOwnProperty(name)) {
 			inputData[name] = value;
 		} else {
@@ -58,32 +64,59 @@
 							collectively sharing disinformation.
 						</p>
 						<form>
-							<Label.Root for="region_selector">browsers</Label.Root>
+							<div class="flex">
+								<div> 
+									<Label.Root for="content_search">language</Label.Root>
+									<textarea 
+										id="content_search"
+										name="content search" 
+										rows="4"
+										cols="50"
+										class="w-full resize-none"/>
+								</div>
+								<button type="submit">Submit</button>
+							</div>
+
+							<Label.Root for="region_input">browsers</Label.Root>
 							<DropdownSelect
-								id="region_selector"
+								id="region_input"
 								name="region"
 								selected={dropdown_dummy_region[0]}
-								onSelectedChange={handleSelectedChange}
+								onSelectedChange={handleDropdownSelectedChange}
 							>
 								{#each dropdown_dummy_region as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>
 
-							<Label.Root for="language_selector">language</Label.Root>
+
+							<Label.Root for="language_input">language</Label.Root>
 							<DropdownSelect
-								id="language_selector"
+								id="language_input"
 								name="language"
 								multiple={true}
 								selected={dropdown_dummy_language[0]}
-								onSelectedChange={handleSelectedChange}
+								onSelectedChange={handleDropdownSelectedChange}
 							>
 								{#each dropdown_dummy_language as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>
 
-							<button type="submit">Submit</button>
+							<Label.Root for="browser_input">browser</Label.Root>
+							<DropdownSelect
+								id="browser_input"
+								name="browser"
+								multiple={true}
+								selected={dropdown_dummy_browser[0]}
+								onSelectedChange={handleDropdownSelectedChange}
+							>
+								{#each dropdown_dummy_browser as item}
+									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
+								{/each}
+							</DropdownSelect>
+
+
 							<form></form>
 						</form></TabsContent
 					>

@@ -11,19 +11,19 @@
 	export { className as class };
 
 	function handleSelectedChange(value: Selected<unknown> | undefined) {
-	  if (value) {
-	    if (Array.isArray(value)) {
-	      let str = value
-		.filter((v: Selected<unknown>) => v.value)
-		.map((v: Selected<unknown>) => v.value)
-		.join(',');
-	      onSelectedChange(str, name);
-	    } else if (value.value) {
-	      onSelectedChange(value.value as string, name);
-	    } else {
-	      console.warn('Dropdown value(s) are undefined');
-	    }
-	  }
+		if (value  && onSelectedChange) {
+			if (Array.isArray(value)) {
+				let str = value
+					.filter((v: Selected<unknown>) => v.value)
+					.map((v: Selected<unknown>) => v.value)
+					.join(',');
+				onSelectedChange(str, name);
+			} else if (value.value) {
+				onSelectedChange(value.value as string, name);
+			} else {
+				console.warn('Dropdown value(s) are undefined');
+			}
+		}
 	}
 
 	onMount(() => {

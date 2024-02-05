@@ -2,11 +2,8 @@
 <script lang="ts">
 	import { Select, type Selected, type SelectProps } from 'bits-ui';
 	import type { LabeledValue } from "$types";
-
-	//import { onMount } from 'svelte';
 	export let name: string;
-	export let selected: LabeledValue;
-	//export let onSelectedChange: (value: string, name: string) => void;
+	export let value: LabeledValue;
 	let className: string | undefined = undefined;
 	export { className as class };
 
@@ -26,14 +23,11 @@
 //		}
 //	}
 
-//	onMount(() => {
-//		// update parent with default selected value
-//		handleSelectedChange(selected);
-//	});
+
 </script>
 
 <div id={name} class={className}>
-	<Select.Root {name} {selected} {...$$restProps}>
+	<Select.Root {name} bind:selected={value} {...$$restProps}>
 		<Select.Trigger
 			class="h-input border-border-input bg-background placeholder:text-foreground-alt/50 focus:ring-foreground focus:ring-offset-background inline-flex items-center border px-[11px]  text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
 			aria-label="Select a item"

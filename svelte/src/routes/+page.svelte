@@ -85,7 +85,7 @@
 							<DropdownSelect
 								name="region"
 								items={dropdown_dummy_region}
-								bind:selected={formData["region"]}
+								bind:value={formData.region}
 								required={true}>
 								{#each dropdown_dummy_region as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
@@ -95,13 +95,17 @@
 							<Label.Root for="language">language</Label.Root>
 							<DropdownSelect
 								name="language"
-								bind:selected={formData.language}
+								bind:value={formData.language}
 								required={true}
 							>
 								{#each dropdown_dummy_language as item}
 									<DropdownSelectItem value={item.value} label={item.label}></DropdownSelectItem>
 								{/each}
 							</DropdownSelect>
+
+							<Label.Root for="browser">browser</Label.Root>
+
+
 							<form></form>
 						</form>
 						<a href="search"> advanced search </a>

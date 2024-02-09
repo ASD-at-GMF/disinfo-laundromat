@@ -3,13 +3,50 @@ The purpose of the laundromat, how to use it effectively, and how to interpret t
 
 ## The Laundromat
 The laundromat tool is a **lead generation tool** to try and determine if and how websites share architecture and content. *Even the strongest evidence from the laundromat tool requires corroboration through further investigation and additional evidence*
-The laundromat tool provides two functions: Content Similarity Search and Domain Forensics Matching. 
-Content Similarity Search attempts to detect URLs where a given text snippet occurs. It does not provide evidence of where that text originated or any relationship between two entities posting two similar texts. Detemination of a given text's provenance is outside the scope of this tool.
-Domain Forensics Matching attempts to find aspects of a website which indicate what makes it unique, give insight into its architecture/design, or show how its used/tracked. These indicators are compared for items with high degrees of similarity and matches are provided to the user
 
-### The Domain Forensics Corpus
+The laundromat tool provides two functions: Content Similarity Search and Domain Forensics Matching:
+
+- Content Similarity Search attempts to detect URLs where a given text snippet occurs. It does not provide evidence of where that text originated or any relationship between two entities posting two similar texts. Detemination of a given text's provenance is outside the scope of this tool.
+- Domain Forensics Matching attempts to find aspects of a website which indicate what makes it unique, give insight into its architecture/design, or show how its used/tracked. These indicators are compared for items with high degrees of similarity and matches are provided to the user
+
+### The Domain Forensics Comparison Corpus
+
+Any URLs entered into the Domain Forensics Matching tool are compared against against a list of domains already processed by the tool. This corpus is sourced from a number of sources, including: 
+
+- [EU vs Disinfo's Database](https://euvsdisinfo.eu/disinformation-cases/)
+- Research from partner and related organizations, such as [ISD's report on RT Mirror Sites](https://isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/)
+- Known [state media sites](https://github.com/ASD-at-GMF/state-media-profiles)
+- Lists of [pink slime sites](https://iffy.news/pink-slime-fake-local-news/) and [faux local news sites](https://www.midwestradionetwork.com/)
+- Dave Troy's list of potential ['Russia Adjacent' sites](https://docs.google.com/spreadsheets/d/1JIHe_RqyRVO9JR1yR7AqEYqcLg9uimidiiEcVnlDnbA/edit#gid=0) 
+- At our own discretion, user-input sites. 
+
+Inclusion in the corpus of comparison sites is neither an endorsement nor a criticism of a given website's point of view or their relationship to any other member of the corpus. It solely reflects what websites are of interest to OSINT researchers. If you'd like a website removed from the list or have a potential list of new items to include, email pbenzoni (at) gmfus.org
+
+Suggested for future inclusion, but not yet evaluated:
+- https://en.wikipedia.org/wiki/List_of_fake_news_websites
+- [List of news websites](https://www.wikidata.org/w/index.php?title=Special:WhatLinksHere/Q17232649&limit=50&dir=next&offset=0%7C3014523)
+
+### About the Indicator Tier System
 
 ## How to use the Laundromat
+
+### Content Similarity Search
+
+Content Similarity Search takes a given title and/or content and uses [GDELT](https://www.gdeltproject.org/), a variety of search services, and a plagiarism checker to detect urls with some degree of similarity of the provided content.
+
+#### URL Search
+
+Enter the full URL of an article or webpage (e.g. https://tech.cnn.com/article-title.html or https://www.rt.com/russia/588284-darkening-prospects-ukraine-postwar/) to automatically attempt to extract title and content 
+
+#### Advanced (Title/Content) Search
+
+This search allows users to specify the title and content (and apply boolean ANDs/ORs to the title and content). It also requires specifying a country and language to search in. As not all languages and countries are supported by each service, these will default to US and English if unsupported. Finally, users may specify which search engines they want to use for their search. 
+
+This will produce a searchable list of links, their domains, possible associations with known lists, the title and snippet, the search engines where that link will be found, and the percentage of the title or snippet which matches the provided inputs as determined by the [Ratcliff/Obershelp algorithm.](https://en.wikipedia.org/wiki/Gestalt_pattern_matching).
+
+### Domain Forensics Matching
+
+This search, which will accept a list of one or more [fully qualified domain names.](https://en.wikipedia.org/wiki/Fully_qualified_domain_name) (including a prepended https:// on each domain name). This will produce a list of indicators and a list of sites which match (or are extremely similart to) those indicators. Indicators, and thus matches, are broken into the three tiers described above.  
 
 ## Interpreting Results
 

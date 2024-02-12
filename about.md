@@ -26,7 +26,39 @@ Suggested for future inclusion, but not yet evaluated:
 - https://en.wikipedia.org/wiki/List_of_fake_news_websites
 - [List of news websites](https://www.wikidata.org/w/index.php?title=Special:WhatLinksHere/Q17232649&limit=50&dir=next&offset=0%7C3014523)
 
-### About the Indicator Tier System
+### About the Indicator Tier System and Interpreting Results
+
+Each indicator is associated with evidentiary tier and are subject to [interpretation](#Interpreting Indicator Validity). 
+
+Tier 1 indicators: [**WHEN VALID**](#Interpreting Indicator Validity) are typically unique or highly indicative of the provenance of a website. This includes unique IDs for verification purposes and web services like Google, Yandex, etc as well as site metadata like WHOIS information and certification, [**WHEN VALID**](#Interpreting Indicator Validity), as DDOS protection services like Cloudflare and shared hosting services like Bluehost can provide spurious matches. 
+
+Tier 2 indicators: Tier 2 indicators, [**WHEN VALID**](#Interpreting Indicator Validity), offer a moderate level of certainty regarding the provenance of a website. These are not as unique as Tier 1 indicators but provide valuable context. This tier includes IPs within the same subnet, matching meta tags, and commonalities in standard and custom response headers
+
+Tier 3: Tertiary Indicators
+Tier 3 indicators, [**WHEN VALID**](#Interpreting Indicator Validity),  are the least specific but can still support broader analyses when combined with higher-tier indicators. These include shared CSS classes, UUIDs, and Content Management Systems 
+
+#### Interpreting Indicator Validity
+Understanding the validity of indicators is crucial in the analysis of websites' provenance and connections. Indicators can range from high-confidence markers of direct relationships to spurious matches that may mislead investigations. It is essential to approach each indicator with a critical eye and corroborate findings with additional evidence.
+
+**High Confidence Indicators:**
+
+- Unique IDs for verification purposes: These are often excellent evidence of a connection or shared ownership, such as unique Google Analytics IDs that directly link websites to the same account.
+- Domain Certificate sharing: When websites share a specific SSL certificate, it often (but not always, see below) indicates a direct relationship, as certificates are typically issued to and managed by the same entity.
+
+Discovering two websites with the same unique Google Analytics ID AND a shared, specific SSL certificate suggests a high-confidence link, indicating shared management or ownership.
+
+**Spurious Matches:**
+
+- Using services like Cloudflare: While Cloudflare and similar DDOS protection services offer valuable security benefits, they also mask true IP addresses and distribute shared SSL certificates across multiple sites. This can lead to false positives in linking unrelated websites based on shared IP addresses or certificates.
+- Shared hosting services: Websites hosted on shared services like Bluehost may share IP addresses with hundreds of unrelated sites, making IP-based matches unreliable without further context.
+
+Identifying that multiple websites are behind Cloudflare does not inherently indicate a connection beyond choosing a common, popular service for performance and security enhancements. All tier 1 and 2 indicators should be scrutinized carefully to determine if a match is valid or spurious
+
+##### Example Investigation:
+
+An analyst investigating a network of disinformation websites notices that several sites share a specific Facebook Pixel ID, indicating a potential link in their online marketing strategies. This Tier 1 indicator suggests a high-confidence connection. However, upon further investigation, it's revealed that these sites also use Cloudflare for DDOS protection, sharing SSL certificates and IP addresses with numerous unrelated sites. While the shared Facebook Pixel ID remains a strong indicator of connection, the shared certificates and IP addresses through Cloudflare are deemed spurious matches and the additional sites are discarded from the network. The analyst corroborates the initial finding with additional Tier 1 indicators, such as unique verification IDs, solidifying the connection between the sites beyond the spurious matches introduced by shared security services.
+
+In interpreting indicator validity, analysts must weigh the evidence, seek corroboration, and consider the broader context to distinguish between high-confidence connections and potentially misleading, spurious matches.
 
 ## How to use the Laundromat
 
@@ -47,8 +79,6 @@ This will produce a searchable list of links, their domains, possible associatio
 ### Domain Forensics Matching
 
 This search, which will accept a list of one or more [fully qualified domain names.](https://en.wikipedia.org/wiki/Fully_qualified_domain_name) (including a prepended https:// on each domain name). This will produce a list of indicators and a list of sites which match (or are extremely similart to) those indicators. Indicators, and thus matches, are broken into the three tiers described above.  
-
-## Interpreting Results
 
 ## Partners, Sponsors, Disclaimers
 The Laundromat Tool is made possible with the support of European Media and Information Fund (EMIF).

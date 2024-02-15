@@ -239,32 +239,37 @@ methods = {
 
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
+    """
+    This function iterates over the set of indicator types to calculate matches
+    for each type. It then aggregates all found matches and returns them as a dataframe.
+    * If no comparison dataset is provided, this function will do
+    internal matching on the provided `data` dataset.
+    * If result_dir is provided, intermediary results per-indicator type will be written out
+    to the directory.
+    """
     matches_per_feature = []
-    # Get unique values from 'column_name'
-    unique_values = data['indicator_type'].unique()
-    for value in unique_values:
-        if value not in FEATURE_MATCHING.keys():
-            print("MISSING FEATURE MATCHING METHOD FOR: ", value)
-
-    for feature, method in FEATURE_MATCHING.items():
-        print(f"Matching {feature} with method: {method}")
-        feature_df = data[data[INDICATOR_TYPE] == feature]
-        if comparison is not None:
-            comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
-        else:
-            comparison_df = None
+    if not comparison:
+        comparison = data
+    unique_indicator_types = data[INDICATOR_TYPE].unique()
+    for indicator_type in unique_indicator_types:
+        match_method = FEATURE_MATCHING.get(indicator_type)
+        if not match_method:
+            print(f"MISSING FEATURE MATCHING METHOD FOR: {indicator_type}")
+            continue
+        feature_df = data[data[INDICATOR_TYPE] == indicator_type]
+        comparison_df = comparison[comparison[INDICATOR_TYPE] == indicator_type]
         #TODO FIX BAD MATCHES FOR SOME IOU FEATURES
         try:
-            feature_matches = methods[method](
-                feature_df=feature_df, feature=feature, comparison_df=comparison_df
+            feature_matches = methods[match_method](
+                feature_df=feature_df, feature=indicator_type, comparison_df=comparison_df
             )
             matches_per_feature.append(feature_matches)
             if result_dir:
                 feature_matches.to_csv(
-                    f"{result_dir}/{feature}_matches.csv", index=False
+                    f"{result_dir}/{indicator_type}_matches.csv", index=False
                 )
         except:
-            print(f"Error matching feature: {feature}")
+            print(f"Error matching feature: {indicator_type}")
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 
@@ -328,7 +333,7 @@ if __name__ == "__main__":
         data1 = pd.read_csv(args.input_file)
         data2 = None
         result_file = result_file or f"{Path(args.input_file).stem}_results.csv"
-    matches = find_matches(data1, data2, result_dir=result_dir)
+    matches = find_matches(data=data1, comparison=data2, result_dir=result_dir)
     print(f"Matches found: {matches.shape[0]}")
     print(
         f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"

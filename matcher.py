@@ -17,15 +17,12 @@ INDICATOR = "indicator_content"
 def find_direct_matches(
     feature_df: pd.DataFrame,
     feature: str,
-    comparison_df: Optional[pd.DataFrame] = None,
+    comparison_df: pd.DataFrame,
     indicator=INDICATOR,
 ) -> pd.DataFrame:
     # filter out invalid data
     feature_df = basic_preprocess(feature_df, indicator)
-    if comparison_df is not None:
-        comparison_df = basic_preprocess(comparison_df, indicator)
-    else:
-        comparison_df = feature_df
+    comparison_df = basic_preprocess(comparison_df, indicator)
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
     matches = test_matches[test_matches.domain_name_x != test_matches.domain_name_y]
     # deduplicating
@@ -38,7 +35,7 @@ def find_direct_matches(
 def find_iou_matches(
     feature_df: pd.DataFrame,
     feature: str,
-    comparison_df: Optional[pd.DataFrame] = None,
+    comparison_df: pd.DataFrame,
     threshold: float = 0.9,
 ) -> pd.DataFrame:
     # Define IOU function
@@ -48,35 +45,22 @@ def find_iou_matches(
     # Convert feature data to sets
     feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
 
-    if comparison_df is not None:
-        # Convert comparison data to sets
-        comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    # Convert comparison data to sets
+    comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
 
-        # Generate IOU data
-        iou_data = [
-            {
-                "domain_name_x": f_domain,
-                "domain_name_y": c_domain,
-                "match_value": round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
-                "matched_on": feature_sets[f_domain]
+    # Generate IOU data
+    iou_data = [
+        {
+            "domain_name_x": f_domain,
+            "domain_name_y": c_domain,
+            "match_value": round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
+            "matched_on": feature_sets[f_domain]
 
-            }
-            for f_domain in feature_sets
-            for c_domain in comparison_sets
-        ]
-    else:
-        # Generate IOU data for self-comparison
-        iou_data = [
-            {
-                "domain_name_x": domain1,
-                "domain_name_y": domain2,
-                "match_value": round(iou(feature_sets[domain1], feature_sets[domain2]), 3),
-                "matched_on": feature_sets[domain1]
-
-            }
-            for idx, domain1 in enumerate(feature_sets)
-            for domain2 in list(feature_sets)[idx + 1:]
-        ]
+        }
+        for f_domain in feature_sets
+        for c_domain in comparison_sets
+        if f_domain != c_domain
+    ]
 
     # Create DataFrame from IOU data
     result = pd.DataFrame(iou_data)
@@ -89,23 +73,18 @@ def find_iou_matches(
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
     feature="whois",
-    comparison_df: Optional[pd.DataFrame] = None,
 ):
     whois_df = whois_preprocess(feature_df, feature)
-    if comparison_df is not None:
-        whois_comparison_df = whois_preprocess(comparison_df, feature)
-    else:
-        whois_comparison_df = None
+    whois_comparison_df = whois_preprocess(comparison_df, feature)
+
     feature_matches = []
     for sub_feature in WHOIS_FEATURES:
         whois_feature_df = feature_df_preprocess(whois_df, sub_feature)
-        if whois_comparison_df is not None:
-            whois_feature_comparison_df = feature_df_preprocess(
-                whois_comparison_df, sub_feature
-            )
-        else:
-            whois_feature_comparison_df = whois_feature_df
+        whois_feature_comparison_df = feature_df_preprocess(
+            whois_comparison_df, sub_feature
+        )
         matches = find_direct_matches(
             whois_feature_df,
             feature=sub_feature,
@@ -120,23 +99,17 @@ def parse_whois_matches(
 # this is very similar to whois and can be refactored
 def parse_certificate_matches(
     feature_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
     feature="urlscan_certificate",
-    comparison_df: Optional[pd.DataFrame] = None,
 ):
     cert_df = cert_preprocess(feature_df, feature)
-    if comparison_df is not None:
-        cert_comparison_df = cert_preprocess(comparison_df, feature)
-    else:
-        cert_comparison_df = None
+    cert_comparison_df = cert_preprocess(comparison_df, feature)
     feature_matches = []
     for sub_feature in URLSCAN_CERT_FEATURES:
         cert_feature_df = feature_df_preprocess(cert_df, sub_feature)
-        if cert_comparison_df is not None:
-            cert_feature_comparison_df = feature_df_preprocess(
-                cert_comparison_df, sub_feature
-            )
-        else:
-            cert_feature_comparison_df = cert_feature_df
+        cert_feature_comparison_df = feature_df_preprocess(
+            cert_comparison_df, sub_feature
+        )
         matches = find_direct_matches(
             cert_feature_df,
             feature=sub_feature,

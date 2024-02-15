@@ -46,12 +46,11 @@ def feature_df_preprocess(feature_df: pd.DataFrame, feature: str) -> pd.DataFram
     return whois_feature_df
 
 
-# urlscan certificate
 def prefix_keys(data_dict: Dict[str, Any], prefix: str) -> Dict[str, Any]:
-    new_dict = {}
-    for key in data_dict.keys():
-        new_dict[f"{prefix}-{key}"] = data_dict[key]
-    return new_dict
+    """
+    Add a prefix string to every key in a dictionary
+    """
+    return {f"{prefix}-{key}": data_dict[key] for key in data_dict.keys()}
 
 
 def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:

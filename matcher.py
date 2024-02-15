@@ -1,79 +1,14 @@
 import argparse
-import json
-import ast
 from pathlib import Path
 import pandas as pd
-import numpy as np
-from typing import Optional, Dict, Any
-from functools import partial
+from preprocess import basic_preprocess,cert_preprocess, feature_df_preprocess, whois_preprocess 
+from typing import Optional, Dict
 
 ## Preprocessing
 
 DOMAIN = "domain_name"
 INDICATOR_TYPE = "indicator_type"
 INDICATOR = "indicator_content"
-
-
-def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
-    df = df[["domain_name", feature]]
-    df = df[~df[feature].isna() & ~df[feature].isnull()]
-
-    return df
-
-
-# whois data
-def convert_whois(data):
-    try:
-        whois_data = json.loads(str(data))
-    except json.decoder.JSONDecodeError:
-        whois_data = ast.literal_eval(data)
-    # this keeps the property 'domain_name' from conflicting with our column
-    if "domain_name" in whois_data:
-        whois_data["whois_domain"] = whois_data.pop("domain_name")
-    return whois_data
-
-
-def whois_preprocess(df: pd.DataFrame, whois_feature: str) -> pd.DataFrame:
-    whois_df = df.loc[df[INDICATOR_TYPE] == whois_feature, :].reset_index()
-    whois_df[INDICATOR] = (
-        whois_df[INDICATOR].map(convert_whois).map(partial(prefix_keys, prefix="whois"))
-    )
-    whois_df = pd.concat([whois_df, pd.json_normalize(whois_df[INDICATOR])], axis=1)
-
-    return whois_df
-
-
-def feature_df_preprocess(feature_df: pd.DataFrame, feature: str) -> pd.DataFrame:
-    whois_feature_df = feature_df[[DOMAIN, feature]].set_index(DOMAIN)
-    whois_feature_df = whois_feature_df[feature].explode().reset_index()
-    whois_feature_df = (
-        whois_feature_df.replace("REDACTED FOR PRIVACY", np.nan)
-        .dropna()
-        .drop_duplicates()
-    )
-    return whois_feature_df
-
-
-# urlscan certificate
-def prefix_keys(data_dict: Dict[str, Any], prefix: str) -> Dict[str, Any]:
-    new_dict = {}
-    for key in data_dict.keys():
-        new_dict[f"{prefix}-{key}"] = data_dict[key]
-    return new_dict
-
-
-def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:
-    cert_df = df.loc[df[INDICATOR_TYPE] == cert_feature, :].reset_index()
-    try:
-        cert_df[INDICATOR] = cert_df[INDICATOR].map(json.loads)
-    except json.JSONDecodeError:
-        # this is bad and should be fixed by the change in crawler line 462
-        cert_df[INDICATOR] = cert_df[INDICATOR].map(ast.literal_eval)
-    cert_df[INDICATOR] = cert_df[INDICATOR].map(
-        partial(prefix_keys, prefix="certificate")
-    )
-    cert_df = pd.concat([cert_df, pd.json_normalize(cert_df[INDICATOR])], axis=1)
-    return cert_df
 
 
 ## Matching
@@ -298,7 +233,6 @@ methods = {
     "iou": find_iou_matches,
     # "dict_direct_match"
     # "intersection"
-    # "iou"
     # "abs_difference_vs_threshold"
 }
 # todo add 'any in list" match
@@ -333,31 +267,6 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
             print(f"Error matching feature: {feature}")
     all_matches = pd.concat(matches_per_feature)
     return all_matches
-
-
-def compare_indicator_files(file1, file2, result_dir=None, result_file=None):
-    data1 = pd.read_csv(file1)
-    data2 = pd.read_csv(file2)
-    if not result_file:
-        result_file = f"{Path(file1).stem}_{Path(file2).stem}_results.csv"
-    matches = find_matches(data1, data2, result_dir=result_dir)
-    print(f"Matches found: {matches.shape[0]}")
-    print(
-        f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
-    )
-    matches.to_csv(result_file, index=False)
-
-
-def pairwise_comparison(input_file, result_dir=None, result_file=None):
-    data = pd.read_csv(input_file)
-    if not result_file:
-        result_file = Path(input_file).stem + "_results.csv"
-    matches = find_matches(data, result_dir=result_dir)
-    print(f"Matches found: {matches.shape[0]}")
-    print(
-        f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
-    )
-    matches.to_csv(result_file, index=False)
 
 
 if __name__ == "__main__":
@@ -412,13 +321,16 @@ if __name__ == "__main__":
         Path(result_dir).mkdir(exist_ok=True)
 
     if args.comparison_type == "compare":
-        compare_indicator_files(
-            file1=args.input_file,
-            file2=args.compare_file,
-            result_dir=result_dir,
-            result_file=result_file,
-        )
+        data1 = pd.read_csv(args.input_file)
+        data2 = pd.read_csv(args.compare_file)
+        result_file = result_file or f"{Path(args.input_file).stem}_{Path(args.compare_file).stem}_results.csv"
     else:
-        pairwise_comparison(
-            input_file=args.input_file, result_dir=result_dir, result_file=result_file
-        )
+        data1 = pd.read_csv(args.input_file)
+        data2 = None
+        result_file = result_file or f"{Path(args.input_file).stem}_results.csv"
+    matches = find_matches(data1, data2, result_dir=result_dir)
+    print(f"Matches found: {matches.shape[0]}")
+    print(
+        f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
+    )
+    matches.to_csv(result_file, index=False)

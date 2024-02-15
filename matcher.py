@@ -43,10 +43,10 @@ def find_iou_matches(
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
     # Convert feature data to sets
-    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    feature_sets = feature_df.groupby(DOMAIN)[feature].apply(lambda x: set.union(*map(set, x))).to_dict()
 
     # Convert comparison data to sets
-    comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    comparison_sets = comparison_df.groupby(DOMAIN)[feature].apply(lambda x: set.union(*map(set, x))).to_dict()
 
     # Generate IOU data
     iou_data = [
@@ -54,7 +54,7 @@ def find_iou_matches(
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
             "match_value": round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
-            "matched_on": feature_sets[f_domain]
+            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
@@ -306,6 +306,7 @@ if __name__ == "__main__":
         data1 = pd.read_csv(args.input_file)
         data2 = None
         result_file = result_file or f"{Path(args.input_file).stem}_results.csv"
+
     matches = find_matches(data=data1, comparison=data2, result_dir=result_dir)
     print(f"Matches found: {matches.shape[0]}")
     print(

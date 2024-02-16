@@ -1,4 +1,4 @@
-SERP_API_KEY        =''
+ERP_API_KEY        =''
 SITES_OF_CONCERN    =''
 KNOWN_INDICATORS    =''
 MYIPMS_API_PATH     =''

@@ -1,6 +1,8 @@
 
 from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify
 from flask_bootstrap import Bootstrap
+from flask_cors import CORS
+
 import json
 import re
 from io import BytesIO
@@ -31,6 +33,7 @@ from matcher import find_matches
 from modules.email import send_results_email
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 bootstrap = Bootstrap(app)
 bcrypt = Bcrypt(app)
 app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
@@ -172,7 +175,7 @@ def fingerprint_gui():
     if request.method == 'POST':
         try:
             indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
-            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
+            return render_template('index.html',  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
         except Exception as e:
             return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)

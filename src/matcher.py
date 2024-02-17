@@ -1,14 +1,17 @@
 import argparse
 from pathlib import Path
 import pandas as pd
-from preprocess import basic_preprocess,cert_preprocess, feature_df_preprocess, whois_preprocess 
-from typing import Optional, Dict
+from src.preprocess import basic_preprocess,cert_preprocess, feature_df_preprocess, whois_preprocess 
+from typing import Dict
+import traceback
 
 ## Preprocessing
 
 DOMAIN = "domain_name"
 INDICATOR_TYPE = "indicator_type"
 INDICATOR = "indicator_content"
+MATCH_TYPE = "match_type"
+MATCH_VALUE = "match_value"
 
 
 ## Matching
@@ -27,8 +30,8 @@ def find_direct_matches(
     matches = test_matches[test_matches.domain_name_x != test_matches.domain_name_y]
     # deduplicating
     matches = matches[matches.domain_name_x < matches.domain_name_y]
-    matches["match_type"] = feature
-    matches = matches.rename(columns={indicator: "match_value"})
+    matches[MATCH_TYPE] = feature
+    matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches
 
 
@@ -41,33 +44,33 @@ def find_iou_matches(
     # Define IOU function
     def iou(set1, set2):
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
-
+    print(feature_df.head())
     # Convert feature data to sets
-    feature_sets = feature_df.groupby(DOMAIN)[feature].apply(lambda x: set.union(*map(set, x))).to_dict()
-
+    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    print(feature_sets)
     # Convert comparison data to sets
-    comparison_sets = comparison_df.groupby(DOMAIN)[feature].apply(lambda x: set.union(*map(set, x))).to_dict()
+    comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
 
     # Generate IOU data
     iou_data = [
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
-            "match_value": round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
+            MATCH_VALUE: round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
             "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
         for c_domain in comparison_sets
-        if f_domain != c_domain
+        if (f_domain != c_domain) and (f_domain < c_domain)
     ]
 
     # Create DataFrame from IOU data
     result = pd.DataFrame(iou_data)
     if result.empty:
         return result
-    result["match_type"] = feature
-    result = result[result["match_value"] >= threshold]
+    result[MATCH_TYPE] = feature
+    result = result[result[MATCH_VALUE] >= threshold]
 
     return result
 
@@ -241,8 +244,10 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                 feature_matches.to_csv(
                     f"{result_dir}/{indicator_type}_matches.csv", index=False
                 )
-        except:
+        except Exception as e:
             print(f"Error matching feature: {indicator_type}")
+            print(traceback.format_exc())
+            break
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 

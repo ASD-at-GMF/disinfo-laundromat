@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.matcher import find_iou_matches, DOMAIN, INDICATOR, INDICATOR_TYPE, MATCH_TYPE, MATCH_VALUE
+from modules.matcher import find_iou_matches, DOMAIN, INDICATOR, INDICATOR_TYPE, MATCH_TYPE, MATCH_VALUE
 
 def test__find_direct_matches():
     raise NotImplementedError

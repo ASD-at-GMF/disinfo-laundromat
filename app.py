@@ -26,8 +26,8 @@ import traceback
 from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER, PATH_TO_OUTPUT_CSV, MATCH_VALUES_TO_IGNORE
 from reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA
 # Import all your functions here
-from src.crawler import crawl_one_or_more_urls
-from src.matcher import find_matches
+from modules.crawler import crawl_one_or_more_urls
+from modules.matcher import find_matches
 from modules.email import send_results_email
 
 app = Flask(__name__)

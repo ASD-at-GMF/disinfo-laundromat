@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 import pandas as pd
-from src.preprocess import basic_preprocess,cert_preprocess, feature_df_preprocess, whois_preprocess 
+from modules.preprocess import basic_preprocess,cert_preprocess, feature_df_preprocess, whois_preprocess 
 from typing import Dict
 import traceback
 

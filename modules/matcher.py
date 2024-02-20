@@ -329,8 +329,9 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                 feature_matches.to_csv(
                     f"{result_dir}/{feature}_matches.csv", index=False
                 )
-        except:
+        except Exception as e:
             print(f"Error matching feature: {feature}")
+            raise e
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 

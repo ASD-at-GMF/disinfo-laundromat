@@ -26,7 +26,7 @@ import hashlib
 import datetime
 import whois
 
-from id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+from modules.id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY, PATH_TO_OUTPUT_CSV
 
 visited = set()

@@ -1,6 +1,7 @@
 import argparse
 import ast
 from functools import partial
+from itertools import chain
 import json
 import logging
 import numpy as np
@@ -23,6 +24,22 @@ def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
     df = df[~df[feature].isna() & ~df[feature].isnull()]
 
     return df
+
+def column_contains_list(column: pd.Series) -> bool:
+    # Note: this works off the assumption that all values will have the same type
+    return column.iloc[0].startswith("[")
+
+def column_contains_set(column: pd.Series) -> bool:
+    return column.iloc[0].startswith("{")
+
+def group_indicators(df: pd.DataFrame) -> pd.Series:
+    df_copy = df.copy() # avoid side effects with ast.literal
+    if column_contains_list(df_copy[INDICATOR]) or column_contains_set(df_copy[INDICATOR]):
+        df_copy[INDICATOR] = df_copy[INDICATOR].map(ast.literal_eval)
+        return df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+    else:
+        return df_copy.groupby(DOMAIN)[INDICATOR].apply(set)
+
 
 
 # whois data
@@ -93,9 +110,8 @@ def find_direct_matches(
     feature_df = basic_preprocess(feature_df, indicator)
     comparison_df = basic_preprocess(comparison_df, indicator)
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
-    matches = test_matches[test_matches.domain_name_x != test_matches.domain_name_y]
     # deduplicating
-    matches = matches[matches.domain_name_x < matches.domain_name_y]
+    matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
     matches[MATCH_TYPE] = feature
     matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches
@@ -112,10 +128,9 @@ def find_iou_matches(
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
     # Convert feature data to sets
-    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
-
+    feature_sets = group_indicators(feature_df).to_dict()
     # Convert comparison data to sets
-    comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    comparison_sets = group_indicators(comparison_df).to_dict()
 
     # Generate IOU data
     iou_data = [
@@ -138,6 +153,29 @@ def find_iou_matches(
         result = result[result[MATCH_VALUE] >= threshold]
 
     return result
+
+def find_any_in_list_matches(
+        feature_df: pd.DataFrame,
+        comparison_df: pd.DataFrame,
+        feature: str,
+):
+    feature_sets = group_indicators(feature_df)
+    comparison_sets = group_indicators(comparison_df)
+    matches = [
+        {
+            "domain_name_x": f_domain,
+            "domain_name_y": c_domain,
+            MATCH_TYPE: feature,
+            MATCH_VALUE: feature_sets[f_domain].intersection(feature_sets[c_domain])
+
+        }
+        for f_domain in feature_sets
+        for c_domain in comparison_sets
+        if f_domain < c_domain # deduplicate
+    ]
+    matches_df = pd.DataFrame(matches)
+    matches_df = matches_df[matches_df[MATCH_VALUE].map(lambda d: len(d)) > 0]
+    return matches_df
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
@@ -221,10 +259,10 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-css_classes" : "iou",
 "3-header-nonstd-value" : "direct",
 "3-header-server" : "direct",
-"3-id_tags" : "iou",
-"3-iframe_id_tags" : "iou",
+"3-id_tags" : "iou", # list
+"3-iframe_id_tags" : "iou", # string
 "3-link_href" : "iou",
-"3-meta_generic" : "iou",
+"3-meta_generic" : "iou", # string
 "3-meta_social" : "direct",
 "3-script_src" : "iou",
 "3-uuid" : "direct",
@@ -271,6 +309,7 @@ methods = {
     "whois": parse_whois_matches,
     "certificate": parse_certificate_matches,
     "iou": find_iou_matches,
+    "any_in_list": find_any_in_list_matches,
     # "dict_direct_match"
     # "intersection"
     # "iou"
@@ -305,6 +344,7 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                 )
         except Exception as e:
             logging.error(f"Error matching feature {feature}: {traceback.print_stack()}")
+            raise(e)
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 

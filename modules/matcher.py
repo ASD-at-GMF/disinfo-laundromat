@@ -1,24 +1,45 @@
 import argparse
-import json
 import ast
-from pathlib import Path
-import pandas as pd
-import numpy as np
-from typing import Optional, Dict, Any
 from functools import partial
+from itertools import chain
+import json
+import logging
+import numpy as np
+import pandas as pd
+from pathlib import Path
+import traceback
+from typing import Dict, Any
 
 ## Preprocessing
 
 DOMAIN = "domain_name"
 INDICATOR_TYPE = "indicator_type"
 INDICATOR = "indicator_content"
+MATCH_TYPE = "match_type"
+MATCH_VALUE = "match_value"
 
 
 def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
-    df = df[["domain_name", feature]]
+    df = df[[DOMAIN, feature]]
     df = df[~df[feature].isna() & ~df[feature].isnull()]
 
     return df
+
+def column_contains_list(column: pd.Series) -> bool:
+    # Note: this works off the assumption that all values will have the same type
+    return column.iloc[0].startswith("[")
+
+def column_contains_set(column: pd.Series) -> bool:
+    return column.iloc[0].startswith("{")
+
+def group_indicators(df: pd.DataFrame) -> pd.Series:
+    df_copy = df.copy() # avoid side effects with ast.literal
+    if column_contains_list(df_copy[INDICATOR]) or column_contains_set(df_copy[INDICATOR]):
+        df_copy[INDICATOR] = df_copy[INDICATOR].map(ast.literal_eval)
+        return df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+    else:
+        return df_copy.groupby(DOMAIN)[INDICATOR].apply(set)
+
 
 
 # whois data
@@ -28,8 +49,8 @@ def convert_whois(data):
     except json.decoder.JSONDecodeError:
         whois_data = ast.literal_eval(data)
     # this keeps the property 'domain_name' from conflicting with our column
-    if "domain_name" in whois_data:
-        whois_data["whois_domain"] = whois_data.pop("domain_name")
+    if DOMAIN in whois_data:
+        whois_data["whois_domain"] = whois_data.pop(DOMAIN)
     return whois_data
 
 
@@ -82,28 +103,24 @@ def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:
 def find_direct_matches(
     feature_df: pd.DataFrame,
     feature: str,
-    comparison_df: Optional[pd.DataFrame] = None,
+    comparison_df: pd.DataFrame,
     indicator=INDICATOR,
 ) -> pd.DataFrame:
     # filter out invalid data
     feature_df = basic_preprocess(feature_df, indicator)
-    if comparison_df is not None:
-        comparison_df = basic_preprocess(comparison_df, indicator)
-    else:
-        comparison_df = feature_df
+    comparison_df = basic_preprocess(comparison_df, indicator)
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
-    matches = test_matches[test_matches.domain_name_x != test_matches.domain_name_y]
     # deduplicating
-    matches = matches[matches.domain_name_x < matches.domain_name_y]
-    matches["match_type"] = feature
-    matches = matches.rename(columns={indicator: "match_value"})
+    matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
+    matches[MATCH_TYPE] = feature
+    matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches
 
 
 def find_iou_matches(
     feature_df: pd.DataFrame,
     feature: str,
-    comparison_df: Optional[pd.DataFrame] = None,
+    comparison_df: pd.DataFrame,
     threshold: float = 0.9,
 ) -> pd.DataFrame:
     # Define IOU function
@@ -111,66 +128,67 @@ def find_iou_matches(
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
     # Convert feature data to sets
-    feature_sets = feature_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    feature_sets = group_indicators(feature_df).to_dict()
+    # Convert comparison data to sets
+    comparison_sets = group_indicators(comparison_df).to_dict()
 
-    if comparison_df is not None:
-        # Convert comparison data to sets
-        comparison_sets = comparison_df.groupby(DOMAIN)[INDICATOR].apply(lambda x: set.union(*map(set, x))).to_dict()
+    # Generate IOU data
+    iou_data = [
+        {
+            "domain_name_x": f_domain,
+            "domain_name_y": c_domain,
+            MATCH_VALUE: round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
+            "matched_on": feature_sets[f_domain].intersection(feature_sets[c_domain])
 
-        # Generate IOU data
-        iou_data = [
-            {
-                "domain_name_x": f_domain,
-                "domain_name_y": c_domain,
-                "match_value": round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
-                "matched_on": feature_sets[f_domain]
-
-            }
-            for f_domain in feature_sets
-            for c_domain in comparison_sets
-        ]
-    else:
-        # Generate IOU data for self-comparison
-        iou_data = [
-            {
-                "domain_name_x": domain1,
-                "domain_name_y": domain2,
-                "match_value": round(iou(feature_sets[domain1], feature_sets[domain2]), 3),
-                "matched_on": feature_sets[domain1]
-
-            }
-            for idx, domain1 in enumerate(feature_sets)
-            for domain2 in list(feature_sets)[idx + 1:]
-        ]
+        }
+        for f_domain in feature_sets
+        for c_domain in comparison_sets
+        if f_domain < c_domain # deduplicate
+    ]
 
     # Create DataFrame from IOU data
-    result = pd.DataFrame(iou_data)
-    if result.empty:
-        return result
-    result["match_type"] = feature
-    result = result[result["match_value"] >= threshold]
+    result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_TYPE, MATCH_VALUE])
+    if not result.empty:
+        result[MATCH_TYPE] = feature
+        result = result[result[MATCH_VALUE] >= threshold]
 
     return result
 
+def find_any_in_list_matches(
+        feature_df: pd.DataFrame,
+        comparison_df: pd.DataFrame,
+        feature: str,
+):
+    feature_sets = group_indicators(feature_df)
+    comparison_sets = group_indicators(comparison_df)
+    matches = [
+        {
+            "domain_name_x": f_domain,
+            "domain_name_y": c_domain,
+            MATCH_TYPE: feature,
+            MATCH_VALUE: feature_sets[f_domain].intersection(feature_sets[c_domain])
+
+        }
+        for f_domain in feature_sets
+        for c_domain in comparison_sets
+        if f_domain < c_domain # deduplicate
+    ]
+    matches_df = pd.DataFrame(matches)
+    matches_df = matches_df[matches_df[MATCH_VALUE].map(lambda d: len(d)) > 0]
+    return matches_df
+
 def parse_whois_matches(
     feature_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
     feature="whois",
-    comparison_df: Optional[pd.DataFrame] = None,
 ):
     whois_df = whois_preprocess(feature_df, feature)
-    if comparison_df is not None:
-        whois_comparison_df = whois_preprocess(comparison_df, feature)
-    else:
-        whois_comparison_df = None
+    whois_comparison_df = whois_preprocess(comparison_df, feature)
+
     feature_matches = []
     for sub_feature in WHOIS_FEATURES:
         whois_feature_df = feature_df_preprocess(whois_df, sub_feature)
-        if whois_comparison_df is not None:
-            whois_feature_comparison_df = feature_df_preprocess(
-                whois_comparison_df, sub_feature
-            )
-        else:
-            whois_feature_comparison_df = whois_feature_df
+        whois_feature_comparison_df = feature_df_preprocess(whois_comparison_df, sub_feature)
         matches = find_direct_matches(
             whois_feature_df,
             feature=sub_feature,
@@ -185,23 +203,18 @@ def parse_whois_matches(
 # this is very similar to whois and can be refactored
 def parse_certificate_matches(
     feature_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
     feature="urlscan_certificate",
-    comparison_df: Optional[pd.DataFrame] = None,
 ):
     cert_df = cert_preprocess(feature_df, feature)
-    if comparison_df is not None:
-        cert_comparison_df = cert_preprocess(comparison_df, feature)
-    else:
-        cert_comparison_df = None
+    cert_comparison_df = cert_preprocess(comparison_df, feature)
+
     feature_matches = []
     for sub_feature in URLSCAN_CERT_FEATURES:
         cert_feature_df = feature_df_preprocess(cert_df, sub_feature)
-        if cert_comparison_df is not None:
-            cert_feature_comparison_df = feature_df_preprocess(
-                cert_comparison_df, sub_feature
-            )
-        else:
-            cert_feature_comparison_df = cert_feature_df
+        cert_feature_comparison_df = feature_df_preprocess(
+            cert_comparison_df, sub_feature
+        )
         matches = find_direct_matches(
             cert_feature_df,
             feature=sub_feature,
@@ -246,10 +259,10 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-css_classes" : "iou",
 "3-header-nonstd-value" : "direct",
 "3-header-server" : "direct",
-"3-id_tags" : "iou",
-"3-iframe_id_tags" : "iou",
+"3-id_tags" : "iou", # list
+"3-iframe_id_tags" : "iou", # string
 "3-link_href" : "iou",
-"3-meta_generic" : "iou",
+"3-meta_generic" : "iou", # string
 "3-meta_social" : "direct",
 "3-script_src" : "iou",
 "3-uuid" : "direct",
@@ -288,7 +301,7 @@ DICT_FEATURES = {"whois": WHOIS_FEATURES, "certificate": URLSCAN_CERT_FEATURES}
 # to add a new method, write a function with the expected arguments:
 # - feature_df,
 # - feature,
-# - comparison_df (with default value Non)
+# - comparison_df
 # then add the method to this dictionary. to use the method on a feature, set the value
 # of a feature in the FEATURE_MATCHING dictionary above to the label/key you use in this dictionary.
 methods = {
@@ -296,6 +309,7 @@ methods = {
     "whois": parse_whois_matches,
     "certificate": parse_certificate_matches,
     "iou": find_iou_matches,
+    "any_in_list": find_any_in_list_matches,
     # "dict_direct_match"
     # "intersection"
     # "iou"
@@ -306,20 +320,19 @@ methods = {
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     matches_per_feature = []
-    # Get unique values from 'column_name'
-    unique_values = data['indicator_type'].unique()
-    for value in unique_values:
-        if value not in FEATURE_MATCHING.keys():
-            print("MISSING FEATURE MATCHING METHOD FOR: ", value)
+    unique_features = data[INDICATOR_TYPE].unique()
 
-    for feature, method in FEATURE_MATCHING.items():
-        print(f"Matching {feature} with method: {method}")
+    if comparison is None:
+        comparison = data
+
+    for feature in unique_features:
+        method = FEATURE_MATCHING.get(feature)
+        if not method:
+            logging.error(f"MISSING FEATURE MATCHING METHOD FOR: {feature}")
+            continue
+        logging.info(f"Matching {feature} with method: {method}")
         feature_df = data[data[INDICATOR_TYPE] == feature]
-        if comparison is not None:
-            comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
-        else:
-            comparison_df = None
-        #TODO FIX BAD MATCHES FOR SOME IOU FEATURES
+        comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
         try:
             feature_matches = methods[method](
                 feature_df=feature_df, feature=feature, comparison_df=comparison_df
@@ -330,35 +343,36 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                     f"{result_dir}/{feature}_matches.csv", index=False
                 )
         except Exception as e:
-            print(f"Error matching feature: {feature}")
-            raise e
+            logging.error(f"Error matching feature {feature}: {traceback.print_stack()}")
+            raise(e)
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 
 
-def compare_indicator_files(file1, file2, result_dir=None, result_file=None):
-    data1 = pd.read_csv(file1)
-    data2 = pd.read_csv(file2)
-    if not result_file:
-        result_file = f"{Path(file1).stem}_{Path(file2).stem}_results.csv"
-    matches = find_matches(data1, data2, result_dir=result_dir)
-    print(f"Matches found: {matches.shape[0]}")
-    print(
+def define_output_filename(file1, file2 = None):
+    if file2:
+        return f"{Path(file1).stem}_{Path(file2).stem}_results.csv"
+    return f"{Path(file1).stem}_results.csv"
+        
+
+def main(input_file, compare_file, result_dir, output_file, comparison_type):
+    if result_dir:
+        logging.info(f"we'll save intermediary results to the directory {result_dir}")
+        Path(result_dir).mkdir(exist_ok=True)
+
+    data1 = pd.read_csv(input_file)
+    if comparison_type == "compare" and compare_file:
+        data2 = pd.read_csv(compare_file)
+        matches: pd.DataFrame = find_matches(data1, data2, result_dir=result_dir)
+    else:
+        matches = find_matches(data1, result_dir=result_dir)
+    logging.info(f"Matches found: {matches.shape[0]}")
+    logging.info(
         f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
     )
-    matches.to_csv(result_file, index=False)
-
-
-def pairwise_comparison(input_file, result_dir=None, result_file=None):
-    data = pd.read_csv(input_file)
-    if not result_file:
-        result_file = Path(input_file).stem + "_results.csv"
-    matches = find_matches(data, result_dir=result_dir)
-    print(f"Matches found: {matches.shape[0]}")
-    print(
-        f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
-    )
-    matches.to_csv(result_file, index=False)
+    if not output_file:
+        output_file = define_output_filename(input_file, compare_file)
+    matches.to_csv(output_file, index=False)
 
 
 if __name__ == "__main__":
@@ -402,24 +416,13 @@ if __name__ == "__main__":
         required=False,
         default="./comparison_indicators.csv"
     )
-
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
     args = parser.parse_args()
 
-    result_dir = args.result_dir
-    result_file = args.output_file
-
-    if result_dir:
-        print(f"we'll save intermediary results to the directory {args.result_dir}")
-        Path(result_dir).mkdir(exist_ok=True)
-
-    if args.comparison_type == "compare":
-        compare_indicator_files(
-            file1=args.input_file,
-            file2=args.compare_file,
-            result_dir=result_dir,
-            result_file=result_file,
-        )
-    else:
-        pairwise_comparison(
-            input_file=args.input_file, result_dir=result_dir, result_file=result_file
-        )
+    main(**vars(args))

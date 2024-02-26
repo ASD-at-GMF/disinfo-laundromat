@@ -1,6 +1,8 @@
 
-from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file
+from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify
 from flask_bootstrap import Bootstrap
+from flask_cors import CORS
+
 import json
 import re
 from io import BytesIO
@@ -31,6 +33,7 @@ from modules.matcher import find_matches
 from modules.email import send_results_email
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 bootstrap = Bootstrap(app)
 bcrypt = Bcrypt(app)
 app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
@@ -118,26 +121,40 @@ def insert_indicators(indicators):
 def index():
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
+@app.route('/api/', methods=['GET'])
+def index_api():
+    return jsonify({'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+def login_gui():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-        user = cursor.fetchone()
-
-        if user and bcrypt.check_password_hash(user['password'], password):
-            user_obj = User(
-                id=user['id'], username=user['username'], password=user['password'])
-            login_user(user_obj)
+        if login(request):
             return redirect(url_for('index'))
         return 'Invalid username or password'
-
     return render_template('login.html')
 
+@app.route('/api/login', methods=['POST'])
+def login_api():
+    if request.method == 'POST':
+        if login(request):
+            return jsonify({'message': 'Logged in successfully'})
+    return jsonify({'message': 'Invalid username or password'})
+
+def login(request):
+    is_logged_in = False
+    username = request.form['username']
+    password = request.form['password']
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    user = cursor.fetchone()
+
+    if user and bcrypt.check_password_hash(user['password'], password):
+        user_obj = User(
+            id=user['id'], username=user['username'], password=user['password'])
+        login_user(user_obj)
+        is_logged_in = True
+    return is_logged_in
 
 @app.route('/logout')
 @login_required
@@ -145,28 +162,41 @@ def logout():
     logout_user()
     return 'Logged out'
 
+@app.route('/api/logout')
+@login_required
+def logout_api():
+    logout_user()
+    return jsonify({'message': 'Logged out'})
+
 
 @app.route('/fingerprint', methods=['GET', 'POST'])
 @login_required
-def fingerprint():
-    url = ''
+def fingerprint_gui():
     if request.method == 'POST':
-        url = request.form['url']
-        run_urlscan =  'run_urlscan' in request.form
-        internal_only = 'internal_only' in request.form
-        # Do something with the url using your functions
         try:
-            urls = url.split(',')
-            
-            indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, run_urlscan = run_urlscan, internal_only = internal_only)
-
-            return render_template('index.html', url=url, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
-
+            indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
+            return render_template('index.html',  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
         except Exception as e:
             return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
-
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
+@app.route('/api/fingerprint', methods=['POST'])
+@login_required
+def fingerprint_api():
+    if request.method == 'POST':
+        try:
+            indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
+            return jsonify({'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA, 'indicators': indicators_df.to_dict('records'), 'matches': matches_df.to_dict('records'), 'indicator_summary': indicator_summary, 'matches_summary': matches_summary})
+        except Exception as e:
+            return jsonify({'error': e, 'trace': traceback.format_exc()})
+    return jsonify({'error': 'No URL provided'})
+
+def fingerprint(request):
+    url = request.form['url']
+    run_urlscan =  'run_urlscan' in request.form
+    internal_only = 'internal_only' in request.form
+    urls = url.split(',')
+    return find_indicators_and_matches(urls, run_urlscan = run_urlscan, internal_only = internal_only)
 
 def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False):
     indicators = crawl_one_or_more_urls(urls, run_urlscan = run_urlscan)
@@ -208,49 +238,55 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     return indicators_df, matches_df, indicator_summary, matches_summary
 
 @app.route('/content', methods=['GET', 'POST'])
-def content():
-    results = None
-    csv_data = None
-
+def content_gui():
     if request.method == 'POST':
-        title_query = request.form.get('titleQuery')
-        content_query = request.form.get('contentQuery')
-        combineOperator = request.form.get('combineOperator')
-        language = request.form.get('language')
-        country = request.form.get('country')
-        engines = request.form.getlist('search_engines')
-
-        if engines == ['all'] or engines == []:
-            engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
-
-        if not title_query and not content_query:
+        if not request.form.get('titleQuery') and not request.form.get('contentQuery'):
             # Error message if neither is provided
             flash("Please provide at least a title or content query.")
         else:
-            results, csv_data = fetch_content_results(
-                title_query, content_query, combineOperator, language, country, engines=engines)
-
+            results, csv_data = None
+            results, csv_data = content(request)
+            
     return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
+@app.route('/api/content', methods=['POST'])
+def content_api():
+    if request.method == 'POST':
+        if not request.form.get('titleQuery') and not request.form.get('contentQuery'):
+            # Error message if neither is provided
+            return jsonify({'error': 'Please provide at least a title or content query.'})
+        else:
+            results, csv_data = None
+            results, csv_data = content(request)
+            return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
-@app.route('/parse-url', methods=['POST'])
-def parse_url():
-    url = request.form['url']
+def content(request):
+    title_query = request.form.get('titleQuery')
+    content_query = request.form.get('contentQuery')
+    combineOperator = request.form.get('combineOperator')
+    language = request.form.get('language')
+    country = request.form.get('country')
     engines = request.form.getlist('search_engines')
 
     if engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
 
+    if not title_query and not content_query:
+        # Error message if neither is provided
+        return jsonify({'error': 'Please provide at least a title or content query.'})
+    else:
+        return fetch_content_results(
+            title_query, content_query, combineOperator, language, country, engines=engines)
+
+@app.route('/parse-url', methods=['POST'])
+def parse_url_gui():
+    url = request.form['url']
+
+
     if not url:
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     try:
-        # Extracting article data-
-        article = Article(url)
-        article.download()
-        article.parse()
-
-        results, csv_data = fetch_content_results(
-                article.title, article.text, "OR", "en", "us", engines=engines)
+        results, csv_data = parse_url(request)
 
         return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
@@ -267,9 +303,33 @@ def parse_url():
             flash("This page could not automatically be parsed for content. Please enter a title and/or content query manually.")
         
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+    
+@app.route('/api/parse-url', methods=['POST'])
+def parse_url_api():
+    try:
+        results, csv_data = parse_url(request)
+        return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
+    except Exception as e:
+        return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
+        
+def parse_url(request):
+    url = request.form['url']
+    engines = request.form.getlist('search_engines')
+    if engines == ['all'] or engines == []:
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+        # Extracting article data-
+    article = Article(url)
+    article.download()
+    article.parse()
+
+    return fetch_content_results(
+            article.title, article.text, "OR", "en", "us", engines=engines)
+
+
+#TODO: Figure out a way to API-ify this
 @app.route('/content-csv', methods=['POST'])
-def upload_file():
+def upload_file_gui():
     file = request.files['file']
     email_recipient = request.form.get('email')
     if file:
@@ -346,6 +406,7 @@ def upload_file():
         finally:
             return send_file( PATH_TO_OUTPUT_CSV, as_attachment=True)
 
+#TODO: Figure out a way to API-ify this
 @app.route('/fingerprint-csv', methods=['POST'])
 def fingerprint_file():
     file = request.files['fingerprint-file']
@@ -388,8 +449,9 @@ def fingerprint_file():
     # If no file, render the index template
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
+# todo: figure out a way to API-ify this
 @app.route('/download_csv', methods=['POST'])
-def download_csv():
+def download_csv_gui():
     csv_data = request.form.get('csv_data', '')
 
     output = make_response(csv_data)
@@ -397,10 +459,19 @@ def download_csv():
     output.headers["Content-type"] = "text/csv"
     return output
 
-
 @app.route('/indicators')
-def indicators():
+def indicators_gui():
+    data, unique_types, selected_type = indicators(request)
+    return render_template('indicators.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
+
+@app.route('/api/indicators')
+def indicators_api():
     # Get the selected type from the query parameters
+
+    data, unique_types, selected_type = indicators(request)
+    return jsonify({'data': data, 'unique_types': unique_types, 'selected_type': selected_type, 'indicator_metadata': INDICATOR_METADATA})
+
+def indicators(request):
     selected_type = request.args.get('type', '')
     
     maxInt = sys.maxsize
@@ -424,8 +495,7 @@ def indicators():
                 truncated_row = {key: value[:100] for key, value in row.items()}
                 data.append(truncated_row)
         unique_types = sorted(set(unique_types_list))
-
-    return render_template('indicators.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
+    return data, unique_types, selected_type
 
 
 def filter_gdelt_query(query):

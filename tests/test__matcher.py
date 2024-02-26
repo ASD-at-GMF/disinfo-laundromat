@@ -70,16 +70,16 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
         (
             pd.DataFrame(
                 [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [1, 2, 3]},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [3, 4, 5]},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [4, 5, 6]},
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
                 ]
             ),
             pd.DataFrame(
                 [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [1, 2, 3]},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [3, 4, 5]},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [4, 5, 6]},
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
                 ]
             ),
             pd.DataFrame(
@@ -154,15 +154,15 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
         (
             pd.DataFrame(
                 [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [1, 2, 3]},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [3, 4, 5]},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [4, 5, 6]},
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
                 ]
             ),
             pd.DataFrame(
                 columns=[DOMAIN, INDICATOR, INDICATOR_TYPE],
                 data=[
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [7, 8, 9]}
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[7, 8, 9]"}
                 ],
             ),
             pd.DataFrame(
@@ -193,16 +193,16 @@ def test__parse_certificate_matches():
         (
             pd.DataFrame(
                 [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [1, 2, 3]},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [3, 4, 5]},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [4, 5, 6]},
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
                 ]
             ),
             pd.DataFrame(
                 [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [1, 2, 3]},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [3, 4, 5]},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [4, 5, 6]},
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
                 ]
             ),
             pd.DataFrame(

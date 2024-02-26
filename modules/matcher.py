@@ -114,7 +114,7 @@ def find_direct_matches(
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
     matches[MATCH_TYPE] = feature
     matches = matches.rename(columns={indicator: MATCH_VALUE})
-    return matches
+    return matches.reset_index(drop=True)
 
 
 def find_iou_matches(
@@ -127,9 +127,8 @@ def find_iou_matches(
     def iou(set1, set2):
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
-    # Convert feature data to sets
+    # Convert data to sets
     feature_sets = group_indicators(feature_df).to_dict()
-    # Convert comparison data to sets
     comparison_sets = group_indicators(comparison_df).to_dict()
 
     # Generate IOU data
@@ -138,7 +137,7 @@ def find_iou_matches(
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
             MATCH_VALUE: round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
-            "matched_on": feature_sets[f_domain].intersection(feature_sets[c_domain])
+            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
@@ -159,8 +158,8 @@ def find_any_in_list_matches(
         comparison_df: pd.DataFrame,
         feature: str,
 ):
-    feature_sets = group_indicators(feature_df)
-    comparison_sets = group_indicators(comparison_df)
+    feature_sets = group_indicators(feature_df).to_dict()
+    comparison_sets = group_indicators(comparison_df).to_dict()
     matches = [
         {
             "domain_name_x": f_domain,
@@ -175,7 +174,7 @@ def find_any_in_list_matches(
     ]
     matches_df = pd.DataFrame(matches)
     matches_df = matches_df[matches_df[MATCH_VALUE].map(lambda d: len(d)) > 0]
-    return matches_df
+    return matches_df.reset_index(drop=True)
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,

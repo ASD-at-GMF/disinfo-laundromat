@@ -1,7 +1,7 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urlparse, urlsplit
+from urllib.parse import urlsplit
 import socket
 import time
 import pandas as pd
@@ -27,7 +27,7 @@ import datetime
 import whois
 
 from modules.id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
-from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY, PATH_TO_OUTPUT_CSV
+from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY
 
 visited = set()
 

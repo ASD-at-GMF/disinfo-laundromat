@@ -2,15 +2,12 @@ import smtplib
 from email.message import EmailMessage
 import pandas as pd
 from config import EMAIL_CREDS
+from io import BytesIO
 
 sender_email = EMAIL_CREDS['username']
 password = EMAIL_CREDS['app_password']
 
-def send_results_email(
-    receiver_email: str,
-    subject: str,
-    body: str,
-    csv_filename: str,
+def send_results_email(receiver_email, subject, body, file, filename = "none"
     ):
     """
     Send an email with a CSV file as an attachment.
@@ -22,12 +19,15 @@ def send_results_email(
     msg["Subject"] = subject
     msg.set_content(body)
 
-    # Open the file in binary mode
-    with open(csv_filename, 'rb') as attachment:
-        # Add file as application/octet-stream
-        # Email client can usually download this automatically as attachment
-        msg.add_attachment(attachment.read(), maintype='application', subtype='octet-stream', filename='disinfo_laundromat_results.csv')
-
+    print(filename)
+    # Check if csv_file is a file-like object
+    if isinstance(file, BytesIO):
+        # Make sure we're at the start of the BytesIO object
+        file.seek(0)
+        # Read the content of the file-like object
+        attachment_content = file.read()
+        msg.add_attachment(attachment_content, maintype='application', subtype='octet-stream', filename=filename)
+   
     # Send the email
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:

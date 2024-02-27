@@ -316,6 +316,9 @@ def parse_url_api():
 def parse_url(request):
     url = request.form['url']
     engines = request.form.getlist('search_engines')
+    combineOperator = request.form.get('combineOperator')
+    language = request.form.get('language')
+    country = request.form.get('country')
     if engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
         # Extracting article data-
@@ -324,46 +327,62 @@ def parse_url(request):
     article.parse()
 
     return fetch_content_results(
-            article.title, article.text, "OR", "en", "us", engines=engines)
+            article.title, article.text, combineOperator, language, country, engines=engines)
 
 
 #TODO: Figure out a way to API-ify this
 @app.route('/content-csv', methods=['POST'])
 def upload_file_gui():
+    return upload_file(request)
+   
+@app.route('/api/content-csv', methods=['POST'])    
+def upload_file_api():
+    return upload_file(request)
+    # return jsonify({'message': 'File processed successfully'})
+
+def upload_file(request):
     file = request.files['file']
     email_recipient = request.form.get('email')
     if file:
         stream = io.StringIO(file.stream.read().decode("UTF8"), newline='')
         csv_input = csv.DictReader(stream)
+        # Use StringIO to create an in-memory file-like object
+        output_stream = io.StringIO()
 
         # Prepare to write to a new CSV file
         output_stream = io.StringIO()
-        csv_output = csv.writer(output_stream)
-        csv_output.writerow(['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
 
         results_df = pd.DataFrame(columns=['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
         # Process each URL in the CSV
         for row in csv_input:
-            searched_url = row.get("Urls")
+            searched_url = row.get("url")
+            title_query = row.get("title")
+            content_query = row.get("content")
+            combineOperator = row.get("combineOperator")
+            language = row.get("language")
+            country = row.get("country")
+            engines = row.get("engines").split(',')
+            if engines == ['all'] or engines == [] or engines == '':
+                engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+            if language == '':
+                language = 'en'
+            if country == '':
+                country = 'us'
             try:
-                # if  'title' in row and 'content' in row:
-                #     title_query = row['title']
-                #     content_query = row['content']
+                if title_query or content_query:
+                    title_query = row.get("title")
+                    content_query = row.get("content")
 
-                #     #todo: add language and country from csv
-
-                #     results, csv_data = fetch_content_results(
-                #         title_query, content_query, "OR", "en","us", engines=['google', 'google_news', 'bing', 'bing_news', 'yahoo', 'yandex'])
-
-                if searched_url:
-                    
+                    results, csv_data = fetch_content_results(
+                        title_query, content_query, combineOperator, language, country, engines=engines)
+                elif searched_url:
                     article = Article(searched_url)
                     article.download()
                     article.parse()
 
                     #todo: add language and country from csv
                     results, csv_data = fetch_content_results(
-                        article.title, article.text, "OR", "en","us", engines=['google', 'bing',  'yandex'])
+                        article.title, article.text, language, country, engines=engines)
                 # Initialize an empty list to hold all the new rows
                 all_new_rows = []
 
@@ -397,26 +416,47 @@ def upload_file_gui():
                 continue
 
         # Reset file pointer to the beginning
-        results_df.to_csv(PATH_TO_OUTPUT_CSV, index=False)
+        results_df.to_csv(output_stream, index=False)
+        output_stream.seek(0) 
         try:
             send_results_email(
-             email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", PATH_TO_OUTPUT_CSV)
+             email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_content_results.csv')
         except Exception as e:
             print(f"Error sending email: {e}, continuing...")
         finally:
-            return send_file( PATH_TO_OUTPUT_CSV, as_attachment=True)
+            bytes_stream = io.BytesIO(output_stream.getvalue().encode())
+            #print("Finally Content Results")
+            return send_file(
+            bytes_stream,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='laundromat_content_results.csv'
+        )
 
 #TODO: Figure out a way to API-ify this
 @app.route('/fingerprint-csv', methods=['POST'])
-def fingerprint_file():
+def fingerprint_file_gui():
+    return fingerprint_file(request)
+    # If no file, render the index template
+   # return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+
+@app.route('/api/fingerprint-csv', methods=['POST'])
+def fingerprint_file_api():
+    return fingerprint_file(request)
+    #return jsonify({'message': 'File processed successfully'})
+
+def fingerprint_file(request):
     file = request.files['fingerprint-file']
     internal_only = 'internal_only' in request.form
+    email_recipient = request.form.get('email')
+    run_urlscan =  'run_urlscan' in request.form
+    
     if file:    
         df_urls = pd.read_csv(StringIO(file.read().decode('utf-8')))
-        urls = df_urls['Urls'].tolist()  # Assuming 'Urls' is the column name
+        urls = df_urls['url'].tolist()  # Assuming 'Urls' is the column name
 
         # The find_indicators_and_matches function should be defined elsewhere
-        indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, internal_only = internal_only)
+        indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, internal_only = internal_only, run_urlscan = run_urlscan)
 
         # Save dataframes as csv in memory
         indicators_csv = StringIO()
@@ -435,8 +475,8 @@ def fingerprint_file():
         with zipfile.ZipFile(mem_zip, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
             zf.writestr('indicators.csv', indicators_csv.getvalue())
             zf.writestr('matches.csv', matches_csv.getvalue())
-
-        print('Zipped - downloading...')
+        if email_recipient: 
+            send_results_email(email_recipient, "Laundromat Results - Batch Metadata", "Please find the results from the Laundromat Metadata analysis attached. Summary: ", mem_zip, 'indicators_and_matches.zip')            
         # Prepare the zip file to send to client
         mem_zip.seek(0)
         return send_file(
@@ -445,13 +485,12 @@ def fingerprint_file():
             as_attachment=True,
             download_name='indicators_and_matches.zip'
         )
+    
 
-    # If no file, render the index template
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
-# todo: figure out a way to API-ify this
 @app.route('/download_csv', methods=['POST'])
-def download_csv_gui():
+@app.route('/api/download_csv', methods=['POST'])
+def download_csvi():
     csv_data = request.form.get('csv_data', '')
 
     output = make_response(csv_data)

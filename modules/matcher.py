@@ -344,7 +344,8 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                 )
         except Exception as e:
             logging.error(f"Error matching feature {feature}: {traceback.print_stack()}")
-            raise(e)
+            #raise(e)
+            continue
     all_matches = pd.concat(matches_per_feature)
     return all_matches
 

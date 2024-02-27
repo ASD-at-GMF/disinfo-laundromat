@@ -15,6 +15,35 @@ from modules.matcher import (
     MATCH_VALUE,
 )
 
+def feature_group_as_list_1():
+    return pd.DataFrame(
+                [
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
+                ]
+            )
+
+def feature_group_as_list_2():
+    return pd.DataFrame(
+                columns=[DOMAIN, INDICATOR, INDICATOR_TYPE],
+                data=[
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[7, 8, 9]"}
+                ],
+            )
+
+def feature_group_as_string_1():
+    return pd.DataFrame(
+                [
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "foo"},
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "bar"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "bar"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "fake"},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "phrase"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "fake"},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "phrase"},
+                ]
+            )
 
 @pytest.mark.parametrize(
     "feature_df,compare_df,expected_results",
@@ -67,21 +96,8 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
 @pytest.mark.parametrize(
     "feature_df,compare_df,expected_results",
     [
-        (
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
-                ]
-            ),
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
-                ]
-            ),
+        (   feature_group_as_list_1(),
+            feature_group_as_list_1(),
             pd.DataFrame(
                 [
                     {
@@ -106,35 +122,15 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
             ),
         ),
         (
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "foo"},
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "bar"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "bar"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "fake"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "phrase"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "fake"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "phrase"},
-                ]
-            ),
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "foo"},
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "bar"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "bar"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "fake"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "phrase"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "fake"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "phrase"},
-                ]
-            ),
+            feature_group_as_string_1(),
+            feature_group_as_string_1(),
             pd.DataFrame(
                 [
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
                         "match_type": "feature",
-                        "match_value": 0.2,
+                        "match_value": 0.25,
                     },
                     {
                         "domain_name_x": "a",
@@ -146,25 +142,14 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
                         "domain_name_x": "b",
                         "domain_name_y": "c",
                         "match_type": "feature",
-                        "match_value": 0.5,
+                        "match_value": 0.667,
                     },
                 ]
             ),
         ),
         (
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
-                ]
-            ),
-            pd.DataFrame(
-                columns=[DOMAIN, INDICATOR, INDICATOR_TYPE],
-                data=[
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[7, 8, 9]"}
-                ],
-            ),
+            feature_group_as_list_1(),
+            feature_group_as_list_2(),
             pd.DataFrame(
                 columns=["domain_name_x", "domain_name_y", "match_type", "match_value"]
             ),
@@ -175,9 +160,8 @@ def test__find_iou_matches(feature_df, compare_df, expected_results):
     results = find_iou_matches(
         feature_df=feature_df, comparison_df=compare_df, feature="feature", threshold=0
     )
-    # results = results.drop("matched_on", axis=1)  # can't compare equality of sets
-    # print(results)
-    # pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)
+    results = results.drop("matched_on", axis=1)  # can't compare equality of sets
+    pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)
 
 
 def test__parse_whois_matches():
@@ -191,42 +175,63 @@ def test__parse_certificate_matches():
     "feature_df,compare_df,expected_results",
     [
         (
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
-                ]
-            ),
-            pd.DataFrame(
-                [
-                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
-                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
-                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
-                ]
-            ),
+            feature_group_as_list_1(),
+            feature_group_as_list_1(),
             pd.DataFrame(
                 [
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
                         "match_type": "feature",
-                        "match_value": {3},
+                        "match_value": True,
+                        # "matched_on": {'bar'},
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
                         "match_type": "feature",
-                        "match_value" : {4, 5},
+                        "match_value": True,
+                        # "matched_on" : {'phrase', 'fake'},
                     },
                 ]
             )
-        )
+        ),
+        (
+            feature_group_as_string_1(),
+            feature_group_as_string_1(),
+            pd.DataFrame(
+                [
+                    {
+                        "domain_name_x": "a",
+                        "domain_name_y": "b",
+                        "match_type": "feature",
+                        "match_value": True,
+                        # "matched_on": {3},
+                    },
+                    {
+                        "domain_name_x": "b",
+                        "domain_name_y": "c",
+                        "match_type": "feature",
+                        "match_value": True,
+                        # "matched_on" : {4, 5},
+                    },
+                ]
+            )
+        ),
+        (
+            feature_group_as_list_1(),
+            feature_group_as_list_2(),
+            pd.DataFrame(
+                columns=["domain_name_x", "domain_name_y", "match_type", "match_value"],
+                data=[]
+            )
+        ),
     ]
 )
 def test__find_any_in_list_matches(feature_df, compare_df, expected_results):
-    matches = find_any_in_list_matches(feature_df, compare_df, feature='feature')
-    pd.testing.assert_frame_equal(matches, expected_results, check_index_type=False)
+    results = find_any_in_list_matches(feature_df, compare_df, feature='feature')
+    results = results.drop("matched_on", axis=1)
+    pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)
 
 
 def test__dict_direct_match():

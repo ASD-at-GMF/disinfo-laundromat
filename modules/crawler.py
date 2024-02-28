@@ -27,7 +27,10 @@ import datetime
 import whois
 
 from modules.id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
-from config import MYIPMS_API_PATH, SCRAPER_API_KEY, URLSCAN_API_KEY, PATH_TO_OUTPUT_CSV
+
+URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY')
+SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY')
+
 
 visited = set()
 

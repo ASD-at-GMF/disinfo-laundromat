@@ -114,7 +114,7 @@ def find_direct_matches(
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
     matches[MATCH_TYPE] = feature
     matches = matches.rename(columns={indicator: MATCH_VALUE})
-    return matches
+    return matches.reset_index(drop=True)
 
 
 def find_iou_matches(
@@ -127,9 +127,8 @@ def find_iou_matches(
     def iou(set1, set2):
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
-    # Convert feature data to sets
+    # Convert data to sets
     feature_sets = group_indicators(feature_df).to_dict()
-    # Convert comparison data to sets
     comparison_sets = group_indicators(comparison_df).to_dict()
 
     # Generate IOU data
@@ -138,7 +137,7 @@ def find_iou_matches(
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
             MATCH_VALUE: round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
-            "matched_on": feature_sets[f_domain].intersection(feature_sets[c_domain])
+            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
@@ -159,23 +158,25 @@ def find_any_in_list_matches(
         comparison_df: pd.DataFrame,
         feature: str,
 ):
-    feature_sets = group_indicators(feature_df)
-    comparison_sets = group_indicators(comparison_df)
+    feature_sets = group_indicators(feature_df).to_dict()
+    comparison_sets = group_indicators(comparison_df).to_dict()
     matches = [
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
             MATCH_TYPE: feature,
-            MATCH_VALUE: feature_sets[f_domain].intersection(feature_sets[c_domain])
+            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
         for c_domain in comparison_sets
         if f_domain < c_domain # deduplicate
     ]
-    matches_df = pd.DataFrame(matches)
-    matches_df = matches_df[matches_df[MATCH_VALUE].map(lambda d: len(d)) > 0]
-    return matches_df
+    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_TYPE, MATCH_VALUE])
+    if not matches_df.empty:
+        matches_df = matches_df[matches_df["matched_on"].map(lambda d: len(d)) > 0]
+        matches_df[MATCH_VALUE] = True
+    return matches_df.reset_index(drop=True)
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
@@ -259,10 +260,10 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-css_classes" : "iou",
 "3-header-nonstd-value" : "direct",
 "3-header-server" : "direct",
-"3-id_tags" : "iou", # list
-"3-iframe_id_tags" : "iou", # string
+"3-id_tags" : "iou",
+"3-iframe_id_tags" : "iou",
 "3-link_href" : "iou",
-"3-meta_generic" : "iou", # string
+"3-meta_generic" : "iou",
 "3-meta_social" : "direct",
 "3-script_src" : "iou",
 "3-uuid" : "direct",

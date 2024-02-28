@@ -165,15 +165,17 @@ def find_any_in_list_matches(
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
             MATCH_TYPE: feature,
-            MATCH_VALUE: feature_sets[f_domain].intersection(feature_sets[c_domain])
+            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
         for c_domain in comparison_sets
         if f_domain < c_domain # deduplicate
     ]
-    matches_df = pd.DataFrame(matches)
-    matches_df = matches_df[matches_df[MATCH_VALUE].map(lambda d: len(d)) > 0]
+    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_TYPE, MATCH_VALUE])
+    if not matches_df.empty:
+        matches_df = matches_df[matches_df["matched_on"].map(lambda d: len(d)) > 0]
+        matches_df[MATCH_VALUE] = True
     return matches_df.reset_index(drop=True)
 
 def parse_whois_matches(
@@ -258,10 +260,10 @@ FEATURE_MATCHING: Dict[str, str] = {
 "3-css_classes" : "iou",
 "3-header-nonstd-value" : "direct",
 "3-header-server" : "direct",
-"3-id_tags" : "iou", # list
-"3-iframe_id_tags" : "iou", # string
+"3-id_tags" : "iou",
+"3-iframe_id_tags" : "iou",
 "3-link_href" : "iou",
-"3-meta_generic" : "iou", # string
+"3-meta_generic" : "iou",
 "3-meta_social" : "direct",
 "3-script_src" : "iou",
 "3-uuid" : "direct",

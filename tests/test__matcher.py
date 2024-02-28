@@ -184,14 +184,14 @@ def test__parse_certificate_matches():
                         "domain_name_y": "b",
                         "match_type": "feature",
                         "match_value": True,
-                        # "matched_on": {'bar'},
+                        # "matched_on": {3},
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
                         "match_type": "feature",
                         "match_value": True,
-                        # "matched_on" : {'phrase', 'fake'},
+                        # "matched_on" : {4, 5},
                     },
                 ]
             )
@@ -206,14 +206,14 @@ def test__parse_certificate_matches():
                         "domain_name_y": "b",
                         "match_type": "feature",
                         "match_value": True,
-                        # "matched_on": {3},
+                        # "matched_on": {'bar'},
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
                         "match_type": "feature",
                         "match_value": True,
-                        # "matched_on" : {4, 5},
+                        # "matched_on" : {'phrase', 'fake'},
                     },
                 ]
             )

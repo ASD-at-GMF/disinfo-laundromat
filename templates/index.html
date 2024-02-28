@@ -184,12 +184,60 @@
             <div class="row">
                 <div class="col-md-12">
                     <form method="POST" action="/parse-url">
-                        <div class="form-group">
+                        <div class="form-group col-md-12">
                             <label for="url"><strong>Enter Article URL:</strong> (Enter the full url, e.g.
                                 https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a
                                 title/content query if prompted) </label>
                             <input type="url" class="form-control" id="url" name="url"
                                 placeholder="https://example.com">
+                        </div>
+                        <div class="row">
+
+                            <div class="form-group col-md-3">
+                                <label for="combineOperator"><strong>Boolean:</strong>combine title and content with a boolean AND or OR</label>
+                                <select class="form-control" id="combineOperator" name="combineOperator">
+                                    <option value="AND">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <!-- Country Dropdown -->
+                                <label for="country"><strong>Country:</strong> Select a country to search. Not all countries are
+                                    served by all services, and will fall back to the USA if unsupported</label>
+                                <select class="form-control" name="country" id="country">
+                                    {% for code, name in countries.items() %}
+                                    <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+        
+                            <div class="form-group  col-md-3">
+                                <!-- Language Dropdown -->
+                                <label for="language"><strong>Language:</strong> Select a language to search. Not all languages
+                                    are
+                                    served by all services, and will fall back to the english if unsupported</label>
+                                <select class="form-control" name="language" id="language">
+                                    {% for code, name in languages.items() %}
+                                    <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group  col-md-3">
+                                <!-- Language Dropdown -->
+                                <label for="language"><strong>Search Engine:</strong> Select databases and search engines to
+                                    search on </label>
+                                <select name="search_engines" multiple>
+                                    <option selected="selected" value="all">All</option>
+                                    <option value="google">Google</option>
+                                    <option value="bing">Bing</option>
+                                    <option value="google_news">Google News</option>
+                                    <option value="bing_news">Bing News</option>
+                                    <option value="yandex">Yandex</option>
+                                    <option value="yahoo">Yahoo</option>
+                                    <option value="copyscape">Copyscape</option>
+                                    <option value="gdelt">GDELT</option>
+                                </select>
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-primary">Submit</button>
                     </form>
@@ -271,17 +319,19 @@
         <div id="BatchSearch" class="tabcontent">
             <h4 class="mt-3">Batch Content Search By CSV</h4>
             <form method="POST" action="/content-csv" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled URLs; if
-                        title and content, must be two columns 'title' and column. MUST BE CSV) </label>
-                    <input type="file" class="form-control" id="file" name="file">
-                </div>
-                <!-- Email Address-->
-                <div class="form-group">
-                    <label for="email"><strong>Email Address:</strong> Enter your email address to receive a
-                        notification
-                        when the batch job is complete</label>
-                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address">
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled URLs; if
+                            title and content, must be two columns 'title' and column. MUST BE CSV) </label>
+                        <input type="file" class="form-control" id="file" name="file">
+                    </div>
+                    <!-- Email Address-->
+                    <div class="form-group col-md-6">
+                        <label for="email"><strong>Email Address:</strong> Enter your email address to receive a
+                            notification
+                            when the batch job is complete</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address">
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Submit</button>
             </form>
@@ -344,16 +394,30 @@
 
                 <h4 class="mt-3">Batch Fingerprint By CSV</h4>
                 <form method="POST" action="/fingerprint-csv" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled
-                            URLs; if title and content, must be two columns 'title' and column. MUST BE CSV)
-                        </label>
-                        <input type="file" class="form-control" id="fingerprint-file" name="fingerprint-file">
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
-                        <label class="form-check-label" for="internal_only">In-group matching only (for multiple
-                            URLS)</label>
+                    <div class="row">
+                        <div class="form-group col-md-3">
+                            <label for="url"><strong>Add CSV:</strong> (If URLS, mulst include a single column, labeled
+                                URLs; if title and content, must be two columns 'title' and column. MUST BE CSV)
+                            </label>
+                            <input type="file" class="form-control" id="fingerprint-file" name="fingerprint-file">
+                        </div>
+                        <div class="form-group  col-md-3">
+                            <label for="email"><strong>Email Address:</strong> Enter your email address to receive a
+                                notification
+                                when the batch job is complete</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Enter email address">
+                        </div>
+                        <div class="form-check  col-md-3">
+                            <input type="checkbox" class="form-check-input" id="run_urlscan" name="run_urlscan">
+                            <label class="form-check-label" for="run_urlscan">Run <a href="https://urlscan.io/"
+                                    target="_blank">URLSCAN</a> (may take up to 2 minutes)</label>
+                        </div>
+                        <div class="form-check col-md-3">
+                            <input type="checkbox" class="form-check-input" id="internal_only" name="internal_only">
+                            <label class="form-check-label" for="internal_only">In-group matching only (for multiple
+                                URLS)</label>
+                        </div>
+
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
                 </form>

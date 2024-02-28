@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()  
 
 from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify
 from flask_bootstrap import Bootstrap
@@ -23,10 +25,21 @@ import io
 import zipfile
 import numpy as np
 import traceback
+import os
 
 # Paramaterizable Variables
-from config import SERP_API_KEY, SITES_OF_CONCERN, KNOWN_INDICATORS, APP_SECRET_KEY, SQLLITE_DB_PATH,  COPYSCAPE_API_KEY, COPYSCAPE_USER, PATH_TO_OUTPUT_CSV, MATCH_VALUES_TO_IGNORE
-from modules.reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA
+SERP_API_KEY = os.getenv('SERP_API_KEY')
+SITES_OF_CONCERN = os.getenv('SITES_OF_CONCERN')
+KNOWN_INDICATORS = os.getenv('KNOWN_INDICATORS')
+MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH')
+APP_SECRET_KEY = os.getenv('APP_SECRET_KEY')
+SQLLITE_DB_PATH = os.getenv('SQLLITE_DB_PATH')
+COPYSCAPE_API_KEY = os.getenv('COPYSCAPE_API_KEY')
+COPYSCAPE_USER = os.getenv('COPYSCAPE_USER')
+PATH_TO_OUTPUT_CSV = os.getenv('PATH_TO_OUTPUT_CSV')
+MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE')
+
+from modules.reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls
 from modules.matcher import find_matches

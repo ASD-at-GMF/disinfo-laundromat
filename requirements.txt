@@ -17,3 +17,4 @@ flask_bcrypt==1.0.1
 flask_login==0.6.3
 newspaper3k==0.2.8
 python-dotenv==1.0.0
+flask_cors==4.0.0

@@ -1,11 +1,13 @@
 import smtplib
 from email.message import EmailMessage
 import pandas as pd
-from config import EMAIL_CREDS
+import os 
 from io import BytesIO
+EMAIL_CREDS_USER = os.getenv('EMAIL_CREDS_USER')
+EMAIL_CREDS_PASS = os.getenv('EMAIL_CREDS_PASS')
+EMAIL_CREDS_SMTP = os.getenv('EMAIL_CREDS_SMTP')
 
-sender_email = EMAIL_CREDS['username']
-password = EMAIL_CREDS['app_password']
+
 
 def send_results_email(receiver_email, subject, body, file, filename = "none"
     ):
@@ -14,7 +16,7 @@ def send_results_email(receiver_email, subject, body, file, filename = "none"
     """
     # Create a multipart message
     msg = EmailMessage()
-    msg["From"] = sender_email
+    msg["From"] = EMAIL_CREDS_USER
     msg["To"] = receiver_email
     msg["Subject"] = subject
     msg.set_content(body)
@@ -30,8 +32,8 @@ def send_results_email(receiver_email, subject, body, file, filename = "none"
    
     # Send the email
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(sender_email, password)
+        with smtplib.SMTP_SSL(EMAIL_CREDS_SMTP, 465) as server:
+            server.login(EMAIL_CREDS_USER, EMAIL_CREDS_PASS)
             server.send_message(msg)
         print("Email sent successfully")
     except Exception as e:

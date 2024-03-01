@@ -26,7 +26,7 @@ import hashlib
 import datetime
 import whois
 
-from modules.indicators import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY')
@@ -697,6 +697,13 @@ def parse_embedded_ids(response):
         tag_indicators.extend(id_indicators)
     return tag_indicators
 
+def parse_financial_ids(response):
+    tag_indicators = []
+
+    for id_type, pattern in FINANCIAL_IDS.items():
+        id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
+        tag_indicators.extend(id_indicators)
+    return tag_indicators
 
 def parse_social_media_ids(response):
     text  = response.text

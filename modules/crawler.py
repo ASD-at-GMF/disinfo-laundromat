@@ -26,7 +26,7 @@ import hashlib
 import datetime
 import whois
 
-from modules.id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+from modules.indicators import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY')

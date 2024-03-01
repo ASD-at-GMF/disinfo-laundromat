@@ -43,7 +43,7 @@ from modules.reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls
 from modules.matcher import find_matches
-from modules.email import send_results_email
+from modules.email_utils import send_results_email
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})

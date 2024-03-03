@@ -6,6 +6,7 @@ import json
 import logging
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_list_like
 from pathlib import Path
 import traceback
 from typing import Dict, Any
@@ -25,20 +26,28 @@ def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
 
     return df
 
-def column_contains_list(column: pd.Series) -> bool:
+def column_contains_list_string(column: pd.Series) -> bool:
     # Note: this works off the assumption that all values will have the same type
-    return column.iloc[0].startswith("[")
+    try:
+        return column.iloc[0].startswith("[")
+    except AttributeError:
+        return False
 
-def column_contains_set(column: pd.Series) -> bool:
-    return column.iloc[0].startswith("{")
+def column_contains_set_string(column: pd.Series) -> bool:
+    try:
+        return column.iloc[0].startswith("{")
+    except AttributeError:
+        return False
 
 def group_indicators(df: pd.DataFrame) -> pd.Series:
-    df_copy = df.copy() # avoid side effects with ast.literal
-    if column_contains_list(df_copy[INDICATOR]) or column_contains_set(df_copy[INDICATOR]):
+    if is_list_like(df[INDICATOR].iloc[0]):
+        return df.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+    elif column_contains_list_string(df[INDICATOR]) or column_contains_set_string(df[INDICATOR]):
+        df_copy = df.copy() # avoid side effects with ast.literal
         df_copy[INDICATOR] = df_copy[INDICATOR].map(ast.literal_eval)
         return df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
     else:
-        return df_copy.groupby(DOMAIN)[INDICATOR].apply(set)
+        return df.groupby(DOMAIN)[INDICATOR].apply(set)
 
 
 

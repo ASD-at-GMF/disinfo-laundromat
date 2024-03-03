@@ -30,6 +30,7 @@ from modules.id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY')
+MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH', '')
 
 visited = set()
 

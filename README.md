@@ -77,7 +77,7 @@ The simpler use case, where you're seeking indicators about about a few URLS, no
 ```
 python app.py 
 ```
-This should deploy a simple webapp to http://127.0.0.1:5000 or your equivalent location. To make this webapp accessible to external users, I suggest following a tutorial for deploying flask apps like this one: https://pythonbasics.org/deploy-flask-app/
+This should deploy a simple webapp to http://127.0.0.1:8000 or your equivalent location. To make this webapp accessible to external users, I suggest following a tutorial for deploying flask apps like this one: https://pythonbasics.org/deploy-flask-app/
  
 ## Deeper analysis, analyzing multiple sites against each at once  
 To analyze many URLs and once and to have a suspect URL run against a those URLS, you'll need to generate an list of indicatorsm, then choose your comparison method.
@@ -98,6 +98,59 @@ py match.py
 To check a given url against the corpus, run the following command: 
 ```
 py match.py -domain <domain-to-be-searched>
+```
+
+## As an API
+While a GUI is provided, any function of the Laundromat is also available via an API, as described below:
+
+```
+
+[GET] /api/metadata
+
+[GET] /api/indicators
+Required request fields:
+    request.args.get('type', '')
+
+[POST] /api/content
+Required request fields:
+    request.form.get('titleQuery')
+    request.form.get('contentQuery')
+    request.form.get('combineOperator')
+    request.form.get('language')
+    request.form.get('country')
+    request.form.getlist('search_engines')
+
+[POST] /api/parse-url
+Required request fields:
+    request.form['url']
+    request.form.getlist('search_engines')
+    request.form.get('combineOperator')
+    request.form.get('language')
+    request.form.get('country')
+
+[POST] /api/content-csv
+Required request fields:
+    request.files['file']
+    request.form.get('email')
+
+[POST] /api/fingerprint-csv
+Required request fields:
+    request.files['file']
+    request.form.get('email')
+    request.form.get('internal_only')
+    request.form.get('run_urlscan')
+
+[POST] /api/fingerprint-csv
+Required request fields:
+    request.files['file']
+    request.form.get('email')
+    request.form.get('internal_only')
+    request.form.get('run_urlscan')
+
+[POST] /api/download_csv
+Required request fields:
+    request.form.get('csv_data', '')
+
 ```
 
 # How matches are determined
@@ -127,4 +180,5 @@ See matches.csv
 
 ## Financial tracking
 - Additional tracking of adsense ids
+
 

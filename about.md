@@ -17,15 +17,14 @@ Any URLs entered into the Domain Forensics Matching tool are compared against ag
 - Research from partner and related organizations, such as [ISD's report on RT Mirror Sites](https://isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/)
 - Known [state media sites](https://github.com/ASD-at-GMF/state-media-profiles)
 - Lists of [pink slime sites](https://iffy.news/pink-slime-fake-local-news/) and [faux local news sites](https://www.midwestradionetwork.com/)
-- Dave Troy's list of potential ['Russia Adjacent' sites](https://docs.google.com/spreadsheets/d/1JIHe_RqyRVO9JR1yR7AqEYqcLg9uimidiiEcVnlDnbA/edit#gid=0) 
-- At our own discretion, user-input sites. 
+- Wikipedia's  list of [fake news websites](https://en.wikipedia.org/wiki/List_of_fake_news_websites) and Wikidata's [list of news websites](https://www.wikidata.org/w/index.php?title=Special:WhatLinksHere/Q17232649&limit=50&dir=next&offset=0%7C3014523)
+- At our own discretion, user-input sites. (As of March 2024, no user input sites are included) 
 
 Inclusion in the corpus of comparison sites is neither an endorsement nor a criticism of a given website's point of view or their relationship to any other member of the corpus. It solely reflects what websites are of interest to OSINT researchers. If you'd like a website removed from the list or have a potential list of new items to include, email pbenzoni (at) gmfus.org
 
 Suggested for future inclusion, but not yet evaluated:
-- https://en.wikipedia.org/wiki/List_of_fake_news_websites
-- [List of news websites](https://www.wikidata.org/w/index.php?title=Special:WhatLinksHere/Q17232649&limit=50&dir=next&offset=0%7C3014523)
-
+- 
+- 
 ### About the Indicator Tier System and Interpreting Results
 
 Each indicator is associated with evidentiary tier and are subject to [interpretation](#Interpreting Indicator Validity). 

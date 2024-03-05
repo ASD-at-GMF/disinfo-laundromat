@@ -122,6 +122,7 @@ def find_direct_matches(
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
     # deduplicating
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
+    # note this throws a false positive SettingWithCopyWarning; the behavior is OK
     matches[MATCH_TYPE] = feature
     matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches.reset_index(drop=True)

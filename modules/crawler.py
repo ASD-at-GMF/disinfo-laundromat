@@ -26,7 +26,6 @@ import hashlib
 import datetime
 import whois
 
-from config import MYIPMS_API_PATH
 from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')

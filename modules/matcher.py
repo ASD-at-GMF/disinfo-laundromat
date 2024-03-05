@@ -11,6 +11,7 @@ from pathlib import Path
 import traceback
 from typing import Dict, Any
 
+from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 ## Preprocessing
 
 DOMAIN = "domain_name"
@@ -121,6 +122,7 @@ def find_direct_matches(
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
     # deduplicating
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
+    # note this throws a false positive SettingWithCopyWarning; the behavior is OK
     matches[MATCH_TYPE] = feature
     matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches.reset_index(drop=True)
@@ -294,6 +296,11 @@ FEATURE_MATCHING: Dict[str, str] = {
 "2-urlscanhrefs" : "iou",
 "2-techstack" : "iou"
 }
+
+FEATURE_MATCHING.update({financial_id: "direct" for financial_id in FINANCIAL_IDS})
+FEATURE_MATCHING.update({embedded_id: "direct" for embedded_id in EMBEDDED_IDS})
+FEATURE_MATCHING.update({social_id: "direct" for social_id in SOCIAL_MEDIA_IDS})
+FEATURE_MATCHING.update({tracking_id: "direct" for tracking_id in TRACKING_IDS})
 
 WHOIS_FEATURES = [
     "whois-registrar",

@@ -26,10 +26,10 @@ import hashlib
 import datetime
 import whois
 
-from modules.id_patterns import EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 
-URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY')
-SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY')
+URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
+SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY', '')
 MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH', '')
 
 visited = set()
@@ -681,30 +681,12 @@ def add_associated_domains_from_cert(url):
     finally:
         return tag_indicators
 
-
-def parse_tracking_ids(response):
+def parse_id_patterns(response, id_patterns: dict[str,str]):
     tag_indicators = []
-    for id_type, pattern in TRACKING_IDS.items():
+    for id_type, pattern in id_patterns.items():
         id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
         tag_indicators.extend(id_indicators)
     return tag_indicators
-
-def parse_embedded_ids(response):
-    tag_indicators = []
-
-    for id_type, pattern in EMBEDDED_IDS.items():
-        id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
-        tag_indicators.extend(id_indicators)
-    return tag_indicators
-
-
-def parse_social_media_ids(response):
-    text  = response.text
-    social_indicators = []
-    for platform, pattern in SOCIAL_MEDIA_IDS.items():
-        platform_indicators = find_with_regex(pattern, text, indicator_type=platform)
-        social_indicators.extend(platform_indicators)
-    return social_indicators
 
 
 def add_cdn_domains(soup):
@@ -985,9 +967,10 @@ def crawl(url, run_urlscan=False):
     indicators.extend(parse_id_attributes(soup))
     indicators.extend(parse_link_tags(url, soup))
     indicators.extend(parse_footer(soup))
-    indicators.extend(parse_tracking_ids(response=response))
-    indicators.extend(parse_embedded_ids(response=response))
-    indicators.extend(parse_social_media_ids(response=response))
+    indicators.extend(parse_id_patterns(response=response, id_patterns=EMBEDDED_IDS))
+    indicators.extend(parse_id_patterns(response=response, id_patterns=FINANCIAL_IDS))
+    indicators.extend(parse_id_patterns(response=response, id_patterns=SOCIAL_MEDIA_IDS))
+    indicators.extend(parse_id_patterns(response=response, id_patterns=TRACKING_IDS))
     indicators.extend(add_cdn_domains(soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(soup))

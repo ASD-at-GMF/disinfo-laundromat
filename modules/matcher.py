@@ -6,10 +6,12 @@ import json
 import logging
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_list_like
 from pathlib import Path
 import traceback
 from typing import Dict, Any
 
+from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 ## Preprocessing
 
 DOMAIN = "domain_name"
@@ -25,20 +27,28 @@ def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
 
     return df
 
-def column_contains_list(column: pd.Series) -> bool:
+def column_contains_list_string(column: pd.Series) -> bool:
     # Note: this works off the assumption that all values will have the same type
-    return column.iloc[0].startswith("[")
+    try:
+        return column.iloc[0].startswith("[")
+    except AttributeError:
+        return False
 
-def column_contains_set(column: pd.Series) -> bool:
-    return column.iloc[0].startswith("{")
+def column_contains_set_string(column: pd.Series) -> bool:
+    try:
+        return column.iloc[0].startswith("{")
+    except AttributeError:
+        return False
 
 def group_indicators(df: pd.DataFrame) -> pd.Series:
-    df_copy = df.copy() # avoid side effects with ast.literal
-    if column_contains_list(df_copy[INDICATOR]) or column_contains_set(df_copy[INDICATOR]):
+    if is_list_like(df[INDICATOR].iloc[0]):
+        return df.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+    elif column_contains_list_string(df[INDICATOR]) or column_contains_set_string(df[INDICATOR]):
+        df_copy = df.copy() # avoid side effects with ast.literal
         df_copy[INDICATOR] = df_copy[INDICATOR].map(ast.literal_eval)
         return df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
     else:
-        return df_copy.groupby(DOMAIN)[INDICATOR].apply(set)
+        return df.groupby(DOMAIN)[INDICATOR].apply(set)
 
 
 
@@ -112,6 +122,7 @@ def find_direct_matches(
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
     # deduplicating
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
+    # note this throws a false positive SettingWithCopyWarning; the behavior is OK
     matches[MATCH_TYPE] = feature
     matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches.reset_index(drop=True)
@@ -285,6 +296,11 @@ FEATURE_MATCHING: Dict[str, str] = {
 "2-urlscanhrefs" : "iou",
 "2-techstack" : "iou"
 }
+
+FEATURE_MATCHING.update({financial_id: "direct" for financial_id in FINANCIAL_IDS})
+FEATURE_MATCHING.update({embedded_id: "direct" for embedded_id in EMBEDDED_IDS})
+FEATURE_MATCHING.update({social_id: "direct" for social_id in SOCIAL_MEDIA_IDS})
+FEATURE_MATCHING.update({tracking_id: "direct" for tracking_id in TRACKING_IDS})
 
 WHOIS_FEATURES = [
     "whois-registrar",

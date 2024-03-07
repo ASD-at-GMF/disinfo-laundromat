@@ -18,13 +18,22 @@ from modules.matcher import (
 def feature_group_as_list_1():
     return pd.DataFrame(
                 [
+                    {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [1, 2, 3]},
+                    {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [3, 4, 5]},
+                    {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: [4, 5, 6]},
+                ]
+            )
+
+def feature_group_as_list_str_1():
+    return pd.DataFrame(
+                [
                     {DOMAIN: "a", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[1, 2, 3]"},
                     {DOMAIN: "b", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[3, 4, 5]"},
                     {DOMAIN: "c", INDICATOR_TYPE: INDICATOR_TYPE, INDICATOR: "[4, 5, 6]"},
                 ]
             )
 
-def feature_group_as_list_2():
+def feature_group_as_list_str_2():
     return pd.DataFrame(
                 columns=[DOMAIN, INDICATOR, INDICATOR_TYPE],
                 data=[
@@ -96,8 +105,9 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
 @pytest.mark.parametrize(
     "feature_df,compare_df,expected_results",
     [
-        (   feature_group_as_list_1(),
-            feature_group_as_list_1(),
+        pytest.param(
+            feature_group_as_list_str_1(),
+            feature_group_as_list_str_1(),
             pd.DataFrame(
                 [
                     {
@@ -120,8 +130,34 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
                     },
                 ]
             ),
-        ),
-        (
+        id="listlike strings, same values"),
+        pytest.param(
+            feature_group_as_list_1(),
+            feature_group_as_list_str_1(),
+            pd.DataFrame(
+                [
+                    {
+                        "domain_name_x": "a",
+                        "domain_name_y": "b",
+                        "match_type": "feature",
+                        "match_value": 0.2,
+                    },
+                    {
+                        "domain_name_x": "a",
+                        "domain_name_y": "c",
+                        "match_type": "feature",
+                        "match_value": 0.0,
+                    },
+                    {
+                        "domain_name_x": "b",
+                        "domain_name_y": "c",
+                        "match_type": "feature",
+                        "match_value": 0.5,
+                    },
+                ]
+            ),
+        id="one list, one listlike string, same values"),
+        pytest.param(
             feature_group_as_string_1(),
             feature_group_as_string_1(),
             pd.DataFrame(
@@ -146,14 +182,14 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
                     },
                 ]
             ),
-        ),
-        (
-            feature_group_as_list_1(),
-            feature_group_as_list_2(),
+        id="two set-like strings, same values"),
+        pytest.param(
+            feature_group_as_list_str_1(),
+            feature_group_as_list_str_2(),
             pd.DataFrame(
                 columns=["domain_name_x", "domain_name_y", "match_type", "match_value"]
             ),
-        ),
+        id="two listlike strings, different values"),
     ],
 )
 def test__find_iou_matches(feature_df, compare_df, expected_results):
@@ -175,8 +211,8 @@ def test__parse_certificate_matches():
     "feature_df,compare_df,expected_results",
     [
         (
-            feature_group_as_list_1(),
-            feature_group_as_list_1(),
+            feature_group_as_list_str_1(),
+            feature_group_as_list_str_1(),
             pd.DataFrame(
                 [
                     {
@@ -219,8 +255,8 @@ def test__parse_certificate_matches():
             )
         ),
         (
-            feature_group_as_list_1(),
-            feature_group_as_list_2(),
+            feature_group_as_list_str_1(),
+            feature_group_as_list_str_2(),
             pd.DataFrame(
                 columns=["domain_name_x", "domain_name_y", "match_type", "match_value"],
                 data=[]

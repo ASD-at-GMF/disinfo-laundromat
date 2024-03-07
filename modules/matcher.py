@@ -9,7 +9,7 @@ import pandas as pd
 from pandas.api.types import is_list_like
 from pathlib import Path
 import traceback
-from typing import Dict, Any
+from typing import Any
 
 from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 ## Preprocessing
@@ -86,7 +86,7 @@ def feature_df_preprocess(feature_df: pd.DataFrame, feature: str) -> pd.DataFram
 
 
 # urlscan certificate
-def prefix_keys(data_dict: Dict[str, Any], prefix: str) -> Dict[str, Any]:
+def prefix_keys(data_dict: dict[str, Any], prefix: str) -> dict[str, Any]:
     new_dict = {}
     for key in data_dict.keys():
         new_dict[f"{prefix}-{key}"] = data_dict[key]
@@ -239,68 +239,68 @@ def parse_certificate_matches(
 
 
 ## Main program
-FEATURE_MATCHING: Dict[str, str] = {
-"1-cert-domain" : "direct",
-"1-crypto-wallet" : "direct",
-"1-domain" : "direct",
-"1-domain_suffix" : "direct",
-"1-fb_pixel_id" : "direct",
-"1-adobe_analytics_id" : "direct",
-"3-sitemap_entries" : "direct",
-"3-ipms_domain_iprangeowner_cidr" : "direct",
-"3-ipms_domain_iprangeowner_ownerName" : "direct",
-"3-ipms_domain_iprangeowner_address" : "direct",
-"3-ipms_domain_nameserver" : "direct",
-"3-ipms_domain_otheripused" : "direct",
-"3-ipms_siteonthisip_now" : "direct",
-"3-ipms_siteonthisip_before" : "direct",
-"3-ipms_siteonthisip_broken" : "direct",
-"3-ipms_useragents" : "direct",
-"1-ip_shodan_hostnames" : "direct",
-"3-ip_shodan_ports" : "iou",
-"2-ip_shodan_vuln" : "iou",
-"3-ip_shodan_cpe" : "iou",
-"1-ga_id" : "direct",
-"1-ga_tag_id" : "direct",
-"1-ip" : "direct",
-"1-verification_id" : "direct",
-"1-yandex_tag_id" : "direct",
-"2-subnet" : "direct",
-"3-cdn-domain" : "direct",
-"3-cms" : "direct",
-"3-css_classes" : "iou",
-"3-header-nonstd-value" : "direct",
-"3-header-server" : "direct",
-"3-id_tags" : "iou",
-"3-iframe_id_tags" : "iou",
-"3-link_href" : "iou",
-"3-meta_generic" : "iou",
-"3-meta_social" : "direct",
-"3-script_src" : "iou",
-"3-uuid" : "direct",
-"3-whois_creation_date" : "direct",
-"3-whois_server" : "direct",
-"3-whois-registrar" : "direct",
-"3-wp-blocks" : "iou",
-"3-wp-categories" : "iou",
-"3-wp-pages" : "iou",
-"3-wp-posts" : "iou",
-"3-wp-tags" : "iou",
-"3-wp-users" : "iou",
-"2-urlscan_globalvariable": "iou",
-"2-urlscan_cookies": "iou",
-"2-urlscan_consolemessages": "iou",
-"2-urlscan_asn": "direct",
-"2-urlscan_domainsonpage": "iou",
-"2-urlscan_urlssonpage" : "iou",
-"2-urlscanhrefs" : "iou",
-"2-techstack" : "iou"
+FEATURE_MATCHING: dict[str, dict[str, dict[str, Any]]] = {
+"1-cert-domain" : {"match": {"method": "direct"}},
+"1-crypto-wallet" : {"match": {"method": "direct"}},
+"1-domain" : {"match": {"method": "direct"}},
+"1-domain_suffix" : {"match": {"method": "direct"}},
+"1-fb_pixel_id" : {"match": {"method": "direct"}},
+"1-adobe_analytics_id" : {"match": {"method": "direct"}},
+"3-sitemap_entries" : {"match": {"method": "direct"}},
+"3-ipms_domain_iprangeowner_cidr" : {"match": {"method": "direct"}},
+"3-ipms_domain_iprangeowner_ownerName" : {"match": {"method": "direct"}},
+"3-ipms_domain_iprangeowner_address" : {"match": {"method": "direct"}},
+"3-ipms_domain_nameserver" : {"match": {"method": "direct"}},
+"3-ipms_domain_otheripused" : {"match": {"method": "direct"}},
+"3-ipms_siteonthisip_now" : {"match": {"method": "direct"}},
+"3-ipms_siteonthisip_before" : {"match": {"method": "direct"}},
+"3-ipms_siteonthisip_broken" : {"match": {"method": "direct"}},
+"3-ipms_useragents" : {"match": {"method": "direct"}},
+"1-ip_shodan_hostnames" : {"match": {"method": "direct"}},
+"3-ip_shodan_ports" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-ip_shodan_vuln" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-ip_shodan_cpe" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"1-ga_id" : {"match": {"method": "direct"}},
+"1-ga_tag_id" : {"match": {"method": "direct"}},
+"1-ip" : {"match": {"method": "direct"}},
+"1-verification_id" : {"match": {"method": "direct"}},
+"1-yandex_tag_id" : {"match": {"method": "direct"}},
+"2-subnet" : {"match": {"method": "direct"}},
+"3-cdn-domain" : {"match": {"method": "direct"}},
+"3-cms" : {"match": {"method": "direct"}},
+"3-css_classes" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-header-nonstd-value" : {"match": {"method": "direct"}},
+"3-header-server" : {"match": {"method": "direct"}},
+"3-id_tags" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-iframe_id_tags" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-link_href" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-meta_generic" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-meta_social" : {"match": {"method": "direct"}},
+"3-script_src" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-uuid" : {"match": {"method": "direct"}},
+"3-whois_creation_date" : {"match": {"method": "direct"}},
+"3-whois_server" : {"match": {"method": "direct"}},
+"3-whois-registrar" : {"match": {"method": "direct"}},
+"3-wp-blocks" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-wp-categories" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-wp-pages" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-wp-posts" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-wp-tags" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"3-wp-users" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-urlscan_globalvariable": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-urlscan_cookies": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-urlscan_consolemessages": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-urlscan_asn": {"match": {"method": "direct"}},
+"2-urlscan_domainsonpage": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-urlscan_urlssonpage" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-urlscanhrefs" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
+"2-techstack" : {"match": {"method": "iou", "args": {"threshold": 0.9}}}
 }
 
-FEATURE_MATCHING.update({financial_id: "direct" for financial_id in FINANCIAL_IDS})
-FEATURE_MATCHING.update({embedded_id: "direct" for embedded_id in EMBEDDED_IDS})
-FEATURE_MATCHING.update({social_id: "direct" for social_id in SOCIAL_MEDIA_IDS})
-FEATURE_MATCHING.update({tracking_id: "direct" for tracking_id in TRACKING_IDS})
+FEATURE_MATCHING.update({financial_id: {"match": {"method": "direct"}} for financial_id in FINANCIAL_IDS})
+FEATURE_MATCHING.update({embedded_id: {"match": {"method": "direct"}} for embedded_id in EMBEDDED_IDS})
+FEATURE_MATCHING.update({social_id: {"match": {"method": "direct"}} for social_id in SOCIAL_MEDIA_IDS})
+FEATURE_MATCHING.update({tracking_id: {"match": {"method": "direct"}} for tracking_id in TRACKING_IDS})
 
 WHOIS_FEATURES = [
     "whois-registrar",
@@ -343,16 +343,21 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
         comparison = data
 
     for feature in unique_features:
-        method = FEATURE_MATCHING.get(feature)
-        if not method:
+        match_func = FEATURE_MATCHING.get(feature, {}).get("match")
+        if not match_func:
             logging.error(f"MISSING FEATURE MATCHING METHOD FOR: {feature}")
             continue
-        logging.info(f"Matching {feature} with method: {method}")
+        logging.info(f"Matching {feature} with method: {match_func}")
         feature_df = data[data[INDICATOR_TYPE] == feature]
         comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
         try:
+            method = match_func["method"]
+            args = match_func.get("args", {})
             feature_matches = methods[method](
-                feature_df=feature_df, feature=feature, comparison_df=comparison_df
+                feature_df=feature_df,
+                feature=feature,
+                comparison_df=comparison_df,
+                **args
             )
             matches_per_feature.append(feature_matches)
             if result_dir:

@@ -9,7 +9,7 @@ import pandas as pd
 from pandas.api.types import is_list_like
 from pathlib import Path
 import traceback
-from typing import Any
+from typing import Any, Callable
 
 from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
 ## Preprocessing
@@ -239,7 +239,7 @@ def parse_certificate_matches(
 
 
 ## Main program
-FEATURE_MATCHING: dict[str, Any] = {
+FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame, Any], pd.DataFrame]] = {
 "1-cert-domain" : find_direct_matches,
 "1-crypto-wallet" : find_direct_matches,
 "1-domain" : find_direct_matches,
@@ -314,25 +314,6 @@ WHOIS_FEATURES = [
 URLSCAN_CERT_FEATURES = ["certificate-subjectName"]
 
 DICT_FEATURES = {"whois": WHOIS_FEATURES, "certificate": URLSCAN_CERT_FEATURES}
-
-# to add a new method, write a function with the expected arguments:
-# - feature_df,
-# - feature,
-# - comparison_df
-# then add the method to this dictionary. to use the method on a feature, set the value
-# of a feature in the FEATURE_MATCHING dictionary above to the label/key you use in this dictionary.
-methods = {
-    "direct": find_direct_matches,
-    "whois": parse_whois_matches,
-    "certificate": parse_certificate_matches,
-    "iou": find_iou_matches,
-    "any_in_list": find_any_in_list_matches,
-    # "dict_direct_match"
-    # "intersection"
-    # "iou"
-    # "abs_difference_vs_threshold"
-}
-# todo add 'any in list" match
 
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:

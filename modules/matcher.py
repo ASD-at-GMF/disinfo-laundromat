@@ -110,7 +110,7 @@ def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:
 ## Matching
 
 
-def find_direct_matches(
+def direct_match(
     feature_df: pd.DataFrame,
     feature: str,
     comparison_df: pd.DataFrame,
@@ -128,7 +128,7 @@ def find_direct_matches(
     return matches.reset_index(drop=True)
 
 
-def find_iou_matches(
+def iou_match(
     feature_df: pd.DataFrame,
     feature: str,
     comparison_df: pd.DataFrame,
@@ -164,7 +164,7 @@ def find_iou_matches(
 
     return result
 
-def find_any_in_list_matches(
+def any_in_list_match(
         feature_df: pd.DataFrame,
         comparison_df: pd.DataFrame,
         feature: str,
@@ -201,7 +201,7 @@ def parse_whois_matches(
     for sub_feature in WHOIS_FEATURES:
         whois_feature_df = feature_df_preprocess(whois_df, sub_feature)
         whois_feature_comparison_df = feature_df_preprocess(whois_comparison_df, sub_feature)
-        matches = find_direct_matches(
+        matches = direct_match(
             whois_feature_df,
             feature=sub_feature,
             comparison_df=whois_feature_comparison_df,
@@ -227,7 +227,7 @@ def parse_certificate_matches(
         cert_feature_comparison_df = feature_df_preprocess(
             cert_comparison_df, sub_feature
         )
-        matches = find_direct_matches(
+        matches = direct_match(
             cert_feature_df,
             feature=sub_feature,
             comparison_df=cert_feature_comparison_df,
@@ -239,68 +239,68 @@ def parse_certificate_matches(
 
 
 ## Main program
-FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame, Any], pd.DataFrame]] = {
-"1-cert-domain" : find_direct_matches,
-"1-crypto-wallet" : find_direct_matches,
-"1-domain" : find_direct_matches,
-"1-domain_suffix" : find_direct_matches,
-"1-fb_pixel_id" : find_direct_matches,
-"1-adobe_analytics_id" : find_direct_matches,
-"3-sitemap_entries" : find_direct_matches,
-"3-ipms_domain_iprangeowner_cidr" : find_direct_matches,
-"3-ipms_domain_iprangeowner_ownerName" : find_direct_matches,
-"3-ipms_domain_iprangeowner_address" : find_direct_matches,
-"3-ipms_domain_nameserver" : find_direct_matches,
-"3-ipms_domain_otheripused" : find_direct_matches,
-"3-ipms_siteonthisip_now" : find_direct_matches,
-"3-ipms_siteonthisip_before" : find_direct_matches,
-"3-ipms_siteonthisip_broken" : find_direct_matches,
-"3-ipms_useragents" : find_direct_matches,
-"1-ip_shodan_hostnames" : find_direct_matches,
-"3-ip_shodan_ports" : find_iou_matches,
-"2-ip_shodan_vuln" : partial(find_iou_matches, threshold=0.5),
-"3-ip_shodan_cpe" : find_iou_matches,
-"1-ga_id" : find_direct_matches,
-"1-ga_tag_id" : find_direct_matches,
-"1-ip" : find_direct_matches,
-"1-verification_id" : find_direct_matches,
-"1-yandex_tag_id" : find_direct_matches,
-"2-subnet" : find_direct_matches,
-"3-cdn-domain" : find_direct_matches,
-"3-cms" : find_direct_matches,
-"3-css_classes" : find_iou_matches,
-"3-header-nonstd-value" : find_direct_matches,
-"3-header-server" : find_direct_matches,
-"3-id_tags" : find_iou_matches,
-"3-iframe_id_tags" : find_iou_matches,
-"3-link_href" : find_iou_matches,
-"3-meta_generic" : find_iou_matches,
-"3-meta_social" : find_direct_matches,
-"3-script_src" : find_iou_matches,
-"3-uuid" : find_direct_matches,
-"3-whois_creation_date" : find_direct_matches,
-"3-whois_server" : find_direct_matches,
-"3-whois-registrar" : find_direct_matches,
-"3-wp-blocks" : find_iou_matches,
-"3-wp-categories" : find_iou_matches,
-"3-wp-pages" : find_iou_matches,
-"3-wp-posts" : find_iou_matches,
-"3-wp-tags" : find_iou_matches,
-"3-wp-users" : find_iou_matches,
-"2-urlscan_globalvariable": find_iou_matches,
-"2-urlscan_cookies": find_iou_matches,
-"2-urlscan_consolemessages": find_iou_matches,
-"2-urlscan_asn": find_direct_matches,
-"2-urlscan_domainsonpage": find_iou_matches,
-"2-urlscan_urlssonpage" : find_iou_matches,
-"2-urlscanhrefs" : find_iou_matches,
-"2-techstack" : find_iou_matches
+FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataFrame]] = {
+"1-cert-domain" : direct_match,
+"1-crypto-wallet" : direct_match,
+"1-domain" : direct_match,
+"1-domain_suffix" : direct_match,
+"1-fb_pixel_id" : direct_match,
+"1-adobe_analytics_id" : direct_match,
+"3-sitemap_entries" : direct_match,
+"3-ipms_domain_iprangeowner_cidr" : direct_match,
+"3-ipms_domain_iprangeowner_ownerName" : direct_match,
+"3-ipms_domain_iprangeowner_address" : direct_match,
+"3-ipms_domain_nameserver" : direct_match,
+"3-ipms_domain_otheripused" : direct_match,
+"3-ipms_siteonthisip_now" : direct_match,
+"3-ipms_siteonthisip_before" : direct_match,
+"3-ipms_siteonthisip_broken" : direct_match,
+"3-ipms_useragents" : direct_match,
+"1-ip_shodan_hostnames" : direct_match,
+"3-ip_shodan_ports" : iou_match,
+"2-ip_shodan_vuln" : partial(iou_match, threshold=0.5),
+"3-ip_shodan_cpe" : iou_match,
+"1-ga_id" : direct_match,
+"1-ga_tag_id" : direct_match,
+"1-ip" : direct_match,
+"1-verification_id" : direct_match,
+"1-yandex_tag_id" : direct_match,
+"2-subnet" : direct_match,
+"3-cdn-domain" : direct_match,
+"3-cms" : direct_match,
+"3-css_classes" : iou_match,
+"3-header-nonstd-value" : direct_match,
+"3-header-server" : direct_match,
+"3-id_tags" : iou_match,
+"3-iframe_id_tags" : iou_match,
+"3-link_href" : iou_match,
+"3-meta_generic" : iou_match,
+"3-meta_social" : direct_match,
+"3-script_src" : iou_match,
+"3-uuid" : direct_match,
+"3-whois_creation_date" : direct_match,
+"3-whois_server" : direct_match,
+"3-whois-registrar" : direct_match,
+"3-wp-blocks" : iou_match,
+"3-wp-categories" : iou_match,
+"3-wp-pages" : iou_match,
+"3-wp-posts" : iou_match,
+"3-wp-tags" : iou_match,
+"3-wp-users" : iou_match,
+"2-urlscan_globalvariable": iou_match,
+"2-urlscan_cookies": iou_match,
+"2-urlscan_consolemessages": iou_match,
+"2-urlscan_asn": direct_match,
+"2-urlscan_domainsonpage": iou_match,
+"2-urlscan_urlssonpage" : iou_match,
+"2-urlscanhrefs" : iou_match,
+"2-techstack" : iou_match
 }
 
-FEATURE_MATCHING.update({financial_id: find_direct_matches for financial_id in FINANCIAL_IDS})
-FEATURE_MATCHING.update({embedded_id: find_direct_matches for embedded_id in EMBEDDED_IDS})
-FEATURE_MATCHING.update({social_id: find_direct_matches for social_id in SOCIAL_MEDIA_IDS})
-FEATURE_MATCHING.update({tracking_id: find_direct_matches for tracking_id in TRACKING_IDS})
+FEATURE_MATCHING.update({financial_id: direct_match for financial_id in FINANCIAL_IDS})
+FEATURE_MATCHING.update({embedded_id: direct_match for embedded_id in EMBEDDED_IDS})
+FEATURE_MATCHING.update({social_id: direct_match for social_id in SOCIAL_MEDIA_IDS})
+FEATURE_MATCHING.update({tracking_id: direct_match for tracking_id in TRACKING_IDS})
 
 WHOIS_FEATURES = [
     "whois-registrar",
@@ -336,7 +336,7 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
         comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
         try:
             feature_matches = match_func(
-                feature_df=feature_df,
+                feature_df=feature_df,  # type: ignore
                 feature=feature,
                 comparison_df=comparison_df
             )

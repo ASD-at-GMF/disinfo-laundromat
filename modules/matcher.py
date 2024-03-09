@@ -239,68 +239,68 @@ def parse_certificate_matches(
 
 
 ## Main program
-FEATURE_MATCHING: dict[str, dict[str, dict[str, Any]]] = {
-"1-cert-domain" : {"match": {"method": "direct"}},
-"1-crypto-wallet" : {"match": {"method": "direct"}},
-"1-domain" : {"match": {"method": "direct"}},
-"1-domain_suffix" : {"match": {"method": "direct"}},
-"1-fb_pixel_id" : {"match": {"method": "direct"}},
-"1-adobe_analytics_id" : {"match": {"method": "direct"}},
-"3-sitemap_entries" : {"match": {"method": "direct"}},
-"3-ipms_domain_iprangeowner_cidr" : {"match": {"method": "direct"}},
-"3-ipms_domain_iprangeowner_ownerName" : {"match": {"method": "direct"}},
-"3-ipms_domain_iprangeowner_address" : {"match": {"method": "direct"}},
-"3-ipms_domain_nameserver" : {"match": {"method": "direct"}},
-"3-ipms_domain_otheripused" : {"match": {"method": "direct"}},
-"3-ipms_siteonthisip_now" : {"match": {"method": "direct"}},
-"3-ipms_siteonthisip_before" : {"match": {"method": "direct"}},
-"3-ipms_siteonthisip_broken" : {"match": {"method": "direct"}},
-"3-ipms_useragents" : {"match": {"method": "direct"}},
-"1-ip_shodan_hostnames" : {"match": {"method": "direct"}},
-"3-ip_shodan_ports" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-ip_shodan_vuln" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-ip_shodan_cpe" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"1-ga_id" : {"match": {"method": "direct"}},
-"1-ga_tag_id" : {"match": {"method": "direct"}},
-"1-ip" : {"match": {"method": "direct"}},
-"1-verification_id" : {"match": {"method": "direct"}},
-"1-yandex_tag_id" : {"match": {"method": "direct"}},
-"2-subnet" : {"match": {"method": "direct"}},
-"3-cdn-domain" : {"match": {"method": "direct"}},
-"3-cms" : {"match": {"method": "direct"}},
-"3-css_classes" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-header-nonstd-value" : {"match": {"method": "direct"}},
-"3-header-server" : {"match": {"method": "direct"}},
-"3-id_tags" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-iframe_id_tags" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-link_href" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-meta_generic" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-meta_social" : {"match": {"method": "direct"}},
-"3-script_src" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-uuid" : {"match": {"method": "direct"}},
-"3-whois_creation_date" : {"match": {"method": "direct"}},
-"3-whois_server" : {"match": {"method": "direct"}},
-"3-whois-registrar" : {"match": {"method": "direct"}},
-"3-wp-blocks" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-wp-categories" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-wp-pages" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-wp-posts" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-wp-tags" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"3-wp-users" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-urlscan_globalvariable": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-urlscan_cookies": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-urlscan_consolemessages": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-urlscan_asn": {"match": {"method": "direct"}},
-"2-urlscan_domainsonpage": {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-urlscan_urlssonpage" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-urlscanhrefs" : {"match": {"method": "iou", "args": {"threshold": 0.9}}},
-"2-techstack" : {"match": {"method": "iou", "args": {"threshold": 0.9}}}
+FEATURE_MATCHING: dict[str, Any] = {
+"1-cert-domain" : find_direct_matches,
+"1-crypto-wallet" : find_direct_matches,
+"1-domain" : find_direct_matches,
+"1-domain_suffix" : find_direct_matches,
+"1-fb_pixel_id" : find_direct_matches,
+"1-adobe_analytics_id" : find_direct_matches,
+"3-sitemap_entries" : find_direct_matches,
+"3-ipms_domain_iprangeowner_cidr" : find_direct_matches,
+"3-ipms_domain_iprangeowner_ownerName" : find_direct_matches,
+"3-ipms_domain_iprangeowner_address" : find_direct_matches,
+"3-ipms_domain_nameserver" : find_direct_matches,
+"3-ipms_domain_otheripused" : find_direct_matches,
+"3-ipms_siteonthisip_now" : find_direct_matches,
+"3-ipms_siteonthisip_before" : find_direct_matches,
+"3-ipms_siteonthisip_broken" : find_direct_matches,
+"3-ipms_useragents" : find_direct_matches,
+"1-ip_shodan_hostnames" : find_direct_matches,
+"3-ip_shodan_ports" : find_iou_matches,
+"2-ip_shodan_vuln" : partial(find_iou_matches, threshold=0.5),
+"3-ip_shodan_cpe" : find_iou_matches,
+"1-ga_id" : find_direct_matches,
+"1-ga_tag_id" : find_direct_matches,
+"1-ip" : find_direct_matches,
+"1-verification_id" : find_direct_matches,
+"1-yandex_tag_id" : find_direct_matches,
+"2-subnet" : find_direct_matches,
+"3-cdn-domain" : find_direct_matches,
+"3-cms" : find_direct_matches,
+"3-css_classes" : find_iou_matches,
+"3-header-nonstd-value" : find_direct_matches,
+"3-header-server" : find_direct_matches,
+"3-id_tags" : find_iou_matches,
+"3-iframe_id_tags" : find_iou_matches,
+"3-link_href" : find_iou_matches,
+"3-meta_generic" : find_iou_matches,
+"3-meta_social" : find_direct_matches,
+"3-script_src" : find_iou_matches,
+"3-uuid" : find_direct_matches,
+"3-whois_creation_date" : find_direct_matches,
+"3-whois_server" : find_direct_matches,
+"3-whois-registrar" : find_direct_matches,
+"3-wp-blocks" : find_iou_matches,
+"3-wp-categories" : find_iou_matches,
+"3-wp-pages" : find_iou_matches,
+"3-wp-posts" : find_iou_matches,
+"3-wp-tags" : find_iou_matches,
+"3-wp-users" : find_iou_matches,
+"2-urlscan_globalvariable": find_iou_matches,
+"2-urlscan_cookies": find_iou_matches,
+"2-urlscan_consolemessages": find_iou_matches,
+"2-urlscan_asn": find_direct_matches,
+"2-urlscan_domainsonpage": find_iou_matches,
+"2-urlscan_urlssonpage" : find_iou_matches,
+"2-urlscanhrefs" : find_iou_matches,
+"2-techstack" : find_iou_matches
 }
 
-FEATURE_MATCHING.update({financial_id: {"match": {"method": "direct"}} for financial_id in FINANCIAL_IDS})
-FEATURE_MATCHING.update({embedded_id: {"match": {"method": "direct"}} for embedded_id in EMBEDDED_IDS})
-FEATURE_MATCHING.update({social_id: {"match": {"method": "direct"}} for social_id in SOCIAL_MEDIA_IDS})
-FEATURE_MATCHING.update({tracking_id: {"match": {"method": "direct"}} for tracking_id in TRACKING_IDS})
+FEATURE_MATCHING.update({financial_id: find_direct_matches for financial_id in FINANCIAL_IDS})
+FEATURE_MATCHING.update({embedded_id: find_direct_matches for embedded_id in EMBEDDED_IDS})
+FEATURE_MATCHING.update({social_id: find_direct_matches for social_id in SOCIAL_MEDIA_IDS})
+FEATURE_MATCHING.update({tracking_id: find_direct_matches for tracking_id in TRACKING_IDS})
 
 WHOIS_FEATURES = [
     "whois-registrar",
@@ -343,21 +343,21 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
         comparison = data
 
     for feature in unique_features:
-        match_func = FEATURE_MATCHING.get(feature, {}).get("match")
+        match_func = FEATURE_MATCHING.get(feature, None)
         if not match_func:
             logging.error(f"MISSING FEATURE MATCHING METHOD FOR: {feature}")
             continue
-        logging.info(f"Matching {feature} with method: {match_func}")
+        try:
+            logging.info(f"Matching {feature} with method: {match_func.__name__}")
+        except AttributeError:
+            logging.info(f"Matching {feature} with method: {match_func.func.__name__}, {match_func.keywords}")
         feature_df = data[data[INDICATOR_TYPE] == feature]
         comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
         try:
-            method = match_func["method"]
-            args = match_func.get("args", {})
-            feature_matches = methods[method](
+            feature_matches = match_func(
                 feature_df=feature_df,
                 feature=feature,
-                comparison_df=comparison_df,
-                **args
+                comparison_df=comparison_df
             )
             matches_per_feature.append(feature_matches)
             if result_dir:
@@ -366,7 +366,6 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                 )
         except Exception as e:
             logging.error(f"Error matching feature {feature}: {traceback.print_stack()}")
-            #raise(e)
             continue
     all_matches = pd.concat(matches_per_feature)
     return all_matches

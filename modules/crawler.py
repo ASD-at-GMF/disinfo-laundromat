@@ -11,7 +11,6 @@ import time
 import traceback
 from io import BytesIO
 from pathlib import Path
-from typing import List
 from urllib.parse import urlsplit
 
 import blockcypher
@@ -27,6 +26,7 @@ from PIL import Image
 from tldextract import tldextract
 from usp.tree import sitemap_tree_for_homepage
 
+from modules.indicator import Indicator
 from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
                                 TRACKING_IDS)
 
@@ -52,7 +52,7 @@ def valid_url(url):
     return url
 
 
-def get_domain_name(url):
+def get_domain_name(url) -> str:
     domain_extract = tldextract.extract(url)
     sd = domain_extract.subdomain
     d = domain_extract.domain
@@ -63,14 +63,14 @@ def get_domain_name(url):
         return f"{sd}.{d}.{su}"
 
 
-def add_response_headers(response):
+def add_response_headers(response) -> list[Indicator]:
     header_indicators = []
     if not response.headers:
         return header_indicators
     for header, value in response.headers.items():
         try:
             if header.startswith("Server"):
-                header_indicators.append(add_indicator("3-header-server", value))
+                header_indicators.append(Indicator("3-header-server", value))
             if (
                 header.startswith("X-") or header.startswith("x-")
             ) and header.lower() not in [
@@ -84,7 +84,7 @@ def add_response_headers(response):
                 "x-robots-tag",
             ]:
                 header_indicators.append(
-                    add_indicator("3-header-nonstd-value", header + ":" + value)
+                    Indicator("3-header-nonstd-value", header + ":" + value)
                 )
         except Exception as e:
             print(e)
@@ -92,15 +92,7 @@ def add_response_headers(response):
     return header_indicators
 
 
-def add_indicator(indicator_type, indicator_content):
-    # Print the name and content attributes
-    return {
-        "indicator_type": indicator_type,
-        "indicator_content": indicator_content,
-    }
-
-
-def add_ip_address(domain_name):
+def add_ip_address(domain_name) -> list[Indicator]:
     ip_indicators = []
     if domain_name.startswith("https://"):
         host_name = domain_name[8:]
@@ -110,31 +102,25 @@ def add_ip_address(domain_name):
     try:
         # Resolve the domain name to an IP address
         ip_address = socket.gethostbyname(host_name)
-        ip_indicators.append(add_indicator("1-ip", ip_address))
+        ip_indicators.append(Indicator("1-ip", ip_address))
 
         last_period_index = ip_address.rfind(".")
         subnet_id = ip_address[:last_period_index]
-        ip_indicators.append(add_indicator("2-subnet", subnet_id))
+        ip_indicators.append(Indicator("2-subnet", subnet_id))
     except socket.gaierror:
         print("Could not resolve the domain name {}".format(domain_name))
     finally:
         return ip_indicators
 
 
-def add_who_is(url):
+def add_who_is(url) -> list[Indicator]:
     whois_indicators = []
     try:
         result = whois.whois(url)
         if result.text != "Socket not responding: [Errno 11001] getaddrinfo failed":
-            whois_indicators.append(
-                add_indicator("3-whois-registrar", result.registrar)
-            )
-            whois_indicators.append(
-                add_indicator("3-whois_server", result.whois_server)
-            )
-            whois_indicators.append(
-                add_indicator("3-whois_creation_date", result.creation_date)
-            )
+            whois_indicators.append(Indicator("3-whois-registrar", result.registrar))
+            whois_indicators.append(Indicator("3-whois_server", result.whois_server))
+            whois_indicators.append(Indicator("3-whois_creation_date", result.creation_date))
             if (
                 "name" in result
                 and result.name is not None
@@ -148,23 +134,12 @@ def add_who_is(url):
                     and "mask" not in result.name.lower()
                     and "secur" not in result.name.lower()
                 ):
+                    whois_indicators.append(Indicator("1-whois_emails", result.emails))
+                    whois_indicators.append(Indicator("1-whois_name", result.name))
+                    whois_indicators.append(Indicator("1-whois_org", result.org))
+                    whois_indicators.append(Indicator("1-whois_address", result.address))
                     whois_indicators.append(
-                        add_indicator("1-whois_emails", result.emails)
-                    )
-                    whois_indicators.append(
-                        add_indicator("1-whois_name", result.name)
-                    )
-                    whois_indicators.append(
-                        add_indicator("1-whois_org", result.org)
-                    )
-                    whois_indicators.append(
-                        add_indicator("1-whois_address", result.address)
-                    )
-                    whois_indicators.append(
-                        add_indicator(
-                            "2-whois_citystatecountry",
-                            result.city + ", " + result.state + ", " + result.country,
-                        )
+                        Indicator("2-whois_citystatecountry", f"{result.city}, {result.state}, {result.country}")
                     )
     except Exception as e:
         traceback.print_exc()
@@ -178,38 +153,38 @@ def get_tracert(ip_address):
     return output.decode().strip().split("\n")
 
 
-def parse_classes(soup):
+def parse_classes(soup) -> list[Indicator]:
     tag_indicators = []
     used_classes = set()
     for elem in soup.select("[class]"):
         classes = elem["class"]
         used_classes.update(classes)
-    tag_indicators.append(add_indicator("3-css_classes", list(used_classes)))
+    tag_indicators.append(Indicator("3-css_classes", list(used_classes)))
     return tag_indicators
 
 
-def parse_sitemaps(url):
+def parse_sitemaps(url) -> list[Indicator]:
     tag_indicators = []
     tree = sitemap_tree_for_homepage(url)
     print(tree)
     entries = set()
     for page in tree.all_pages():
         entries.update(page.url)
-    tag_indicators.append(add_indicator("4-sitemap_entries", entries))
+    tag_indicators.append(Indicator("4-sitemap_entries", entries))
     return tag_indicators
 
 
-def parse_dom_tree(soup):
+def parse_dom_tree(soup) -> list[Indicator]:
     tag_indicators = []
     for text in soup.find_all(text=True):
         text.replace_with("")
     for tag in soup.find_all():
         tag.attrs = {}
-    tag_indicators.append(add_indicator("3-dom_tree", soup.prettify()))
+    tag_indicators.append(Indicator("3-dom_tree", soup.prettify()))
     return tag_indicators
 
 
-def parse_images(url, soup, response):
+def parse_images(url, soup, response) -> list[Indicator]:
     tag_indicators = []
     image_links = []
     for img in soup.find_all("img"):
@@ -222,30 +197,14 @@ def parse_images(url, soup, response):
             response = requests.get(link)
             img = Image.open(BytesIO(response.content))
             image_hash = imagehash.phash(img)
-            tag_indicators.append(add_indicator("3-image-phash", image_hash))
+            tag_indicators.append(Indicator("3-image-phash", image_hash))
         except Exception as ex:
             continue  # print(ex.message)
 
     return tag_indicators
 
 
-def add_verification_tags(name, content):
-    return add_indicator("1-verification_id", name + "|" + content)
-
-
-def add_meta_social_tags(name, content):
-    return add_indicator("3-meta_social", name + "|" + content)
-
-
-def add_script_src_tags(content):
-    return add_indicator("3-script_src", content)
-
-
-def add_link_tags(href):
-    return add_indicator("3-link_href", href)
-
-
-def parse_meta_tags(url, soup):
+def parse_meta_tags(soup) -> list[Indicator]:
     meta_tags = soup.find_all("meta")
     tag_indicators = []
     generic_metas = []
@@ -256,17 +215,17 @@ def parse_meta_tags(url, soup):
         prop = meta_tag.get("property")
         content = meta_tag.get("content")
         if name and "verif" in name.lower():
-            tag_indicators.append(add_verification_tags(name, content))
+            tag_indicators.append(Indicator("1-verification_id", name + "|" + content))
         elif name and name in ["twitter:site", "fb:pages"]:
-            tag_indicators.append(add_meta_social_tags(name, content))
+            tag_indicators.append(Indicator("3-meta_social", name + "|" + content))
         elif (name or prop) and content:
             name = name or prop
             generic_metas.append(name + "|" + content)
-    tag_indicators.append(add_indicator("3-meta_generic", generic_metas))
+    tag_indicators.append(Indicator("3-meta_generic", generic_metas))
     return tag_indicators
 
 
-def parse_script_tags(url, soup):
+def parse_script_tags(url, soup) -> list[Indicator]:
     script_tags = soup.find_all("script")
     tag_indicators = []
     script_tags = []
@@ -278,37 +237,38 @@ def parse_script_tags(url, soup):
             match = re.search(r"/([^/]+)$", source)
             if match and match.group(1) not in script_tags:
                 script_tags.append(match.group(1))
-    tag_indicators = [add_indicator("3-script_src", script_tags)]
+    tag_indicators = [Indicator("3-script_src", script_tags)]
     return tag_indicators
 
 
-def parse_id_attributes(soup):
+def parse_id_attributes(soup) -> list[Indicator]:
     ids = [element["id"] for element in soup.find_all(id=True)]
-    id_indicators = [add_indicator("3-id_tags", ids)]
+    id_indicators = [Indicator("3-id_tags", ids)]
     return id_indicators
 
 
-def parse_iframe_ids(soup):
+def parse_iframe_ids(soup) -> list[Indicator]:
     iframe_ids = [
         iframe["id"] for iframe in soup.find_all("iframe") if "id" in iframe.attrs
     ]
     iframe_indicators = []
     for iframe in iframe_ids:
-        iframe_indicators.append(add_indicator("3-iframe_id_tags", iframe))
+        iframe_indicators.append(Indicator("3-iframe_id_tags", iframe))
     return iframe_indicators
 
 
-def parse_link_tags(url, soup):
+def parse_link_tags(url, soup) -> list[Indicator]:
     link_tags = soup.find_all("link")
     href_links = [link["href"] for link in link_tags if link.has_attr("href")]
     tag_indicators = []
     # Iterate over the link tags
 
-    tag_indicators.append(add_link_tags(href_links))
+    tag_indicators.append(Indicator("3-link_href", href_links))
+
     return tag_indicators
 
 
-def bulk_builtwith_query(domains: List[str], save_matches: bool = False):
+def bulk_builtwith_query(domains: list[str], save_matches: bool = False) -> list[Indicator]:
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
     builtwith_key = api_keys.get("BUILT_WITH")
     if not builtwith_key:
@@ -323,7 +283,7 @@ def bulk_builtwith_query(domains: List[str], save_matches: bool = False):
     return techstack_indicators + techidentifier_indicators
 
 
-def get_techstack_indicators(domains: List[str], api_key: str):
+def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator]:
     domain_list = ",".join(domains)
     tech_stack_query = (
         f"https://api.builtwith.com/v20/api.json?KEY={api_key}&LOOKUP={domain_list}"
@@ -337,16 +297,12 @@ def get_techstack_indicators(domains: List[str], api_key: str):
             tech_stack = []
             for path in result["Paths"]:
                 technologies = [
-                    {
-                        "indicator_type": "techstack",
-                        "indicator_content": {
+                    Indicator("techstack",{
                             "name": tech.get("Name"),
                             "link": tech.get("Link"),
                             "tag": tech.get("Tag"),
                             "subdomain": path["SubDomain"],
-                        },
-                        "domain_name": domain,
-                    }
+                        })
                     for tech in path["Technologies"]
                 ]
                 tech_stack.extend(technologies)
@@ -362,7 +318,7 @@ def get_techstack_indicators(domains: List[str], api_key: str):
         return []
 
 
-def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = False):
+def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = False) -> list[Indicator]:
     domain_list = ",".join(domains)
     tech_relation_query = (
         f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain_list}"
@@ -385,14 +341,7 @@ def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = 
                 .reset_index()
             )
             # applying indicator structure
-            return [
-                {
-                    "indicator_type": "tech_identifier",
-                    "indicator_content": identifier,
-                    "domain_name": domain,
-                }
-                for identifier in identifiers.to_dict(orient="records")
-            ]
+            return [Indicator("tech_identifier", identifier) for identifier in identifiers.to_dict(orient="records")]
     except IndexError as e:
         print(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
@@ -413,57 +362,37 @@ def fetch_shodan_data(ip):
         return None
 
 
-def parse_shodan_json(shodan_json, domain):
+def parse_shodan_json(shodan_json) -> list[Indicator]:
     shodan_indicators = []
     if shodan_json:
         if len(shodan_json["hostnames"]) > 0:
             for hostname in shodan_json["hostnames"]:
-                shodan_indicators.append(
-                    {
-                        "indicator_type": "1-ip_shodan_hostnames",
-                        "indicator_content": hostname,
-                    }
-                )
+                shodan_indicators.append(Indicator("1-ip_shodan_hostnames", hostname))
         if len(shodan_json["vulns"]) > 0:
-            shodan_indicators.append(
-                {
-                    "indicator_type": "2-ip_shodan_vuln",
-                    "indicator_content": shodan_json["vulns"],
-                }
-            )
+            shodan_indicators.append(Indicator("2-ip_shodan_vuln", shodan_json["vulns"]))
         if len(shodan_json["cpes"]) > 0:
-            shodan_indicators.append(
-                {
-                    "indicator_type": "3-ip_shodan_cpe",
-                    "indicator_content": shodan_json["cpes"],
-                }
-            )
+            shodan_indicators.append(Indicator("3-ip_shodan_cpe", shodan_json["cpes"]))
         if len(shodan_json["ports"]) > 0:
-            shodan_indicators.append(
-                {
-                    "indicator_type": "3-ip_shodan_ports",
-                    "indicator_content": shodan_json["ports"],
-                }
-            )
+            shodan_indicators.append(Indicator("3-ip_shodan_ports", shodan_json["ports"]))
 
     return shodan_indicators
 
 
-def get_shodan_indicators(url):
+def get_shodan_indicators(url) -> list[Indicator]:
     shodan_indicators = []
     domain = get_domain_name(url)
     try:
         ip = socket.gethostbyname(domain)
 
         shodan_json = fetch_shodan_data(ip)
-        shodan_indicators = parse_shodan_json(shodan_json, domain)
+        shodan_indicators = parse_shodan_json(shodan_json)
     except Exception as e:
         traceback.print_exc()
     finally:
         return shodan_indicators
 
 
-def get_ipms_indicators(url):
+def get_ipms_indicators(url) -> list[Indicator]:
     ipms_indicators = []
     try:
         if len(MYIPMS_API_PATH) > 0:
@@ -498,7 +427,7 @@ def get_ipms_indicators(url):
         return ipms_indicators
 
 
-def get_ipms_domain_indicators(ipms_url):
+def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
     ipms_indicators = []
     api_result = requests.get(ipms_url)
 
@@ -506,29 +435,29 @@ def get_ipms_domain_indicators(ipms_url):
         data = json.loads(api_result.content)
         if "owners" in data:
             ipms_indicators.append(
-                add_indicator(
+                Indicator(
                     "3-ipms_domain_iprangeowner_cidr", data["owners"]["owner"]["cidr"]
                 )
             )
             ipms_indicators.append(
-                add_indicator(
+                Indicator(
                     "3-ipms_domain_iprangeowner_ownerName",
                     data["owners"]["owner"]["ownerName"],
                 )
             )
             ipms_indicators.append(
-                add_indicator(
+                Indicator(
                     "3-ipms_domain_iprangeowner_address",
                     data["owners"]["owner"]["address"],
                 )
             )
         for dns in data.get("dns", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_domain_nameserver", dns["nameserver"])
+                Indicator("3-ipms_domain_nameserver", dns["nameserver"])
             )
         unique_ips = {entry["ip_address"] for entry in data.get("ip_change_history", [])}
         for ip in unique_ips:
-            ipms_indicators.append(add_indicator("3-ipms_domain_otheripused", ip))
+            ipms_indicators.append(Indicator("3-ipms_domain_otheripused", ip))
 
         return ipms_indicators
 
@@ -543,7 +472,7 @@ def get_ipms_domain_indicators(ipms_url):
         return ipms_indicators
 
 
-def get_ipms_ip_indicators(ipms_url):
+def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
     ipms_indicators = []
     api_result = requests.get(ipms_url)
 
@@ -551,19 +480,19 @@ def get_ipms_ip_indicators(ipms_url):
         data = json.loads(api_result.content)
         for site in data.get("websites_on_ip_now", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_siteonthisip_now", site["website"])
+                Indicator("3-ipms_siteonthisip_now", site["website"])
             )
         for site in data.get("websites_on_ip_before", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_siteonthisip_before", site["website"])
+                Indicator("3-ipms_siteonthisip_before", site["website"])
             )
         for site in data.get("not_working_websites_on_ip", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_siteonthisip_broken", site["website"])
+                Indicator("3-ipms_siteonthisip_broken", site["website"])
             )
         for useragent in data.get("useragents_on_ip", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_useragents", useragent["useragent"])
+                Indicator("3-ipms_useragents", useragent["useragent"])
             )
 
         return ipms_indicators
@@ -578,16 +507,7 @@ def get_ipms_ip_indicators(ipms_url):
         return ipms_indicators
 
 
-def add_meta_generic_tags(url, name, content):
-    # Print the name and content attributes
-    return {
-        "indicator_type": "3-meta_generic",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
-
-def parse_body(url, response):
+def parse_body(url, response) -> list[Indicator]:
     text = response.text
     tag_indicators = []
     tag_indicators.extend(find_uuids(text))
@@ -596,23 +516,23 @@ def parse_body(url, response):
     return tag_indicators
 
 
-def parse_footer(soup):
+def parse_footer(soup) -> list[Indicator]:
     tag_indicators = []
 
     footer = soup.find("footer")
     # Extract text
     if footer:
         footer_text = footer.get_text(strip=True)
-        tag_indicators.append(add_indicator("3-footer-text", footer_text))
+        tag_indicators.append(Indicator("3-footer-text", footer_text))
 
     return tag_indicators
 
 
-def find_with_regex(regex, text, indicator_type):
+def find_with_regex(regex, text, indicator_type) -> list[Indicator]:
     tag_indicators = []
     matches = set(re.findall(regex, text))
     for match in matches:
-        tag_indicators.append(add_indicator(indicator_type, match))
+        tag_indicators.append(Indicator(indicator_type, match))
     return tag_indicators
 
 
@@ -621,7 +541,7 @@ def find_uuids(text):
     return find_with_regex(uuid_pattern, text, "3-uuid")
 
 
-def find_wallets(text):
+def find_wallets(text) -> list[Indicator]:
     tag_indicators = []
     crypto_wallet_pattern = r"[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
 
@@ -643,7 +563,7 @@ def find_wallets(text):
     return tag_indicators
 
 
-def find_wallet_transactions(wallet_type, wallet):
+def find_wallet_transactions(wallet_type, wallet) -> list[Indicator]:
     tx_data = blockcypher.get_address_full(wallet, coin_symbol=wallet_type)
     tag_indicators = []
 
@@ -655,11 +575,11 @@ def find_wallet_transactions(wallet_type, wallet):
             for address in input["addresses"]:
                 addresses.add(address)
         for address in addresses:
-            tag_indicators.append(add_indicator("2-crypto-transacation", address))
+            tag_indicators.append(Indicator("2-crypto-transacation", address))
     return tag_indicators
 
 
-def add_associated_domains_from_cert(url):
+def add_associated_domains_from_cert(url) -> list[Indicator]:
     tag_indicators = []
     try:
         port = 443
@@ -676,14 +596,14 @@ def add_associated_domains_from_cert(url):
                 sans = ext_val.replace("DNS:", "").split(",")
 
         for san in sans:
-            tag_indicators.append(add_indicator("1-cert-domain", san))
+            tag_indicators.append(Indicator("1-cert-domain", san))
     except Exception as e:
         print(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
         traceback.print_exc()
     finally:
         return tag_indicators
 
-def parse_id_patterns(response, id_patterns: dict[str,str]):
+def parse_id_patterns(response, id_patterns: dict[str,str]) -> list[Indicator]:
     tag_indicators = []
     for id_type, pattern in id_patterns.items():
         id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
@@ -691,7 +611,7 @@ def parse_id_patterns(response, id_patterns: dict[str,str]):
     return tag_indicators
 
 
-def add_cdn_domains(soup):
+def add_cdn_domains(soup) -> list[Indicator]:
     tag_indicators = []
 
     img_tags = soup.find_all("img")
@@ -702,42 +622,28 @@ def add_cdn_domains(soup):
             domain = urlsplit(src).hostname
             domains.add(domain)
     for domain in domains:
-        tag_indicators.append(add_indicator("3-cdn-domain", domain))
+        tag_indicators.append(Indicator("3-cdn-domain", domain))
     return tag_indicators
-
-
-def add_domain_suffix(domain_suffix):
-    return {
-        "indicator_type": "1-domain_suffix",
-        "indicator_content": domain_suffix,
-    }
 
 
 # getting domain and suffix, eg -  “google.com”
-def find_domain_suffix(url):
+def find_domain_suffix(url) -> list[Indicator]:
     tag_indicators = []
     ext = tldextract.extract(url)
     domain_suffix = ext.suffix + "." + ext.domain
-    tag_indicators.append(add_domain_suffix(domain_suffix))
+    tag_indicators.append(Indicator(type="1-domain_suffix", content=domain_suffix))
     return tag_indicators  # joins the strings
 
 
-def add_second_level_domain(domain):
-    return {
-        "indicator_type": "1-domain",
-        "indicator_content": domain,
-    }
-
-
-def find_second_level_domain(url):
+def find_second_level_domain(url) -> list[Indicator]:
     tag_indicators = []
     ext = tldextract.extract(url)
     domain = ext.domain
-    tag_indicators.append(add_second_level_domain(domain))
+    tag_indicators.append(Indicator(type="1-domain", content=domain))
     return tag_indicators
 
 
-def parse_domain_name(url):
+def parse_domain_name(url) -> list[Indicator]:
     tag_indicators = []
     tag_indicators.extend(find_domain_suffix(url))
     tag_indicators.extend(find_second_level_domain(url))
@@ -759,51 +665,39 @@ def start_urlscan(url):
 
 
 # todo: add more indicators from urlscan
-def add_urlscan_indicators(data):
+def add_urlscan_indicators(data) -> list[Indicator]:
     urlscan_indicators = []
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_globalvariable",
-            "indicator_content": [
+        Indicator("2-urlscan_globalvariable",
+            [
                 f"{item['prop']}|{item['type']}" for item in data["data"]["globals"]
-            ],
-        }
+            ]
+        )
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_cookies",
-            "indicator_content": [
+        Indicator("2-urlscan_cookies",
+            [
                 f"{item['name']}|{item['domain']}" for item in data["data"]["cookies"]
-            ],
-        }
+            ]
+        )
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_consolemessages",
-            "indicator_content": [
+        Indicator("2-urlscan_consolemessages",
+            [
                 f"{item['message']['level']}|{item['message']['text']}"
                 for item in data["data"]["console"]
-            ],
-        }
+            ]
+        )
     )
 
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_asn",
-            "indicator_content": data["page"]["asn"],
-        }
+        Indicator("2-urlscan_asn", data["page"]["asn"])
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_domainsonpage",
-            "indicator_content": data["lists"]["domains"],
-        }
+        Indicator("2-urlscan_domainsonpage", data["lists"]["domains"])
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_urlssonpage",
-            "indicator_content": data["lists"]["urls"],
-        }
+        Indicator("2-urlscan_urlssonpage", data["lists"]["urls"])
     )
 
     links = data["data"]["links"]
@@ -811,19 +705,13 @@ def add_urlscan_indicators(data):
     for link in links:
         hrefs.append(link["href"] + "|" + link["text"])
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscanhrefs",
-            "indicator_content": hrefs,
-        }
+        Indicator("2-urlscanhrefs", hrefs)
     )
 
     # wappalyzer is used to detect tech used in the website
     detected_tech = data["meta"]["processors"]["wappa"]["data"]
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-techstack",
-            "indicator_content": [tech["app"] for tech in detected_tech],
-        }
+        Indicator("2-techstack", [tech["app"] for tech in detected_tech])
     )
     return urlscan_indicators
 
@@ -837,7 +725,7 @@ def get_endpoints(url, endpoints):
     return ''
 
 
-def parse_cms(url):
+def parse_cms(url) -> list[Indicator]:
     # TODO: add more CMSs
     cms_indicators = []
     cms = None
@@ -860,13 +748,13 @@ def parse_cms(url):
         cms = "Bitrix"
 
     if cms is not None:
-        cms_indicators.append(add_indicator("3-cms", cms))
+        cms_indicators.append(Indicator("3-cms", cms))
 
     return cms_indicators
 
 
 # For WordPress, check for endpoints, if they exist, get the items and add them as indicators
-def parse_wordpress(url):
+def parse_wordpress(url) -> list[Indicator]:
     wp_indicators = []
     endpoints = {
         "tags": "/wp-json/wp/v2/tags",
@@ -883,14 +771,14 @@ def parse_wordpress(url):
             wp_items_string = ""
             for wp_item in wp_items:
                 wp_items_string += wp_item["slug"] + ","
-            wp_indicators.append(add_indicator("3-wp-" + key, wp_items_string))
+            wp_indicators.append(Indicator("3-wp-" + key, wp_items_string))
         except Exception as e:
             traceback.print_exc()
             continue
     return wp_indicators
 
 
-def detect_and_parse_feed_content(url):
+def detect_and_parse_feed_content(url) -> list[Indicator]:
     feed_indicators = []
     feed = None
 
@@ -901,19 +789,19 @@ def detect_and_parse_feed_content(url):
         feed = feedparser.parse(url)
         for entry in feed.entries:
             feed_indicators.append(
-                add_indicator("4-content-title", entry.title)
+                Indicator("4-content-title", entry.title)
             )
-            feed_indicators.append(add_indicator("4-content-link", entry.link))
+            feed_indicators.append(Indicator("4-content-link", entry.link))
             feed_indicators.append(
-                add_indicator("4-content-summary", entry.summary)
+                Indicator("4-content-summary", entry.summary)
             )
             feed_indicators.append(
-                add_indicator("4-content-published", entry.published)
+                Indicator("4-content-published", entry.published)
             )
 
     return feed_indicators
 
-def get_outbound_domains(url, soup):
+def get_outbound_domains(url, soup) -> list[Indicator]:
     outbound_domains = set()
     domain_extract = tldextract.extract(url)
     _ = domain_extract.subdomain
@@ -932,7 +820,7 @@ def get_outbound_domains(url, soup):
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
                 outbound_domains.add(link_domain)
-    return [add_indicator(indicator_content=domain, indicator_type="4-outbound-domain") for domain in outbound_domains]
+    return [Indicator(content=domain, type="4-outbound-domain") for domain in outbound_domains]
 
 
 def scrape_url(url):
@@ -963,7 +851,7 @@ def crawl(url, run_urlscan=False):
     # Run indicators
     indicators.extend(add_response_headers(response=response))
     indicators.extend(add_ip_address(domain_name=url))
-    indicators.extend(parse_meta_tags(url, soup))
+    indicators.extend(parse_meta_tags(soup))
     indicators.extend(parse_script_tags(url, soup))
     indicators.extend(parse_iframe_ids(soup))
     indicators.extend(parse_id_attributes(soup))
@@ -1030,7 +918,7 @@ def crawl_one_or_more_urls(
 def write_domain_indicators(domain, indicators, output_file):
     attribution_table = pd.DataFrame(
         columns=["indicator_type", "indicator_content"],
-        data=indicators,
+        data=(indicator.to_dict() for indicator in indicators),
     )
     attribution_table['domain_name'] = domain
     # this is done so if anything bad happens to break the script, we still get partial results

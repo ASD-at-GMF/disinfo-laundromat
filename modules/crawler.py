@@ -1,32 +1,34 @@
-import os
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlsplit
-import socket
-import time
-import pandas as pd
-import re
-from io import BytesIO
 import argparse
-import ssl
-from OpenSSL import crypto
-import traceback
-import yaml
+import datetime
+import hashlib
 import json
-from tldextract import tldextract
-import imagehash
+import os
+import re
+import socket
+import ssl
 import subprocess
-import blockcypher
-from PIL import Image
+import time
+import traceback
+from io import BytesIO
 from pathlib import Path
 from typing import List
-from usp.tree import sitemap_tree_for_homepage
-import feedparser
-import hashlib
-import datetime
-import whois
+from urllib.parse import urlsplit
 
-from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+import blockcypher
+import feedparser
+import imagehash
+import pandas as pd
+import requests
+import whois
+import yaml
+from bs4 import BeautifulSoup
+from OpenSSL import crypto
+from PIL import Image
+from tldextract import tldextract
+from usp.tree import sitemap_tree_for_homepage
+
+from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
+                                TRACKING_IDS)
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY', '')

@@ -1,17 +1,20 @@
 import argparse
 import ast
-from functools import partial
-from itertools import chain
 import json
 import logging
+import traceback
+from functools import partial
+from itertools import chain
+from pathlib import Path
+from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_list_like
-from pathlib import Path
-import traceback
-from typing import Dict, Any
 
-from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
+                                TRACKING_IDS)
+
 ## Preprocessing
 
 DOMAIN = "domain_name"

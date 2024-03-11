@@ -3,9 +3,9 @@ import pandas as pd
 from unittest import mock
 
 from modules.matcher import (
-    find_any_in_list_matches,
-    find_direct_matches,
-    find_iou_matches,
+    any_in_list_match,
+    direct_match,
+    iou_match,
     find_matches,
     main,
     DOMAIN,
@@ -97,8 +97,8 @@ def feature_group_as_string_1():
         ),
     ],
 )
-def test__find_direct_matches(feature_df, compare_df, expected_results):
-    matches = find_direct_matches(feature_df, "feature", compare_df)
+def test__direct_match(feature_df, compare_df, expected_results):
+    matches = direct_match(feature_df, "feature", compare_df)
     pd.testing.assert_frame_equal(matches, expected_results, check_index_type=False)
 
 
@@ -192,8 +192,8 @@ def test__find_direct_matches(feature_df, compare_df, expected_results):
         id="two listlike strings, different values"),
     ],
 )
-def test__find_iou_matches(feature_df, compare_df, expected_results):
-    results = find_iou_matches(
+def test__iou_match(feature_df, compare_df, expected_results):
+    results = iou_match(
         feature_df=feature_df, comparison_df=compare_df, feature="feature", threshold=0
     )
     results = results.drop("matched_on", axis=1)  # can't compare equality of sets
@@ -264,8 +264,8 @@ def test__parse_certificate_matches():
         ),
     ]
 )
-def test__find_any_in_list_matches(feature_df, compare_df, expected_results):
-    results = find_any_in_list_matches(feature_df, compare_df, feature='feature')
+def test__any_in_list_match(feature_df, compare_df, expected_results):
+    results = any_in_list_match(feature_df, compare_df, feature='feature')
     results = results.drop("matched_on", axis=1)
     pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)
 

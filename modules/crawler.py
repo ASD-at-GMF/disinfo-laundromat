@@ -838,7 +838,7 @@ def scrape_url(url):
         return requests.get(url, verify=False)
 
 
-def crawl(url, run_urlscan=False):
+def crawl(url, run_urlscan=False) -> list[Indicator]:
     indicators = []
     url_submission = None
 
@@ -899,7 +899,7 @@ def crawl(url, run_urlscan=False):
 
 def crawl_one_or_more_urls(
     urls, run_urlscan=False
-):
+) -> list[Indicator]:
     indicators = []
     for url in urls:
         logging.info('Fingerprinting:',url)
@@ -910,7 +910,7 @@ def crawl_one_or_more_urls(
         domain_name = get_domain_name(url)
         
         for indicator in url_indicators:
-            indicator['domain_name'] = domain_name
+            indicator.domain = domain_name
         
         indicators.extend(url_indicators)
     return indicators

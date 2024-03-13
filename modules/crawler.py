@@ -12,7 +12,7 @@ import time
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 from urllib.parse import urlsplit
 
 import blockcypher
@@ -782,9 +782,9 @@ def get_outbound_domains(url, soup) -> list[Indicator]:
         if not link_url or link_url.startswith('tel') or link_url.startswith('mail'):
             continue
         link_extract = tldextract.extract(link_url)
-        _ = domain_extract.subdomain
-        td = domain_extract.domain
-        tsu = domain_extract.suffix
+        _ = link_extract.subdomain
+        td = link_extract.domain
+        tsu = link_extract.suffix
         if tsu and td:
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":

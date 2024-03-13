@@ -2,6 +2,7 @@ import argparse
 import datetime
 import hashlib
 import json
+import logging
 import os
 import re
 import socket
@@ -87,7 +88,7 @@ def add_response_headers(response) -> list[Indicator]:
                     Indicator("3-header-nonstd-value", header + ":" + value)
                 )
         except Exception as e:
-            print(e)
+            logging.error(e)
 
     return header_indicators
 
@@ -108,7 +109,7 @@ def add_ip_address(domain_name) -> list[Indicator]:
         subnet_id = ip_address[:last_period_index]
         ip_indicators.append(Indicator("2-subnet", subnet_id))
     except socket.gaierror:
-        print("Could not resolve the domain name {}".format(domain_name))
+        logging.error("Could not resolve the domain name {}".format(domain_name))
     finally:
         return ip_indicators
 
@@ -166,7 +167,7 @@ def parse_classes(soup) -> list[Indicator]:
 def parse_sitemaps(url) -> list[Indicator]:
     tag_indicators = []
     tree = sitemap_tree_for_homepage(url)
-    print(tree)
+    logging.info(tree)
     entries = set()
     for page in tree.all_pages():
         entries.update(page.url)
@@ -199,7 +200,7 @@ def parse_images(url, soup, response) -> list[Indicator]:
             image_hash = imagehash.phash(img)
             tag_indicators.append(Indicator("3-image-phash", image_hash))
         except Exception as ex:
-            continue  # print(ex.message)
+            continue  # logging.error(ex.message)
 
     return tag_indicators
 
@@ -272,7 +273,7 @@ def bulk_builtwith_query(domains: list[str], save_matches: bool = False) -> list
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
     builtwith_key = api_keys.get("BUILT_WITH")
     if not builtwith_key:
-        print("No Builtwith API key provided. Skipping.")
+        logging.warn("No Builtwith API key provided. Skipping.")
         return []
     techstack_indicators = get_techstack_indicators(
         domains=domains, api_key=builtwith_key
@@ -308,7 +309,7 @@ def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator
                 tech_stack.extend(technologies)
             return tech_stack
     except IndexError:
-        print(
+        logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
         traceback.print_exc()
@@ -343,7 +344,7 @@ def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = 
             # applying indicator structure
             return [Indicator("tech_identifier", identifier) for identifier in identifiers.to_dict(orient="records")]
     except IndexError as e:
-        print(
+        logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
         traceback.print_exc()
@@ -462,7 +463,7 @@ def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
         return ipms_indicators
 
     except IndexError as e:
-        print(
+        logging.warn(
             "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
         )
         traceback.print_exc()
@@ -497,7 +498,7 @@ def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
 
         return ipms_indicators
     except IndexError as e:
-        print(
+        logging.warn(
             "Error hit iterating running through IPMS results. Have you hit your IPMS API limit?"
         )
         traceback.print_exc()
@@ -598,7 +599,7 @@ def add_associated_domains_from_cert(url) -> list[Indicator]:
         for san in sans:
             tag_indicators.append(Indicator("1-cert-domain", san))
     except Exception as e:
-        print(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
+        logging.error(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
         traceback.print_exc()
     finally:
         return tag_indicators
@@ -653,7 +654,7 @@ def parse_domain_name(url) -> list[Indicator]:
 def start_urlscan(url):
     urlscan_key = URLSCAN_API_KEY
     if not urlscan_key:
-        print("No urlscan API key provided. Passing...")
+        logging.warn("No urlscan API key provided. Passing...")
         return None
     headers = {"API-Key": urlscan_key, "Content-Type": "application/json"}
     data = {"url": url, "visibility": "public"}
@@ -830,7 +831,7 @@ def scrape_url(url):
             payload = {"api_key": SCRAPER_API_KEY, "url": url}
             return requests.get("https://api.scraperapi.com/", params=payload)
         except requests.exceptions.ConnectionError:
-            print("Unable to use scraper, will use vanilla requests.get")
+            logging.warn("Unable to use scraper, will use vanilla requests.get")
             traceback.print_exc()
             return requests.get(url, verify=False)
     else:
@@ -881,13 +882,13 @@ def crawl(url, run_urlscan=False):
         while True:
             # Check if 2 minutes have passed
             if time.time() - start_time > 120:
-                print("Timeout: Results not available within 2 minutes.")
+                logging.warn("Timeout: Results not available within 2 minutes.")
                 break
             response = requests.get(
                 url_submission, headers={"API-Key": URLSCAN_API_KEY}
             )
             if response.status_code == 404:
-                print("Results not ready, retrying in 10 seconds...")
+                logging.warn("Results not ready, retrying in 10 seconds...")
                 time.sleep(10)  # Wait for 10 seconds before retrying
             else:
                 indicators.extend(add_urlscan_indicators(response.json()))
@@ -901,7 +902,7 @@ def crawl_one_or_more_urls(
 ):
     indicators = []
     for url in urls:
-        print('Fingerprinting:',url)
+        logging.info('Fingerprinting:',url)
         url_indicators = crawl(
             url,
             run_urlscan=run_urlscan,
@@ -967,6 +968,13 @@ if __name__ == "__main__":
         required=False,
         default=os.path.join(".", "indicators_output_dmi.csv"),
     )
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
 
     args = parser.parse_args()
     domain_col = args.domain_column
@@ -980,5 +988,5 @@ if __name__ == "__main__":
             indicators = crawl(domain, run_urlscan=run_urlscan)
             write_domain_indicators(domain_name, indicators, output_file=output_file)
         except Exception as e:
-            print(f"Failing error on {domain}. See traceback below. Soldiering on...")
+            logging.error(f"Failing error on {domain}. See traceback below. Soldiering on...")
             traceback.print_exc()

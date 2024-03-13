@@ -9,7 +9,6 @@ import socket
 import ssl
 import subprocess
 import time
-import traceback
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
@@ -71,12 +70,16 @@ def return_empty_if_fails(f: Callable[[Any], list[Indicator]]):
     def wrapper(*args, **kwargs) -> list[Indicator]:
         try:
             return f(*args, **kwargs)
-        except Exception:
-            traceback.print_exc()
+        except Exception as e:
+            logging.error(e, exc_info=True)
+            return []
         finally:
             return []
     return wrapper
 
+@return_empty_if_fails
+def failure_func(arg):
+    raise RuntimeError
 
 def add_response_headers(response) -> list[Indicator]:
     header_indicators = []
@@ -157,7 +160,7 @@ def add_who_is(url) -> list[Indicator]:
                         Indicator("2-whois_citystatecountry", f"{result.city}, {result.state}, {result.country}")
                     )
     except Exception as e:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
 
     return whois_indicators
 
@@ -322,13 +325,13 @@ def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator
                 ]
                 tech_stack.extend(technologies)
             return tech_stack
-    except IndexError:
+    except IndexError as e:
         logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
-        traceback.print_exc()
-    except Exception:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
+    except Exception as e:
+        logging.error(e, exc_info=True)
     finally:
         return []
 
@@ -361,9 +364,9 @@ def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = 
         logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     except Exception as e:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     finally:
         return []
 
@@ -402,7 +405,7 @@ def get_shodan_indicators(url) -> list[Indicator]:
         shodan_json = fetch_shodan_data(ip)
         shodan_indicators = parse_shodan_json(shodan_json)
     except Exception as e:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     finally:
         return shodan_indicators
 
@@ -437,7 +440,7 @@ def get_ipms_indicators(url) -> list[Indicator]:
             ipms_indicators.extend(get_ipms_domain_indicators(ipms_domain_url))
             ipms_indicators.extend(get_ipms_ip_indicators(ipms_ip_url))
     except Exception as e:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     finally:
         return ipms_indicators
 
@@ -480,9 +483,9 @@ def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
         logging.warn(
             "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
         )
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     except Exception as e:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     finally:
         return ipms_indicators
 
@@ -515,9 +518,9 @@ def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
         logging.warn(
             "Error hit iterating running through IPMS results. Have you hit your IPMS API limit?"
         )
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     except Exception as e:
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     finally:
         return ipms_indicators
 
@@ -614,7 +617,7 @@ def add_associated_domains_from_cert(url) -> list[Indicator]:
             tag_indicators.append(Indicator("1-cert-domain", san))
     except Exception as e:
         logging.error(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
-        traceback.print_exc()
+        logging.error(e, exc_info=True)
     finally:
         return tag_indicators
 
@@ -788,7 +791,7 @@ def parse_wordpress(url) -> list[Indicator]:
                 wp_items_string += wp_item["slug"] + ","
             wp_indicators.append(Indicator("3-wp-" + key, wp_items_string))
         except Exception as e:
-            traceback.print_exc()
+            logging.error(e, exc_info=True)
             continue
     return wp_indicators
 
@@ -844,9 +847,9 @@ def scrape_url(url):
         try:
             payload = {"api_key": SCRAPER_API_KEY, "url": url}
             return requests.get("https://api.scraperapi.com/", params=payload)
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
             logging.warn("Unable to use scraper, will use vanilla requests.get")
-            traceback.print_exc()
+            logging.error(e, exc_info=True)
             return requests.get(url, verify=False)
     else:
         return requests.get(url, verify=False)
@@ -1003,4 +1006,4 @@ if __name__ == "__main__":
             write_domain_indicators(domain_name, indicators, output_file=output_file)
         except Exception as e:
             logging.error(f"Failing error on {domain}. See traceback below. Soldiering on...")
-            traceback.print_exc()
+            logging.error(e, exc_info=True)

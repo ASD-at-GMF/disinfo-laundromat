@@ -65,7 +65,7 @@ def get_domain_name(url) -> str:
         return f"{sd}.{d}.{su}"
 
 
-def return_empty_if_fails(f: Callable[[Any], list[Indicator]]):
+def return_empty_if_fails(f: Callable[..., list[Indicator]]):
     @wraps(f)
     def wrapper(*args, **kwargs) -> list[Indicator]:
         try:
@@ -78,9 +78,6 @@ def return_empty_if_fails(f: Callable[[Any], list[Indicator]]):
     return wrapper
 
 @return_empty_if_fails
-def failure_func(arg):
-    raise RuntimeError
-
 def add_response_headers(response) -> list[Indicator]:
     header_indicators = []
     if not response.headers:
@@ -109,7 +106,7 @@ def add_response_headers(response) -> list[Indicator]:
 
     return header_indicators
 
-
+@return_empty_if_fails
 def add_ip_address(domain_name) -> list[Indicator]:
     ip_indicators = []
     if domain_name.startswith("https://"):
@@ -130,7 +127,7 @@ def add_ip_address(domain_name) -> list[Indicator]:
     finally:
         return ip_indicators
 
-
+@return_empty_if_fails
 def add_who_is(url) -> list[Indicator]:
     whois_indicators = []
     try:
@@ -170,7 +167,7 @@ def get_tracert(ip_address):
     output, _ = tracert.communicate()
     return output.decode().strip().split("\n")
 
-
+@return_empty_if_fails
 def parse_classes(soup) -> list[Indicator]:
     tag_indicators = []
     used_classes = set()
@@ -180,7 +177,7 @@ def parse_classes(soup) -> list[Indicator]:
     tag_indicators.append(Indicator("3-css_classes", list(used_classes)))
     return tag_indicators
 
-
+@return_empty_if_fails
 def parse_sitemaps(url) -> list[Indicator]:
     tag_indicators = []
     tree = sitemap_tree_for_homepage(url)
@@ -191,7 +188,7 @@ def parse_sitemaps(url) -> list[Indicator]:
     tag_indicators.append(Indicator("4-sitemap_entries", entries))
     return tag_indicators
 
-
+@return_empty_if_fails
 def parse_dom_tree(soup) -> list[Indicator]:
     tag_indicators = []
     for text in soup.find_all(text=True):
@@ -201,7 +198,7 @@ def parse_dom_tree(soup) -> list[Indicator]:
     tag_indicators.append(Indicator("3-dom_tree", soup.prettify()))
     return tag_indicators
 
-
+@return_empty_if_fails
 def parse_images(url, soup, response) -> list[Indicator]:
     tag_indicators = []
     image_links = []
@@ -221,7 +218,7 @@ def parse_images(url, soup, response) -> list[Indicator]:
 
     return tag_indicators
 
-
+@return_empty_if_fails
 def parse_meta_tags(soup) -> list[Indicator]:
     meta_tags = soup.find_all("meta")
     tag_indicators = []
@@ -242,8 +239,8 @@ def parse_meta_tags(soup) -> list[Indicator]:
     tag_indicators.append(Indicator("3-meta_generic", generic_metas))
     return tag_indicators
 
-
-def parse_script_tags(url, soup) -> list[Indicator]:
+@return_empty_if_fails
+def parse_script_tags(soup) -> list[Indicator]:
     script_tags = soup.find_all("script")
     tag_indicators = []
     script_tags = []
@@ -258,13 +255,13 @@ def parse_script_tags(url, soup) -> list[Indicator]:
     tag_indicators = [Indicator("3-script_src", script_tags)]
     return tag_indicators
 
-
+@return_empty_if_fails
 def parse_id_attributes(soup) -> list[Indicator]:
     ids = [element["id"] for element in soup.find_all(id=True)]
     id_indicators = [Indicator("3-id_tags", ids)]
     return id_indicators
 
-
+@return_empty_if_fails
 def parse_iframe_ids(soup) -> list[Indicator]:
     iframe_ids = [
         iframe["id"] for iframe in soup.find_all("iframe") if "id" in iframe.attrs
@@ -274,7 +271,7 @@ def parse_iframe_ids(soup) -> list[Indicator]:
         iframe_indicators.append(Indicator("3-iframe_id_tags", iframe))
     return iframe_indicators
 
-
+@return_empty_if_fails
 def parse_link_tags(url, soup) -> list[Indicator]:
     link_tags = soup.find_all("link")
     href_links = [link["href"] for link in link_tags if link.has_attr("href")]
@@ -285,7 +282,7 @@ def parse_link_tags(url, soup) -> list[Indicator]:
 
     return tag_indicators
 
-
+@return_empty_if_fails
 def bulk_builtwith_query(domains: list[str], save_matches: bool = False) -> list[Indicator]:
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
     builtwith_key = api_keys.get("BUILT_WITH")
@@ -300,7 +297,7 @@ def bulk_builtwith_query(domains: list[str], save_matches: bool = False) -> list
     )
     return techstack_indicators + techidentifier_indicators
 
-
+@return_empty_if_fails
 def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator]:
     domain_list = ",".join(domains)
     tech_stack_query = (
@@ -335,7 +332,7 @@ def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator
     finally:
         return []
 
-
+@return_empty_if_fails
 def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = False) -> list[Indicator]:
     domain_list = ",".join(domains)
     tech_relation_query = (
@@ -379,7 +376,7 @@ def fetch_shodan_data(ip):
     else:
         return None
 
-
+@return_empty_if_fails
 def parse_shodan_json(shodan_json) -> list[Indicator]:
     shodan_indicators = []
     if shodan_json:
@@ -395,7 +392,7 @@ def parse_shodan_json(shodan_json) -> list[Indicator]:
 
     return shodan_indicators
 
-
+@return_empty_if_fails
 def get_shodan_indicators(url) -> list[Indicator]:
     shodan_indicators = []
     domain = get_domain_name(url)
@@ -409,7 +406,7 @@ def get_shodan_indicators(url) -> list[Indicator]:
     finally:
         return shodan_indicators
 
-
+@return_empty_if_fails
 def get_ipms_indicators(url) -> list[Indicator]:
     ipms_indicators = []
     try:
@@ -444,7 +441,7 @@ def get_ipms_indicators(url) -> list[Indicator]:
     finally:
         return ipms_indicators
 
-
+@return_empty_if_fails
 def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
     ipms_indicators = []
     api_result = requests.get(ipms_url)
@@ -489,7 +486,7 @@ def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
     finally:
         return ipms_indicators
 
-
+@return_empty_if_fails
 def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
     ipms_indicators = []
     api_result = requests.get(ipms_url)
@@ -525,7 +522,8 @@ def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
         return ipms_indicators
 
 
-def parse_body(url, response) -> list[Indicator]:
+@return_empty_if_fails
+def parse_body(response) -> list[Indicator]:
     text = response.text
     tag_indicators = []
     tag_indicators.extend(find_uuids(text))
@@ -534,6 +532,7 @@ def parse_body(url, response) -> list[Indicator]:
     return tag_indicators
 
 
+@return_empty_if_fails
 def parse_footer(soup) -> list[Indicator]:
     tag_indicators = []
 
@@ -546,6 +545,7 @@ def parse_footer(soup) -> list[Indicator]:
     return tag_indicators
 
 
+@return_empty_if_fails
 def find_with_regex(regex, text, indicator_type) -> list[Indicator]:
     tag_indicators = []
     matches = set(re.findall(regex, text))
@@ -554,11 +554,12 @@ def find_with_regex(regex, text, indicator_type) -> list[Indicator]:
     return tag_indicators
 
 
-def find_uuids(text):
+def find_uuids(text) -> list[Indicator]:
     uuid_pattern = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     return find_with_regex(uuid_pattern, text, "3-uuid")
 
 
+@return_empty_if_fails
 def find_wallets(text) -> list[Indicator]:
     tag_indicators = []
     crypto_wallet_pattern = r"[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
@@ -581,6 +582,7 @@ def find_wallets(text) -> list[Indicator]:
     return tag_indicators
 
 
+@return_empty_if_fails
 def find_wallet_transactions(wallet_type, wallet) -> list[Indicator]:
     tx_data = blockcypher.get_address_full(wallet, coin_symbol=wallet_type)
     tag_indicators = []
@@ -597,6 +599,7 @@ def find_wallet_transactions(wallet_type, wallet) -> list[Indicator]:
     return tag_indicators
 
 
+@return_empty_if_fails
 def add_associated_domains_from_cert(url) -> list[Indicator]:
     tag_indicators = []
     try:
@@ -621,6 +624,7 @@ def add_associated_domains_from_cert(url) -> list[Indicator]:
     finally:
         return tag_indicators
 
+@return_empty_if_fails
 def parse_id_patterns(response, id_patterns: dict[str,str]) -> list[Indicator]:
     tag_indicators = []
     for id_type, pattern in id_patterns.items():
@@ -629,6 +633,7 @@ def parse_id_patterns(response, id_patterns: dict[str,str]) -> list[Indicator]:
     return tag_indicators
 
 
+@return_empty_if_fails
 def add_cdn_domains(soup) -> list[Indicator]:
     tag_indicators = []
 
@@ -645,6 +650,7 @@ def add_cdn_domains(soup) -> list[Indicator]:
 
 
 # getting domain and suffix, eg -  “google.com”
+@return_empty_if_fails
 def find_domain_suffix(url) -> list[Indicator]:
     tag_indicators = []
     ext = tldextract.extract(url)
@@ -653,6 +659,7 @@ def find_domain_suffix(url) -> list[Indicator]:
     return tag_indicators  # joins the strings
 
 
+@return_empty_if_fails
 def find_second_level_domain(url) -> list[Indicator]:
     tag_indicators = []
     ext = tldextract.extract(url)
@@ -661,6 +668,7 @@ def find_second_level_domain(url) -> list[Indicator]:
     return tag_indicators
 
 
+@return_empty_if_fails
 def parse_domain_name(url) -> list[Indicator]:
     tag_indicators = []
     tag_indicators.extend(find_domain_suffix(url))
@@ -683,6 +691,7 @@ def start_urlscan(url):
 
 
 # todo: add more indicators from urlscan
+@return_empty_if_fails
 def add_urlscan_indicators(data) -> list[Indicator]:
     urlscan_indicators = []
     urlscan_indicators.append(
@@ -743,10 +752,10 @@ def get_endpoints(url, endpoints):
     return ''
 
 
+@return_empty_if_fails
 def parse_cms(url) -> list[Indicator]:
     # TODO: add more CMSs
     cms_indicators = []
-    cms = None
 
     # Endpoints to check for
     wp_endpoints = ["wp-login.php", "wp-admin/"]
@@ -755,23 +764,21 @@ def parse_cms(url) -> list[Indicator]:
     bitrix_endpoints = ["bitrix/admin/"]
 
     # Check for endpoints
-    if get_endpoints(url, wp_endpoints) is not None:
+    if get_endpoints(url, wp_endpoints):
         cms_indicators.extend(parse_wordpress(url))
-        cms = "WordPress"
-    if get_endpoints(url, joomla_endpoints) is not None:
-        cms = "Joomla"
-    if get_endpoints(url, drupal_endpoints) is not None:
-        cms = "Drupal"
-    if get_endpoints(url, bitrix_endpoints) is not None:
-        cms = "Bitrix"
-
-    if cms is not None:
-        cms_indicators.append(Indicator("3-cms", cms))
+        cms_indicators.append(Indicator("3-cms", "WordPress"))
+    if get_endpoints(url, joomla_endpoints):
+        cms_indicators.append(Indicator("3-cms", "Joomla"))
+    if get_endpoints(url, drupal_endpoints):
+        cms_indicators.append(Indicator("3-cms", "Drupal"))
+    if get_endpoints(url, bitrix_endpoints):
+        cms_indicators.append(Indicator("3-cms", "Bitrix"))
 
     return cms_indicators
 
 
 # For WordPress, check for endpoints, if they exist, get the items and add them as indicators
+@return_empty_if_fails
 def parse_wordpress(url) -> list[Indicator]:
     wp_indicators = []
     endpoints = {
@@ -796,6 +803,8 @@ def parse_wordpress(url) -> list[Indicator]:
     return wp_indicators
 
 
+# TODO: this function is broken
+@return_empty_if_fails
 def detect_and_parse_feed_content(url) -> list[Indicator]:
     feed_indicators = []
     feed = None
@@ -803,7 +812,7 @@ def detect_and_parse_feed_content(url) -> list[Indicator]:
     feed_endpoints = ["rss.xml", "feed/", "rss/"]
     feed = get_endpoints(url, feed_endpoints)
 
-    if feed is not None and feed != "":
+    if feed:
         feed = feedparser.parse(url)
         for entry in feed.entries:
             feed_indicators.append(
@@ -819,6 +828,8 @@ def detect_and_parse_feed_content(url) -> list[Indicator]:
 
     return feed_indicators
 
+
+@return_empty_if_fails
 def get_outbound_domains(url, soup) -> list[Indicator]:
     outbound_domains = set()
     domain_extract = tldextract.extract(url)
@@ -870,7 +881,7 @@ def crawl(url, run_urlscan=False) -> list[Indicator]:
     indicators.extend(add_response_headers(response=response))
     indicators.extend(add_ip_address(domain_name=url))
     indicators.extend(parse_meta_tags(soup))
-    indicators.extend(parse_script_tags(url, soup))
+    indicators.extend(parse_script_tags(soup))
     indicators.extend(parse_iframe_ids(soup))
     indicators.extend(parse_id_attributes(soup))
     indicators.extend(parse_link_tags(url, soup))

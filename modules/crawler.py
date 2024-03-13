@@ -10,8 +10,10 @@ import ssl
 import subprocess
 import time
 import traceback
+from functools import wraps
 from io import BytesIO
 from pathlib import Path
+from typing import Any, Callable
 from urllib.parse import urlsplit
 
 import blockcypher
@@ -62,6 +64,18 @@ def get_domain_name(url) -> str:
         return f"{d}.{su}"
     else:
         return f"{sd}.{d}.{su}"
+
+
+def return_empty_if_fails(f: Callable[[Any], list[Indicator]]):
+    @wraps(f)
+    def wrapper(*args, **kwargs) -> list[Indicator]:
+        try:
+            return f(*args, **kwargs)
+        except Exception:
+            traceback.print_exc()
+        finally:
+            return []
+    return wrapper
 
 
 def add_response_headers(response) -> list[Indicator]:

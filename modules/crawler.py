@@ -571,7 +571,7 @@ def add_associated_domains_from_cert(url) -> list[Indicator]:
         return [Indicator("1-cert-domain", san) for san in sans]
     except Exception as e:
         logging.error(f"add_associated_domains_from_cert failed for {url}")
-        raise e
+        return []
 
 @return_empty_if_fails
 def parse_id_patterns(response, id_patterns: dict[str,str]) -> list[Indicator]:

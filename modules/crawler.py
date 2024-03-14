@@ -73,8 +73,6 @@ def return_empty_if_fails(f: Callable[..., list[Indicator]]):
         except Exception as e:
             logging.error(e, exc_info=True)
             return []
-        finally:
-            return []
     return wrapper
 
 @return_empty_if_fails
@@ -358,7 +356,7 @@ def fetch_shodan_data(ip):
 @return_empty_if_fails
 def parse_shodan_json(shodan_json: dict) -> list[Indicator]:
     shodan_indicators = []
-    shodan_indicators.append(Indicator("1-ip_shodan_hostnames", hostname) for hostname in shodan_json.get('hostnames', []))
+    shodan_indicators.extend([Indicator("1-ip_shodan_hostnames", hostname) for hostname in shodan_json.get('hostnames', [])])
     if shodan_json.get("vulns", ''):
         shodan_indicators.append(Indicator("2-ip_shodan_vuln", shodan_json["vulns"]))
     if shodan_json.get("cpes", ''):

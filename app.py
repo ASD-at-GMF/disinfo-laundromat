@@ -27,6 +27,7 @@ import zipfile
 import numpy as np
 import traceback
 import os
+import ast
 import bleach
 import logging
 
@@ -143,19 +144,27 @@ def clean_inputs(view_func):
     @wraps(view_func)
     def decorated_function(*args, **kwargs):
         app.logger.info("Request Info: %s", request)
+
         # Clean query parameters
-        for key, value in request.args.items():
-            cleaned_value = bleach.clean(value)
+        cleaned_args = {}
+        for key, values in request.args.lists():
+            cleaned_values = [bleach.clean(value) for value in values]
+            # If there's only one item, just get the item, not a list
             request.args = request.args.copy()
-            request.args[key] = cleaned_value
+            request.args[key] = cleaned_values if len(cleaned_values) > 1 else cleaned_values[0]
 
         # Clean form data
-        for key, value in request.form.items():
-            cleaned_value = bleach.clean(value)
+        cleaned_form = {}
+        for key, values in request.form.lists():     
+            cleaned_values = [bleach.clean(value) for value in values]
             request.form = request.form.copy()
-            request.form[key] = cleaned_value
+            request.form[key] = cleaned_values if len(cleaned_values) > 1 else cleaned_values[0]
+
+        # You can then pass these cleaned dicts to your view function
+        # For demonstration, adding them to kwargs
 
         return view_func(*args, **kwargs)
+
     return decorated_function
 
 #### ROUTES ####
@@ -342,11 +351,15 @@ def content(request):
     combineOperator = request.form.get('combineOperator', 'OR')
     language = request.form.get('language', 'en') 
     country = request.form.get('country', 'us') 
-    engines = request.form.getlist('search_engines', 'all')
+    engines = request.form.getlist('search_engines')
 
-    if engines == ['all'] or engines == []:
+    if engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
-
+    if isinstance(engines, str):
+        engines = [engines]
+    else:
+        engines = engines[0]
+        # Extracting article data-
     if not title_query and not content_query:
         # Error message if neither is provided
         return jsonify({'error': 'Please provide at least a title or content query.'})
@@ -398,6 +411,10 @@ def parse_url(request):
     country = request.form.get('country', 'us')
     if engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+    if isinstance(engines, str):
+        engines = [engines]
+    else:
+        engines = engines[0]
         # Extracting article data-
     article = Article(url)
     article.download()

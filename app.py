@@ -44,7 +44,7 @@ MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 
 
-from modules.reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
+from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls
 from modules.matcher import find_matches
@@ -168,7 +168,7 @@ def index():
 @app.route('/api/', methods=['GET'])
 @app.route('/api/metadata', methods=['GET'])
 def index_api():
-    return jsonify({'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
+    return jsonify({'defaults':DEFAULTS,'engines': ENGINES, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
 ## LOGIN/LOGOUT ROUTES##
 @app.route('/login', methods=['GET', 'POST'])
@@ -339,10 +339,10 @@ def content_api():
 def content(request):
     title_query = request.form.get('titleQuery')
     content_query = request.form.get('contentQuery')
-    combineOperator = request.form.get('combineOperator')
-    language = request.form.get('language')
-    country = request.form.get('country')
-    engines = request.form.getlist('search_engines')
+    combineOperator = request.form.get('combineOperator', 'OR')
+    language = request.form.get('language', 'en') 
+    country = request.form.get('country', 'us') 
+    engines = request.form.getlist('search_engines', 'all')
 
     if engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
@@ -393,10 +393,10 @@ def parse_url_api():
 def parse_url(request):
     url = request.form['url']
     engines = request.form.getlist('search_engines')
-    combineOperator = request.form.get('combineOperator')
-    language = request.form.get('language')
-    country = request.form.get('country')
-    if engines == ['all'] or engines == []:
+    combineOperator = request.form.get('combineOperator', 'OR')
+    language = request.form.get('language', 'en')
+    country = request.form.get('country', 'us')
+    if engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
         # Extracting article data-
     article = Article(url)
@@ -808,7 +808,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         data = response.json()
         organic_results = data.get("organic_results", [])
         print(params)
-        app.logger.error(f"Searching SERP with params: {params}")
+        app.logger.info(f"Searching SERP with params: {params}")
 
 
         # Aggregate by domain, link, title, and count occurrences

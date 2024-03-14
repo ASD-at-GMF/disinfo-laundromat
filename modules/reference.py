@@ -1,3 +1,21 @@
+#  ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+
+DEFAULTS = {
+    "search_engines": ["all"],
+    "language": "en",
+    "country": "us",
+}
+ENGINES = {
+    "google": "Google",
+    "bing": "Bing",
+    "duckduckgo": "DuckDuckGo",
+    "yahoo": "Yahoo",
+    "yandex": "Yandex",
+    "gdelt": "GDELT",
+    "copyscape": "Copyscape",
+    "google_news": "Google News",
+    "bing_news": "Bing News"
+}    
 LANGUAGES = {
 'af':	'Afrikaans',
 'ak':	'Akan',

@@ -71,6 +71,7 @@ def return_empty_if_fails(f: Callable[..., list[Indicator]]):
         try:
             return f(*args, **kwargs)
         except Exception as e:
+            logging.error(f"Caught error {e} for {f.__name__}")
             logging.error(e, exc_info=True)
             return []
     return wrapper
@@ -168,15 +169,15 @@ def parse_classes(soup) -> list[Indicator]:
     for elem in soup.select("[class]"):
         classes = elem["class"]
         used_classes.update(classes)
-    return [Indicator("3-css_classes", list(used_classes))]
+    if len(used_classes) > 0:
+        return [Indicator("3-css_classes", list(used_classes))]
+    return []
 
 @return_empty_if_fails
 def parse_sitemaps(url) -> list[Indicator]:
     tree = sitemap_tree_for_homepage(url)
     logging.info(tree)
-    entries = set()
-    for page in tree.all_pages():
-        entries.update(page.url)
+    entries = set(page.url for page in tree.all_pages())
     return [Indicator("4-sitemap_entries", entries)]
 
 @return_empty_if_fails
@@ -284,11 +285,11 @@ def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator
         api_result = requests.get(tech_stack_query)
         data = json.loads(api_result.content)
         # API supports querying multiple sites at a time, hence the embedded structure
+        technologies = []
         for result_item in data["Results"]:
             result = result_item["Result"]
-            tech_stack = []
             for path in result["Paths"]:
-                technologies = [
+                technologies.extend([
                     Indicator("techstack",{
                             "name": tech.get("Name"),
                             "link": tech.get("Link"),
@@ -296,18 +297,13 @@ def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator
                             "subdomain": path["SubDomain"],
                         })
                     for tech in path["Technologies"]
-                ]
-                tech_stack.extend(technologies)
-            return tech_stack
+                ])
+        return technologies
     except IndexError as e:
         logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
-        logging.error(e, exc_info=True)
-    except Exception as e:
-        logging.error(e, exc_info=True)
-    finally:
-        return []
+        raise e
 
 @return_empty_if_fails
 def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = False) -> list[Indicator]:
@@ -316,11 +312,12 @@ def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = 
         f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain_list}"
     )
     api_result = requests.get(tech_relation_query)
-
+    indicators = []
     try:
         data = json.loads(api_result.content)
         for result_item in data["Relationships"]:
             relations = result_item["Identifiers"]
+            # TODO: is this appropriate to keep?
             matches_df = (
                 pd.DataFrame(relations).explode("Matches").rename(columns=str.lower)
             )
@@ -332,17 +329,13 @@ def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = 
                 .to_frame("num_matches")
                 .reset_index()
             )
-            # applying indicator structure
-            return [Indicator("tech_identifier", identifier) for identifier in identifiers.to_dict(orient="records")]
+            indicators.extend([Indicator("tech_identifier", identifier) for identifier in identifiers.to_dict(orient="records")])
+        return indicators
     except IndexError as e:
         logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
         raise(e)
-    except Exception as e:
-        logging.error(e, exc_info=True)
-    finally:
-        return []
 
 
 def fetch_shodan_data(ip):
@@ -445,11 +438,7 @@ def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
         logging.warn(
             "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
         )
-        logging.error(e, exc_info=True)
-    except Exception as e:
-        logging.error(e, exc_info=True)
-    finally:
-        return ipms_indicators
+        raise(e)
 
 @return_empty_if_fails
 def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
@@ -480,11 +469,7 @@ def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
         logging.warn(
             "Error hit iterating running through IPMS results. Have you hit your IPMS API limit?"
         )
-        logging.error(e, exc_info=True)
-    except Exception as e:
-        logging.error(e, exc_info=True)
-    finally:
-        return ipms_indicators
+        raise(e)
 
 
 @return_empty_if_fails

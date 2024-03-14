@@ -333,7 +333,6 @@ def content_api():
             # Error message if neither is provided
             return jsonify({'error': 'Please provide at least a title or content query.'})
         else:
-            results, csv_data = None
             results, csv_data = content(request)
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 

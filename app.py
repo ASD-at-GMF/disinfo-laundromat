@@ -243,7 +243,7 @@ def register(request):
 
 
 @app.route('/fingerprint', methods=['GET', 'POST'])
-@login_required
+#@login_required
 @clean_inputs
 def fingerprint_gui():
     if request.method == 'POST':
@@ -255,7 +255,7 @@ def fingerprint_gui():
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint', methods=['POST'])
-@login_required
+#@login_required
 @clean_inputs
 def fingerprint_api():
     if request.method == 'POST':

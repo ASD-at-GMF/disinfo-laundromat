@@ -15,7 +15,7 @@ from io import StringIO
 from urllib.parse import urlparse
 import csv
 import sys
-from newspaper import Article
+from newspaper import Article, Config
 import sqlite3
 from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
 from flask_bcrypt import Bcrypt
@@ -56,7 +56,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 bootstrap = Bootstrap(app)
 bcrypt = Bcrypt(app)
 app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
-app.config['DEBUG'] = CURRENT_ENVIRONMENT == 'development'
+app.config['DEBUG'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['REMEMBER_COOKIE_SECURE'] = True
@@ -65,7 +65,11 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='debug.log',
+                        level=logging.DEBUG,
+                        format='%(asctime)s %(levelname)s: %(message)s'
+                        )
+
 
 DATABASE = 'database.db'
 
@@ -172,7 +176,7 @@ def clean_inputs(view_func):
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+    return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/', methods=['GET'])
 @app.route('/api/metadata', methods=['GET'])
@@ -250,7 +254,17 @@ def register(request):
     # Save the username and hashed_password to the database
     return jsonify({'message': 'Registered successfully'})
 
+@app.route('/url-search', methods=[ 'POST'])
+@clean_inputs
+def url_search():
+    try:
+        indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
 
+        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
+    except Exception as e:
+        return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
+    
+#deprecated
 @app.route('/fingerprint', methods=['GET', 'POST'])
 #@login_required
 @clean_inputs
@@ -261,7 +275,7 @@ def fingerprint_gui():
             return render_template('index.html',  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
         except Exception as e:
             return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
-    return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+    return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint', methods=['POST'])
 #@login_required
@@ -317,9 +331,16 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
         matches_df = pd.concat([matches_df, grouped_matches_df])
     matches_df.reset_index(drop=True, inplace=True)
     matches_df = matches_df.replace({np.nan: None})
+    matches_df = matches_df.applymap(convert_sets_to_lists)
     matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
 
     return indicators_df, matches_df, indicator_summary, matches_summary
+
+def convert_sets_to_lists(item):
+    if isinstance(item, set):
+        return list(item)
+    else:
+        return item
 
 @app.route('/content', methods=['GET', 'POST'])
 @clean_inputs
@@ -332,7 +353,7 @@ def content_gui():
             results, csv_data = (None, None)
             results, csv_data = content(request)
             
-    return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+    return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES,  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/content', methods=['POST'])
 @clean_inputs
@@ -345,20 +366,36 @@ def content_api():
             results, csv_data = content(request)
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
-def content(request):
-    title_query = request.form.get('titleQuery')
-    content_query = request.form.get('contentQuery')
+@app.route('/content-search', methods=['POST'])
+@clean_inputs
+def parse_content_search():
+    if request.method == 'POST':
+        contentToSearch = request.form.get('contentToSearch')
+        # Parse the URL
+        parsed_url = urlparse(contentToSearch)
+        if parsed_url.scheme and parsed_url.netloc:
+            results, csv_data = parse_url(request, contentToSearch)
+        else:
+            title_query = contentToSearch
+            content_query = contentToSearch
+            results, csv_data = content(request, title_query, content_query)
+        return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+
+
+def content(request, title_query=None, content_query=None):
+    title_query = title_query if title_query is not None else  request.form.get('titleQuery')
+    content_query = content_query if content_query is not None else request.form.get('contentQuery')
     combineOperator = request.form.get('combineOperator', 'OR')
     language = request.form.get('language', 'en') 
     country = request.form.get('country', 'us') 
     engines = request.form.getlist('search_engines')
 
+    print("Engines: ", engines, "Title Query: ", title_query, "Content Query: ", content_query, "Combine Operator: ", combineOperator, "Language: ", language, "Country: ", country)
     if engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
-    else:
-        engines = engines[0]
+
         # Extracting article data-
     if not title_query and not content_query:
         # Error message if neither is provided
@@ -367,17 +404,18 @@ def content(request):
         return fetch_content_results(
             title_query, content_query, combineOperator, language, country, engines=engines)
 
+#Deprecated
 @app.route('/parse-url', methods=['POST'])
 @clean_inputs
 def parse_url_gui():
     url = request.form['url']
 
     if not url:
-        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     try:
         results, csv_data = parse_url(request)
 
-        return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+        return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
     except Exception as e:
         response = requests.get(url)
@@ -391,7 +429,7 @@ def parse_url_gui():
         else:
             flash("This page could not automatically be parsed for content. Please enter a title and/or content query manually.")
         
-        return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     
 @app.route('/api/parse-url', methods=['POST'])
 @clean_inputs
@@ -403,8 +441,8 @@ def parse_url_api():
     except Exception as e:
         return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
         
-def parse_url(request):
-    url = request.form['url']
+def parse_url(request, urlToParse=None):
+    url = urlToParse if urlToParse is not None else request.form.get('url', '')
     engines = request.form.getlist('search_engines')
     combineOperator = request.form.get('combineOperator', 'OR')
     language = request.form.get('language', 'en')
@@ -413,8 +451,7 @@ def parse_url(request):
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
-    else:
-        engines = engines[0]
+
         # Extracting article data-
     article = Article(url)
     article.download()
@@ -423,8 +460,19 @@ def parse_url(request):
     return fetch_content_results(
             article.title, article.text, combineOperator, language, country, engines=engines)
 
+@app.route('/batch-search-metadata', methods=['POST'])
+@clean_inputs
+def parse_batch_search_metadata():
+    if request.files['fingerprint-file'].filename != '':
+        return fingerprint_file(request)
+    
+@app.route('/batch-search-content', methods=['POST'])
+@clean_inputs
+def parse_batch_search_content():
+    if request.files['file'].filename != '':
+        return upload_file(request)
 
-#TODO: Figure out a way to API-ify this
+
 @app.route('/content-csv', methods=['POST'])
 @clean_inputs
 def upload_file_gui():
@@ -439,13 +487,10 @@ def upload_file_api():
 def upload_file(request):
     file = request.files['file']
     email_recipient = request.form.get('email')
-    if file:
+    if file.filename != '':
         stream = io.StringIO(file.stream.read().decode("UTF8"), newline='')
         csv_input = csv.DictReader(stream)
         # Use StringIO to create an in-memory file-like object
-        output_stream = io.StringIO()
-
-        # Prepare to write to a new CSV file
         output_stream = io.StringIO()
 
         results_df = pd.DataFrame(columns=['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
@@ -465,25 +510,32 @@ def upload_file(request):
             if country == '':
                 country = 'us'
             try:
-                if title_query or content_query:
+                if title_query is not None or content_query is not None :
                     title_query = row.get("title")
                     content_query = row.get("content")
 
                     results, csv_data = fetch_content_results(
-                        title_query, content_query, combineOperator, language, country, engines=engines)
+                        title_query, content_query, combineOperator, combineOperator,  language, country, engines=engines)
                 elif searched_url:
-                    article = Article(searched_url)
+                    user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0'
+
+                    config = Config()
+                    config.browser_user_agent = user_agent
+                    config.request_timeout = 15
+
+                    article = Article(searched_url, config=config)
                     article.download()
                     article.parse()
+                    logging.debug(f"Processing article: {article.title} for {engines}")
 
                     #todo: add language and country from csv
-                    results, csv_data = fetch_content_results(
-                        article.title, article.text, language, country, engines=engines)
+                    results, csv_data = fetch_content_results(article.title, article.text, combineOperator, language, country, engines=engines)
                 # Initialize an empty list to hold all the new rows
                 all_new_rows = []
 
                 # Loop through the results and create a list of new rows
                 for result in results:
+                    logging.debug(f"Processing result: {result}")
                     new_row = [searched_url,
 
                             result['domain'],
@@ -537,7 +589,7 @@ def upload_file(request):
 def fingerprint_file_gui():
     return fingerprint_file(request)
     # If no file, render the index template
-   # return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+   # return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint-csv', methods=['POST'])
 @clean_inputs
@@ -591,7 +643,7 @@ def fingerprint_file(request):
 @app.route('/download_csv', methods=['POST'])
 @app.route('/api/download_csv', methods=['POST'])
 @clean_inputs
-def download_csvi():
+def download_csv():
     csv_data = request.form.get('csv_data', '')
 
     output = make_response(csv_data)
@@ -720,6 +772,7 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
 
 
 def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
+    
     title_query = truncate_text(title_query)
     content_query = truncate_text(content_query)
 
@@ -805,10 +858,12 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         'https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
     results_gdelt = None
     if 'gdelt' in engines:
+        logging.debug(f"Fetching GDELT results for {title_query} and {content_query}")
         results_gdelt = fetch_gdelt_results(
             title_query, content_query, combineOperator, language, country)
     results_cs = None
     if COPYSCAPE_API_KEY and COPYSCAPE_USER and 'copyscape' in engines:
+        logging.debug(f"Fetching CopyScape results for {title_query} and {content_query}")
         results_cs = fetch_copyscape_results(
             title_query, content_query, combineOperator, language, country)
 
@@ -816,6 +871,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         title_query, content_query, combineOperator, language, country)
     aggregated_results = {}
     for params in paramsList:
+        logging.debug(f"Fetching SERP results for {title_query} and {content_query} for params: {params}")
         search_engine = params["engine"]
         if search_engine not in engines:
             continue
@@ -827,9 +883,10 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         print(params)
         app.logger.info(f"Searching SERP with params: {params}")
 
-
+        logging.debug(f"Results found: {organic_results.__len__()} for {search_engine}")
         # Aggregate by domain, link, title, and count occurrences
         for result in organic_results:
+            
             domain = urlparse(result.get('link')).netloc
             link_data = {'link': result.get('link'), 'title': result.get(
                 'title'), 'snippet': result.get('snippet') , 'count': 1, 'engines': [search_engine]}
@@ -870,6 +927,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
                 # If the key is not in the first dictionary, add it
                 aggregated_results[key] = value
 
+    logging.debug(f"Aggregated results: {aggregated_results.__len__()}")
     local_domains_dict = {domain: source for domain, source in local_domains}
     # Flagging domains of concern and tracking their source
     for domain, data in aggregated_results.items():
@@ -891,7 +949,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
     # FLATTEN DOMAINS Iterate over each domain in the JSON data
 
     flattened_data = []
-
+    logging.debug(f"Flattening results: {aggregated_results.__len__()}")
     for domain, domain_data in aggregated_results.items():
         for link in domain_data['links']:
             # Create a dictionary for each link with the required information
@@ -1066,6 +1124,10 @@ def sequence_match_score(title1, title2):
     Returns:
     float: Similarity score between the two titles.
     """
+    if title1 is None:
+        title1 = ""
+    if title2 is None:
+        title2 = ""
     # Initialize SequenceMatcher with the two titles
     matcher = SequenceMatcher(None, title1, title2)
 
@@ -1075,22 +1137,18 @@ def sequence_match_score(title1, title2):
     return round(score*100,1)
 
 def summarize_indicators(results, column='indicator_type'):
-    """
-    Generate a summary of results with the number of occurrences for each tier.
-
-    Args:
-    results (list of dicts): List containing indicator data.
-
-    Returns:
-    str: A formatted summary string.
-    """
-    summary = []
     tier_counts = Counter([item[column].split('-')[0] for item in results])
 
-    # sort the tier as 1, 2, 3
-    tier_counts = {k: v for k, v in sorted(tier_counts.items(), key=lambda item: int(item[0]))}    
+    # Sort the tier as 1, 2, 3
+    tier_counts = {k: v for k, v in sorted(tier_counts.items(), key=lambda item: int(item[0]))}
 
-    return tier_counts
+    # Calculate total count
+    total_count = sum(tier_counts.values())
+
+    # Convert counts to percentages
+    tier_percentages = {k: (v / total_count) * 100 for k, v in tier_counts.items()}
+
+    return tier_percentages
 
 def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:

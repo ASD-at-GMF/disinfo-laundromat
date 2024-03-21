@@ -9,11 +9,12 @@ import socket
 import ssl
 import subprocess
 import time
+import traceback
 from functools import wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Callable
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlparse
 
 import blockcypher
 import feedparser

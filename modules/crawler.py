@@ -639,10 +639,13 @@ def add_urlscan_indicators(data) -> list[Indicator]:
             ]
         )
     )
-
-    urlscan_indicators.append(
-        Indicator("2-urlscan_asn", data["page"]["asn"])
-    )
+    if "asn" in data["page"]:
+        urlscan_indicators.append(
+            {
+                "indicator_type": "2-urlscan_asn",
+                "indicator_content": data["page"]["asn"],
+            }
+        )
     urlscan_indicators.append(
         Indicator("2-urlscan_domainsonpage", data["lists"]["domains"])
     )
@@ -794,7 +797,11 @@ def crawl(url, run_urlscan=False) -> list[Indicator]:
     url_submission = None
 
     if run_urlscan:
-        url_submission = start_urlscan(url)
+        try:
+            url_submission = start_urlscan(url)
+        except Exception as e:
+            print(f"Error in start_urlscan for {url}. Will continue. Traceback below.")
+            traceback.print_exc()
 
     # Parse the HTML content of the page
     response = scrape_url(url)
@@ -853,9 +860,11 @@ def crawl_one_or_more_urls(
 ) -> list[Indicator]:
     indicators = []
     for url in urls:
-        logging.info('Fingerprinting:',url)
+        parsed_url = urlparse(url)
+        base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        logging.info('Fingerprinting:',base_domain)
         url_indicators = crawl(
-            url,
+            base_domain,
             run_urlscan=run_urlscan,
         )
         domain_name = get_domain_name(url)

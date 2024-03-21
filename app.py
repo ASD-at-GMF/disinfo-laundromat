@@ -4,6 +4,7 @@ load_dotenv()
 from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
+from functools import wraps
 
 import json
 import re
@@ -26,20 +27,25 @@ import zipfile
 import numpy as np
 import traceback
 import os
+import ast
+import bleach
+import logging
 
 # Paramaterizable Variables
 SERP_API_KEY = os.getenv('SERP_API_KEY')
-SITES_OF_CONCERN = os.getenv('SITES_OF_CONCERN')
-KNOWN_INDICATORS = os.getenv('KNOWN_INDICATORS')
-MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH')
-APP_SECRET_KEY = os.getenv('APP_SECRET_KEY')
-SQLLITE_DB_PATH = os.getenv('SQLLITE_DB_PATH')
-COPYSCAPE_API_KEY = os.getenv('COPYSCAPE_API_KEY')
-COPYSCAPE_USER = os.getenv('COPYSCAPE_USER')
-PATH_TO_OUTPUT_CSV = os.getenv('PATH_TO_OUTPUT_CSV')
-MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE')
+SITES_OF_CONCERN = os.getenv('SITES_OF_CONCERN', '')
+KNOWN_INDICATORS = os.getenv('KNOWN_INDICATORS', '')
+MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH', '')
+APP_SECRET_KEY = os.getenv('APP_SECRET_KEY', '')
+SQLLITE_DB_PATH = os.getenv('SQLLITE_DB_PATH', '')
+COPYSCAPE_API_KEY = os.getenv('COPYSCAPE_API_KEY', '')
+COPYSCAPE_USER = os.getenv('COPYSCAPE_USER', '')
+PATH_TO_OUTPUT_CSV = os.getenv('PATH_TO_OUTPUT_CSV', '')
+MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
+CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 
-from modules.reference import LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
+
+from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls
 from modules.matcher import find_matches
@@ -50,17 +56,21 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 bootstrap = Bootstrap(app)
 bcrypt = Bcrypt(app)
 app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
+app.config['DEBUG'] = CURRENT_ENVIRONMENT == 'development'
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SECURE'] = True
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+logging.basicConfig(level=logging.INFO)
+
 DATABASE = 'database.db'
 
 #### USER METHODS ####
 # TODO: Move to separate file
-
-
 class User(UserMixin):
     def __init__(self, id, username, password):
         self.id = id
@@ -111,6 +121,7 @@ def init_db():
 
 def insert_sites_of_concern(local_domains):
     db = get_db()
+    app.logger.info("Inserting indicators: %s", local_domains)
     # Check if the table is empty
     if db.execute('SELECT COUNT(*) FROM sites_base').fetchone()[0] == 0:
         # If empty, insert the local_domains
@@ -121,11 +132,40 @@ def insert_sites_of_concern(local_domains):
 
 def insert_indicators(indicators):
     db = get_db()
+    app.logger.info("Inserting indicators: %s", indicators)
 
     # If empty, insert the local_domains
     db.executemany('INSERT INTO site_fingerprint (domain_name, indicator_type, indicator_content) VALUES (?, ?, ?)',
                    [(indicator['domain_name'], indicator['indicator_type'], str(indicator['indicator_content'])) for indicator in indicators])
     db.commit()
+
+# TODO move to a utils or decorators file
+def clean_inputs(view_func):
+    @wraps(view_func)
+    def decorated_function(*args, **kwargs):
+        app.logger.info("Request Info: %s", request)
+
+        # Clean query parameters
+        cleaned_args = {}
+        for key, values in request.args.lists():
+            cleaned_values = [bleach.clean(value) for value in values]
+            # If there's only one item, just get the item, not a list
+            request.args = request.args.copy()
+            request.args[key] = cleaned_values if len(cleaned_values) > 1 else cleaned_values[0]
+
+        # Clean form data
+        cleaned_form = {}
+        for key, values in request.form.lists():     
+            cleaned_values = [bleach.clean(value) for value in values]
+            request.form = request.form.copy()
+            request.form[key] = cleaned_values if len(cleaned_values) > 1 else cleaned_values[0]
+
+        # You can then pass these cleaned dicts to your view function
+        # For demonstration, adding them to kwargs
+
+        return view_func(*args, **kwargs)
+
+    return decorated_function
 
 #### ROUTES ####
 
@@ -135,18 +175,24 @@ def index():
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/', methods=['GET'])
+@app.route('/api/metadata', methods=['GET'])
 def index_api():
-    return jsonify({'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
+    return jsonify({'defaults':DEFAULTS,'engines': ENGINES, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
+## LOGIN/LOGOUT ROUTES##
 @app.route('/login', methods=['GET', 'POST'])
+@clean_inputs
 def login_gui():
     if request.method == 'POST':
         if login(request):
             return redirect(url_for('index'))
+        
         return 'Invalid username or password'
     return render_template('login.html')
 
+
 @app.route('/api/login', methods=['POST'])
+@clean_inputs
 def login_api():
     if request.method == 'POST':
         if login(request):
@@ -167,6 +213,8 @@ def login(request):
             id=user['id'], username=user['username'], password=user['password'])
         login_user(user_obj)
         is_logged_in = True
+    else:
+        app.logger.warning('Unauthorized login attempt for user: %s', username)
     return is_logged_in
 
 @app.route('/logout')
@@ -182,8 +230,30 @@ def logout_api():
     return jsonify({'message': 'Logged out'})
 
 
+@app.route('/register', methods=['GET','POST'])
+@clean_inputs
+def register_gui():
+    if request.method == 'POST':
+        register(request)
+    return render_template('login.html')
+    # Save the username and hashed_password to the database
+
+@app.route('/api/register', methods=['POST'])
+@clean_inputs
+def register_api():
+    return register(request)
+
+def register(request):
+    username = request.form['username']
+    plain_text_password = request.form['password']
+    hashed_password = bcrypt.generate_password_hash(plain_text_password).decode('utf-8')
+    # Save the username and hashed_password to the database
+    return jsonify({'message': 'Registered successfully'})
+
+
 @app.route('/fingerprint', methods=['GET', 'POST'])
-@login_required
+#@login_required
+@clean_inputs
 def fingerprint_gui():
     if request.method == 'POST':
         try:
@@ -194,7 +264,8 @@ def fingerprint_gui():
     return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint', methods=['POST'])
-@login_required
+#@login_required
+@clean_inputs
 def fingerprint_api():
     if request.method == 'POST':
         try:
@@ -251,6 +322,7 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     return indicators_df, matches_df, indicator_summary, matches_summary
 
 @app.route('/content', methods=['GET', 'POST'])
+@clean_inputs
 def content_gui():
     if request.method == 'POST':
         if not request.form.get('titleQuery') and not request.form.get('contentQuery'):
@@ -263,27 +335,31 @@ def content_gui():
     return render_template('index.html', results=results, csv_data=csv_data, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/content', methods=['POST'])
+@clean_inputs
 def content_api():
     if request.method == 'POST':
         if not request.form.get('titleQuery') and not request.form.get('contentQuery'):
             # Error message if neither is provided
             return jsonify({'error': 'Please provide at least a title or content query.'})
         else:
-            results, csv_data = None
             results, csv_data = content(request)
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
 def content(request):
     title_query = request.form.get('titleQuery')
     content_query = request.form.get('contentQuery')
-    combineOperator = request.form.get('combineOperator')
-    language = request.form.get('language')
-    country = request.form.get('country')
+    combineOperator = request.form.get('combineOperator', 'OR')
+    language = request.form.get('language', 'en') 
+    country = request.form.get('country', 'us') 
     engines = request.form.getlist('search_engines')
 
-    if engines == ['all'] or engines == []:
+    if engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
-
+    if isinstance(engines, str):
+        engines = [engines]
+    else:
+        engines = engines[0]
+        # Extracting article data-
     if not title_query and not content_query:
         # Error message if neither is provided
         return jsonify({'error': 'Please provide at least a title or content query.'})
@@ -292,9 +368,9 @@ def content(request):
             title_query, content_query, combineOperator, language, country, engines=engines)
 
 @app.route('/parse-url', methods=['POST'])
+@clean_inputs
 def parse_url_gui():
     url = request.form['url']
-
 
     if not url:
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
@@ -318,6 +394,7 @@ def parse_url_gui():
         return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     
 @app.route('/api/parse-url', methods=['POST'])
+@clean_inputs
 def parse_url_api():
     try:
         results, csv_data = parse_url(request)
@@ -329,11 +406,15 @@ def parse_url_api():
 def parse_url(request):
     url = request.form['url']
     engines = request.form.getlist('search_engines')
-    combineOperator = request.form.get('combineOperator')
-    language = request.form.get('language')
-    country = request.form.get('country')
-    if engines == ['all'] or engines == []:
+    combineOperator = request.form.get('combineOperator', 'OR')
+    language = request.form.get('language', 'en')
+    country = request.form.get('country', 'us')
+    if engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+    if isinstance(engines, str):
+        engines = [engines]
+    else:
+        engines = engines[0]
         # Extracting article data-
     article = Article(url)
     article.download()
@@ -345,10 +426,12 @@ def parse_url(request):
 
 #TODO: Figure out a way to API-ify this
 @app.route('/content-csv', methods=['POST'])
+@clean_inputs
 def upload_file_gui():
     return upload_file(request)
    
 @app.route('/api/content-csv', methods=['POST'])    
+@clean_inputs
 def upload_file_api():
     return upload_file(request)
     # return jsonify({'message': 'File processed successfully'})
@@ -422,6 +505,7 @@ def upload_file(request):
                 results_df = pd.concat([results_df, new_rows_df], ignore_index=True)
 
             except Exception as e:
+                app.logger.error(f"Error processing {searched_url}: {e}")
                 print(f"Error processing {searched_url}: {e}, continuing...")
                         # Reset file pointer to the beginning
                 results_df.to_csv('out_partial.csv', index=False)
@@ -435,6 +519,7 @@ def upload_file(request):
             send_results_email(
              email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_content_results.csv')
         except Exception as e:
+            app.logger.error(f"Error sending email: {e}")
             print(f"Error sending email: {e}, continuing...")
         finally:
             bytes_stream = io.BytesIO(output_stream.getvalue().encode())
@@ -448,12 +533,14 @@ def upload_file(request):
 
 #TODO: Figure out a way to API-ify this
 @app.route('/fingerprint-csv', methods=['POST'])
+@clean_inputs
 def fingerprint_file_gui():
     return fingerprint_file(request)
     # If no file, render the index template
    # return render_template('index.html', countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint-csv', methods=['POST'])
+@clean_inputs
 def fingerprint_file_api():
     return fingerprint_file(request)
     #return jsonify({'message': 'File processed successfully'})
@@ -503,6 +590,7 @@ def fingerprint_file(request):
 
 @app.route('/download_csv', methods=['POST'])
 @app.route('/api/download_csv', methods=['POST'])
+@clean_inputs
 def download_csvi():
     csv_data = request.form.get('csv_data', '')
 
@@ -512,11 +600,13 @@ def download_csvi():
     return output
 
 @app.route('/indicators')
+@clean_inputs
 def indicators_gui():
     data, unique_types, selected_type = indicators(request)
     return render_template('indicators.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/indicators')
+@clean_inputs
 def indicators_api():
     # Get the selected type from the query parameters
 
@@ -592,6 +682,8 @@ def fetch_copyscape_results(title_query, content_query, combineOperator, languag
 
     except requests.RequestException as e:
         print(f"Error during request: {e}")
+        app.logger.error(f"Error during request: {e}")
+
         return None
     
 def fetch_gdelt_results(title_query, content_query, combineOperator, language, country):
@@ -622,6 +714,7 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
             return None
 
     except requests.RequestException as e:
+        app.logger.error(f"Error processing: {e}")
         print(f"Error during request: {e}")
         return None
 
@@ -732,6 +825,8 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         data = response.json()
         organic_results = data.get("organic_results", [])
         print(params)
+        app.logger.info(f"Searching SERP with params: {params}")
+
 
         # Aggregate by domain, link, title, and count occurrences
         for result in organic_results:
@@ -781,7 +876,6 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
         local_source = local_domains_dict.get(domain) or local_domains_dict.get(domain.split('.')[1])  # Check for FQDN and no subdomain
         github_source = "statemedia" if domain in github_domains else None
 
-        print(domain, local_source, github_source)
         # Set concern flag and sources
         data["concern"] = bool(local_source or github_source)
         data["source"] = []

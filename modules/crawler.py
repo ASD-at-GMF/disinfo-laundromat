@@ -1,32 +1,37 @@
-import os
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlsplit, urlparse
-import socket
-import time
-import pandas as pd
-import re
-from io import BytesIO
 import argparse
-import ssl
-from OpenSSL import crypto
-import traceback
-import yaml
-import json
-from tldextract import tldextract
-import imagehash
-import subprocess
-import blockcypher
-from PIL import Image
-from pathlib import Path
-from typing import List
-from usp.tree import sitemap_tree_for_homepage
-import feedparser
-import hashlib
 import datetime
-import whois
+import hashlib
+import json
+import logging
+import os
+import re
+import socket
+import ssl
+import subprocess
+import time
+import traceback
+from functools import wraps
+from io import BytesIO
+from pathlib import Path
+from typing import Callable
+from urllib.parse import urlsplit, urlparse
 
-from modules.indicators import EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+import blockcypher
+import feedparser
+import imagehash
+import pandas as pd
+import requests
+import whois
+import yaml
+from bs4 import BeautifulSoup
+from OpenSSL import crypto
+from PIL import Image
+from tldextract import tldextract
+from usp.tree import sitemap_tree_for_homepage
+
+from modules.indicator import Indicator
+from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
+                                TRACKING_IDS)
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY', '')
@@ -50,7 +55,7 @@ def valid_url(url):
     return url
 
 
-def get_domain_name(url):
+def get_domain_name(url) -> str:
     domain_extract = tldextract.extract(url)
     sd = domain_extract.subdomain
     d = domain_extract.domain
@@ -61,14 +66,26 @@ def get_domain_name(url):
         return f"{sd}.{d}.{su}"
 
 
-def add_response_headers(response):
+def return_empty_if_fails(f: Callable[..., list[Indicator]]):
+    @wraps(f)
+    def wrapper(*args, **kwargs) -> list[Indicator]:
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logging.error(f"Caught error {e} for {f.__name__}")
+            logging.error(e, exc_info=True)
+            return []
+    return wrapper
+
+@return_empty_if_fails
+def add_response_headers(response) -> list[Indicator]:
     header_indicators = []
     if not response.headers:
         return header_indicators
     for header, value in response.headers.items():
         try:
             if header.startswith("Server"):
-                header_indicators.append(add_indicator("3-header-server", value))
+                header_indicators.append(Indicator("3-header-server", value))
             if (
                 header.startswith("X-") or header.startswith("x-")
             ) and header.lower() not in [
@@ -82,23 +99,15 @@ def add_response_headers(response):
                 "x-robots-tag",
             ]:
                 header_indicators.append(
-                    add_indicator("3-header-nonstd-value", header + ":" + value)
+                    Indicator("3-header-nonstd-value", header + ":" + value)
                 )
         except Exception as e:
-            print(e)
+            logging.error(e)
 
     return header_indicators
 
-
-def add_indicator(indicator_type, indicator_content):
-    # Print the name and content attributes
-    return {
-        "indicator_type": indicator_type,
-        "indicator_content": indicator_content,
-    }
-
-
-def add_ip_address(domain_name):
+@return_empty_if_fails
+def add_ip_address(domain_name) -> list[Indicator]:
     ip_indicators = []
     if domain_name.startswith("https://"):
         host_name = domain_name[8:]
@@ -108,64 +117,44 @@ def add_ip_address(domain_name):
     try:
         # Resolve the domain name to an IP address
         ip_address = socket.gethostbyname(host_name)
-        ip_indicators.append(add_indicator("1-ip", ip_address))
+        ip_indicators.append(Indicator("1-ip", ip_address))
 
         last_period_index = ip_address.rfind(".")
         subnet_id = ip_address[:last_period_index]
-        ip_indicators.append(add_indicator("2-subnet", subnet_id))
+        ip_indicators.append(Indicator("2-subnet", subnet_id))
     except socket.gaierror:
-        print("Could not resolve the domain name {}".format(domain_name))
+        logging.error("Could not resolve the domain name {}".format(domain_name))
     finally:
         return ip_indicators
 
-
-def add_who_is(url):
+@return_empty_if_fails
+def add_who_is(url) -> list[Indicator]:
     whois_indicators = []
-    try:
-        result = whois.whois(url)
-        if result.text != "Socket not responding: [Errno 11001] getaddrinfo failed":
-            whois_indicators.append(
-                add_indicator("3-whois-registrar", result.registrar)
-            )
-            whois_indicators.append(
-                add_indicator("3-whois_server", result.whois_server)
-            )
-            whois_indicators.append(
-                add_indicator("3-whois_creation_date", result.creation_date)
-            )
+    result = whois.whois(url)
+    if result.text != "Socket not responding: [Errno 11001] getaddrinfo failed":
+        whois_indicators.append(Indicator("3-whois-registrar", result.registrar))
+        whois_indicators.append(Indicator("3-whois_server", result.whois_server))
+        whois_indicators.append(Indicator("3-whois_creation_date", result.creation_date))
+        if (
+            "name" in result
+            and result.name is not None
+            and isinstance(result.name, str)
+        ):
             if (
-                "name" in result
-                and result.name is not None
-                and isinstance(result.name, str)
+                "priva" not in result.name.lower()
+                and "proxy" not in result.name.lower()
+                and "guard" not in result.name.lower()
+                and "protect" not in result.name.lower()
+                and "mask" not in result.name.lower()
+                and "secur" not in result.name.lower()
             ):
-                if (
-                    "priva" not in result.name.lower()
-                    and "proxy" not in result.name.lower()
-                    and "guard" not in result.name.lower()
-                    and "protect" not in result.name.lower()
-                    and "mask" not in result.name.lower()
-                    and "secur" not in result.name.lower()
-                ):
-                    whois_indicators.append(
-                        add_indicator("1-whois_emails", result.emails)
-                    )
-                    whois_indicators.append(
-                        add_indicator("1-whois_name", result.name)
-                    )
-                    whois_indicators.append(
-                        add_indicator("1-whois_org", result.org)
-                    )
-                    whois_indicators.append(
-                        add_indicator("1-whois_address", result.address)
-                    )
-                    whois_indicators.append(
-                        add_indicator(
-                            "2-whois_citystatecountry",
-                            result.city + ", " + result.state + ", " + result.country,
-                        )
-                    )
-    except Exception as e:
-        traceback.print_exc()
+                whois_indicators.append(Indicator("1-whois_emails", result.emails))
+                whois_indicators.append(Indicator("1-whois_name", result.name))
+                whois_indicators.append(Indicator("1-whois_org", result.org))
+                whois_indicators.append(Indicator("1-whois_address", result.address))
+                whois_indicators.append(
+                    Indicator("2-whois_citystatecountry", f"{result.city}, {result.state}, {result.country}")
+                )
 
     return whois_indicators
 
@@ -175,39 +164,33 @@ def get_tracert(ip_address):
     output, _ = tracert.communicate()
     return output.decode().strip().split("\n")
 
-
-def parse_classes(soup):
-    tag_indicators = []
+@return_empty_if_fails
+def parse_classes(soup) -> list[Indicator]:
     used_classes = set()
     for elem in soup.select("[class]"):
         classes = elem["class"]
         used_classes.update(classes)
-    tag_indicators.append(add_indicator("3-css_classes", list(used_classes)))
-    return tag_indicators
+    if len(used_classes) > 0:
+        return [Indicator("3-css_classes", list(used_classes))]
+    return []
 
-
-def parse_sitemaps(url):
-    tag_indicators = []
+@return_empty_if_fails
+def parse_sitemaps(url) -> list[Indicator]:
     tree = sitemap_tree_for_homepage(url)
-    print(tree)
-    entries = set()
-    for page in tree.all_pages():
-        entries.update(page.url)
-    tag_indicators.append(add_indicator("4-sitemap_entries", entries))
-    return tag_indicators
+    logging.info(tree)
+    entries = set(page.url for page in tree.all_pages())
+    return [Indicator("4-sitemap_entries", entries)]
 
-
-def parse_dom_tree(soup):
-    tag_indicators = []
+@return_empty_if_fails
+def parse_dom_tree(soup) -> list[Indicator]:
     for text in soup.find_all(text=True):
         text.replace_with("")
     for tag in soup.find_all():
         tag.attrs = {}
-    tag_indicators.append(add_indicator("3-dom_tree", soup.prettify()))
-    return tag_indicators
+    return [Indicator("3-dom_tree", soup.prettify())]
 
-
-def parse_images(url, soup, response):
+@return_empty_if_fails
+def parse_images(url, soup, response) -> list[Indicator]:
     tag_indicators = []
     image_links = []
     for img in soup.find_all("img"):
@@ -220,30 +203,15 @@ def parse_images(url, soup, response):
             response = requests.get(link)
             img = Image.open(BytesIO(response.content))
             image_hash = imagehash.phash(img)
-            tag_indicators.append(add_indicator("3-image-phash", image_hash))
-        except Exception as ex:
-            continue  # print(ex.message)
+            tag_indicators.append(Indicator("3-image-phash", image_hash))
+        except Exception as e:
+            logging.error(e, exc_info=True)
+            continue
 
     return tag_indicators
 
-
-def add_verification_tags(name, content):
-    return add_indicator("1-verification_id", name + "|" + content)
-
-
-def add_meta_social_tags(name, content):
-    return add_indicator("3-meta_social", name + "|" + content)
-
-
-def add_script_src_tags(content):
-    return add_indicator("3-script_src", content)
-
-
-def add_link_tags(href):
-    return add_indicator("3-link_href", href)
-
-
-def parse_meta_tags(url, soup):
+@return_empty_if_fails
+def parse_meta_tags(soup) -> list[Indicator]:
     meta_tags = soup.find_all("meta")
     tag_indicators = []
     generic_metas = []
@@ -254,20 +222,19 @@ def parse_meta_tags(url, soup):
         prop = meta_tag.get("property")
         content = meta_tag.get("content")
         if name and "verif" in name.lower():
-            tag_indicators.append(add_verification_tags(name, content))
+            tag_indicators.append(Indicator("1-verification_id", name + "|" + content))
         elif name and name in ["twitter:site", "fb:pages"]:
-            tag_indicators.append(add_meta_social_tags(name, content))
+            tag_indicators.append(Indicator("3-meta_social", name + "|" + content))
         elif (name or prop) and content:
             name = name or prop
             generic_metas.append(name + "|" + content)
-    tag_indicators.append(add_indicator("3-meta_generic", generic_metas))
-    return tag_indicators
+    generic_indicators = [Indicator("3-meta_generic", g_m) for g_m in generic_metas]
+    return tag_indicators + generic_indicators
 
-
-def parse_script_tags(url, soup):
+@return_empty_if_fails
+def parse_script_tags(soup) -> list[Indicator]:
     script_tags = soup.find_all("script")
-    tag_indicators = []
-    script_tags = []
+    script_tag_srcs = []
     # Iterate over the meta tags
     for script_tag in script_tags:
         # Get the name and content attributes of the meta tags
@@ -275,42 +242,31 @@ def parse_script_tags(url, soup):
         if source:
             match = re.search(r"/([^/]+)$", source)
             if match and match.group(1) not in script_tags:
-                script_tags.append(match.group(1))
-    tag_indicators = [add_indicator("3-script_src", script_tags)]
-    return tag_indicators
+                script_tag_srcs.append(match.group(1))
+    return [Indicator("3-script_src", script_src) for script_src in script_tag_srcs]
 
+@return_empty_if_fails
+def parse_id_attributes(soup) -> list[Indicator]:
+    return [Indicator("3-id_tags", element["id"]) for element in soup.find_all(id=True)]
 
-def parse_id_attributes(soup):
-    ids = [element["id"] for element in soup.find_all(id=True)]
-    id_indicators = [add_indicator("3-id_tags", ids)]
-    return id_indicators
-
-
-def parse_iframe_ids(soup):
+@return_empty_if_fails
+def parse_iframe_ids(soup) -> list[Indicator]:
     iframe_ids = [
         iframe["id"] for iframe in soup.find_all("iframe") if "id" in iframe.attrs
     ]
-    iframe_indicators = []
-    for iframe in iframe_ids:
-        iframe_indicators.append(add_indicator("3-iframe_id_tags", iframe))
-    return iframe_indicators
+    return [Indicator("3-iframe_id_tags", iframe) for iframe in iframe_ids]
 
-
-def parse_link_tags(url, soup):
+@return_empty_if_fails
+def parse_link_tags(soup) -> list[Indicator]:
     link_tags = soup.find_all("link")
-    href_links = [link["href"] for link in link_tags if link.has_attr("href")]
-    tag_indicators = []
-    # Iterate over the link tags
+    return [Indicator("3-link_href", link["href"]) for link in link_tags if link.has_attr("href")]
 
-    tag_indicators.append(add_link_tags(href_links))
-    return tag_indicators
-
-
-def bulk_builtwith_query(domains: List[str], save_matches: bool = False):
+@return_empty_if_fails
+def bulk_builtwith_query(domains: list[str], save_matches: bool = False) -> list[Indicator]:
     api_keys = yaml.safe_load(open("config/api_keys.yml", "r"))
     builtwith_key = api_keys.get("BUILT_WITH")
     if not builtwith_key:
-        print("No Builtwith API key provided. Skipping.")
+        logging.warn("No Builtwith API key provided. Skipping.")
         return []
     techstack_indicators = get_techstack_indicators(
         domains=domains, api_key=builtwith_key
@@ -320,8 +276,8 @@ def bulk_builtwith_query(domains: List[str], save_matches: bool = False):
     )
     return techstack_indicators + techidentifier_indicators
 
-
-def get_techstack_indicators(domains: List[str], api_key: str):
+@return_empty_if_fails
+def get_techstack_indicators(domains: list[str], api_key: str) -> list[Indicator]:
     domain_list = ",".join(domains)
     tech_stack_query = (
         f"https://api.builtwith.com/v20/api.json?KEY={api_key}&LOOKUP={domain_list}"
@@ -330,47 +286,39 @@ def get_techstack_indicators(domains: List[str], api_key: str):
         api_result = requests.get(tech_stack_query)
         data = json.loads(api_result.content)
         # API supports querying multiple sites at a time, hence the embedded structure
+        technologies = []
         for result_item in data["Results"]:
             result = result_item["Result"]
-            tech_stack = []
             for path in result["Paths"]:
-                technologies = [
-                    {
-                        "indicator_type": "techstack",
-                        "indicator_content": {
+                technologies.extend([
+                    Indicator("techstack",{
                             "name": tech.get("Name"),
                             "link": tech.get("Link"),
                             "tag": tech.get("Tag"),
                             "subdomain": path["SubDomain"],
-                        },
-                        "domain_name": domain,
-                    }
+                        })
                     for tech in path["Technologies"]
-                ]
-                tech_stack.extend(technologies)
-            return tech_stack
-    except IndexError:
-        print(
+                ])
+        return technologies
+    except IndexError as e:
+        logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
-        traceback.print_exc()
-    except Exception:
-        traceback.print_exc()
-    finally:
-        return []
+        raise e
 
-
-def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = False):
+@return_empty_if_fails
+def get_tech_identifiers(domains: list[str], api_key: str, save_matches: bool = False) -> list[Indicator]:
     domain_list = ",".join(domains)
     tech_relation_query = (
         f"https://api.builtwith.com/rv2/api.json?KEY={api_key}&LOOKUP={domain_list}"
     )
     api_result = requests.get(tech_relation_query)
-
+    indicators = []
     try:
         data = json.loads(api_result.content)
         for result_item in data["Relationships"]:
             relations = result_item["Identifiers"]
+            # TODO: is this appropriate to keep?
             matches_df = (
                 pd.DataFrame(relations).explode("Matches").rename(columns=str.lower)
             )
@@ -382,24 +330,13 @@ def get_tech_identifiers(domains: List[str], api_key: str, save_matches: bool = 
                 .to_frame("num_matches")
                 .reset_index()
             )
-            # applying indicator structure
-            return [
-                {
-                    "indicator_type": "tech_identifier",
-                    "indicator_content": identifier,
-                    "domain_name": domain,
-                }
-                for identifier in identifiers.to_dict(orient="records")
-            ]
+            indicators.extend([Indicator("tech_identifier", identifier) for identifier in identifiers.to_dict(orient="records")])
+        return indicators
     except IndexError as e:
-        print(
+        logging.warn(
             "Error hit iterating through results. Have you hit your Builtwith API limit?"
         )
-        traceback.print_exc()
-    except Exception as e:
-        traceback.print_exc()
-    finally:
-        return []
+        raise(e)
 
 
 def fetch_shodan_data(ip):
@@ -410,93 +347,61 @@ def fetch_shodan_data(ip):
     else:
         return None
 
-
-def parse_shodan_json(shodan_json, domain):
+@return_empty_if_fails
+def parse_shodan_json(shodan_json: dict) -> list[Indicator]:
     shodan_indicators = []
-    if shodan_json:
-        if len(shodan_json["hostnames"]) > 0:
-            for hostname in shodan_json["hostnames"]:
-                shodan_indicators.append(
-                    {
-                        "indicator_type": "1-ip_shodan_hostnames",
-                        "indicator_content": hostname,
-                    }
-                )
-        if len(shodan_json["vulns"]) > 0:
-            shodan_indicators.append(
-                {
-                    "indicator_type": "2-ip_shodan_vuln",
-                    "indicator_content": shodan_json["vulns"],
-                }
-            )
-        if len(shodan_json["cpes"]) > 0:
-            shodan_indicators.append(
-                {
-                    "indicator_type": "3-ip_shodan_cpe",
-                    "indicator_content": shodan_json["cpes"],
-                }
-            )
-        if len(shodan_json["ports"]) > 0:
-            shodan_indicators.append(
-                {
-                    "indicator_type": "3-ip_shodan_ports",
-                    "indicator_content": shodan_json["ports"],
-                }
-            )
+    shodan_indicators.extend([Indicator("1-ip_shodan_hostnames", hostname) for hostname in shodan_json.get('hostnames', [])])
+    if shodan_json.get("vulns", ''):
+        shodan_indicators.append(Indicator("2-ip_shodan_vuln", shodan_json["vulns"]))
+    if shodan_json.get("cpes", ''):
+        shodan_indicators.append(Indicator("3-ip_shodan_cpe", shodan_json["cpes"]))
+    if shodan_json.get("ports", ''):
+        shodan_indicators.append(Indicator("3-ip_shodan_ports", shodan_json["ports"]))
 
     return shodan_indicators
 
-
-def get_shodan_indicators(url):
-    shodan_indicators = []
+@return_empty_if_fails
+def get_shodan_indicators(url) -> list[Indicator]:
     domain = get_domain_name(url)
-    try:
-        ip = socket.gethostbyname(domain)
+    ip = socket.gethostbyname(domain)
 
-        shodan_json = fetch_shodan_data(ip)
-        shodan_indicators = parse_shodan_json(shodan_json, domain)
-    except Exception as e:
-        traceback.print_exc()
-    finally:
-        return shodan_indicators
+    shodan_json = fetch_shodan_data(ip)
+    if shodan_json:
+        return parse_shodan_json(shodan_json)
+    return []
 
-
-def get_ipms_indicators(url):
+@return_empty_if_fails
+def get_ipms_indicators(url) -> list[Indicator]:
+    if len(MYIPMS_API_PATH) == 0:
+        return []
     ipms_indicators = []
-    try:
-        if len(MYIPMS_API_PATH) > 0:
-            api_url = "https://api.myip.ms"
-            domain = get_domain_name(url)
-            # Generate the current GMT timestamp
-            timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
+    api_url = "https://api.myip.ms"
+    domain = get_domain_name(url)
+    # Generate the current GMT timestamp
+    timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
 
-            # Create the signature
-            ipms_domain_signature_raw = (
-                f"{api_url}/{domain}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
-            )
-            ipms_domain_signature = hashlib.md5(
-                ipms_domain_signature_raw.encode()
-            ).hexdigest()
-            # Construct the URL
-            ipms_domain_url = f"{api_url}/{domain}/{MYIPMS_API_PATH}/signature/{ipms_domain_signature}/timestamp/{timestamp}"
+    # Create the signature
+    ipms_domain_signature_raw = (
+        f"{api_url}/{domain}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
+    )
+    ipms_domain_signature = hashlib.md5(ipms_domain_signature_raw.encode()).hexdigest()
+    # Construct the URL
+    ipms_domain_url = f"{api_url}/{domain}/{MYIPMS_API_PATH}/signature/{ipms_domain_signature}/timestamp/{timestamp}"
 
-            # Repeat the process for the IP address
-            ip_address = socket.gethostbyname(domain)
-            ipms_ip_signature_raw = (
-                f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
-            )
-            ipms_ip_signature = hashlib.md5(ipms_ip_signature_raw.encode()).hexdigest()
-            ipms_ip_url = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/signature/{ipms_ip_signature}/timestamp/{timestamp}"
+    # Repeat the process for the IP address
+    ip_address = socket.gethostbyname(domain)
+    ipms_ip_signature_raw = (
+        f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/timestamp/{timestamp}"
+    )
+    ipms_ip_signature = hashlib.md5(ipms_ip_signature_raw.encode()).hexdigest()
+    ipms_ip_url = f"{api_url}/{ip_address}/{MYIPMS_API_PATH}/signature/{ipms_ip_signature}/timestamp/{timestamp}"
 
-            ipms_indicators.extend(get_ipms_domain_indicators(ipms_domain_url))
-            ipms_indicators.extend(get_ipms_ip_indicators(ipms_ip_url))
-    except Exception as e:
-        traceback.print_exc()
-    finally:
-        return ipms_indicators
+    ipms_indicators.extend(get_ipms_domain_indicators(ipms_domain_url))
+    ipms_indicators.extend(get_ipms_ip_indicators(ipms_ip_url))
+    return ipms_indicators
 
-
-def get_ipms_domain_indicators(ipms_url):
+@return_empty_if_fails
+def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
     ipms_indicators = []
     api_result = requests.get(ipms_url)
 
@@ -504,44 +409,40 @@ def get_ipms_domain_indicators(ipms_url):
         data = json.loads(api_result.content)
         if "owners" in data:
             ipms_indicators.append(
-                add_indicator(
+                Indicator(
                     "3-ipms_domain_iprangeowner_cidr", data["owners"]["owner"]["cidr"]
                 )
             )
             ipms_indicators.append(
-                add_indicator(
+                Indicator(
                     "3-ipms_domain_iprangeowner_ownerName",
                     data["owners"]["owner"]["ownerName"],
                 )
             )
             ipms_indicators.append(
-                add_indicator(
+                Indicator(
                     "3-ipms_domain_iprangeowner_address",
                     data["owners"]["owner"]["address"],
                 )
             )
         for dns in data.get("dns", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_domain_nameserver", dns["nameserver"])
+                Indicator("3-ipms_domain_nameserver", dns["nameserver"])
             )
         unique_ips = {entry["ip_address"] for entry in data.get("ip_change_history", [])}
         for ip in unique_ips:
-            ipms_indicators.append(add_indicator("3-ipms_domain_otheripused", ip))
+            ipms_indicators.append(Indicator("3-ipms_domain_otheripused", ip))
 
         return ipms_indicators
 
     except IndexError as e:
-        print(
+        logging.warn(
             "Error hit iterating eunning through IPMS results. Have you hit your IPMS API limit?"
         )
-        traceback.print_exc()
-    except Exception as e:
-        traceback.print_exc()
-    finally:
-        return ipms_indicators
+        raise(e)
 
-
-def get_ipms_ip_indicators(ipms_url):
+@return_empty_if_fails
+def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
     ipms_indicators = []
     api_result = requests.get(ipms_url)
 
@@ -549,101 +450,81 @@ def get_ipms_ip_indicators(ipms_url):
         data = json.loads(api_result.content)
         for site in data.get("websites_on_ip_now", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_siteonthisip_now", site["website"])
+                Indicator("3-ipms_siteonthisip_now", site["website"])
             )
         for site in data.get("websites_on_ip_before", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_siteonthisip_before", site["website"])
+                Indicator("3-ipms_siteonthisip_before", site["website"])
             )
         for site in data.get("not_working_websites_on_ip", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_siteonthisip_broken", site["website"])
+                Indicator("3-ipms_siteonthisip_broken", site["website"])
             )
         for useragent in data.get("useragents_on_ip", []):
             ipms_indicators.append(
-                add_indicator("3-ipms_useragents", useragent["useragent"])
+                Indicator("3-ipms_useragents", useragent["useragent"])
             )
 
         return ipms_indicators
     except IndexError as e:
-        print(
+        logging.warn(
             "Error hit iterating running through IPMS results. Have you hit your IPMS API limit?"
         )
-        traceback.print_exc()
-    except Exception as e:
-        traceback.print_exc()
-    finally:
-        return ipms_indicators
+        raise(e)
 
 
-def add_meta_generic_tags(url, name, content):
-    # Print the name and content attributes
-    return {
-        "indicator_type": "3-meta_generic",
-        "indicator_content": name + "|" + content,
-        "domain_name": get_domain_name(url),
-    }
-
-
-def parse_body(url, response):
+@return_empty_if_fails
+def parse_body(response) -> list[Indicator]:
     text = response.text
-    tag_indicators = []
-    tag_indicators.extend(find_uuids(text))
-    tag_indicators.extend(find_wallets(text))
-
-    return tag_indicators
+    return find_uuids(text) + find_wallets(text)
 
 
-def parse_footer(soup):
-    tag_indicators = []
-
+@return_empty_if_fails
+def parse_footer(soup) -> list[Indicator]:
     footer = soup.find("footer")
     # Extract text
     if footer:
         footer_text = footer.get_text(strip=True)
-        tag_indicators.append(add_indicator("3-footer-text", footer_text))
+        return [Indicator("3-footer-text", footer_text)]
+    return []
 
-    return tag_indicators
 
-
-def find_with_regex(regex, text, indicator_type):
-    tag_indicators = []
+@return_empty_if_fails
+def find_with_regex(regex, text, indicator_type) -> list[Indicator]:
     matches = set(re.findall(regex, text))
-    for match in matches:
-        tag_indicators.append(add_indicator(indicator_type, match))
-    return tag_indicators
+    return [Indicator(indicator_type, match) for match in matches]
 
 
-def find_uuids(text):
+def find_uuids(text) -> list[Indicator]:
     uuid_pattern = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     return find_with_regex(uuid_pattern, text, "3-uuid")
 
 
-def find_wallets(text):
-    tag_indicators = []
-    crypto_wallet_pattern = r"[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
-
+@return_empty_if_fails
+def find_wallets(text) -> list[Indicator]:
+    # Get transaction data for the address from the BlockCypher API
     btc_address_regex = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
     btc_matches = set(re.findall(btc_address_regex, text))
-    # Get transaction data for the address from the BlockCypher API
+    btc_indicators = []
     for match in btc_matches:
-        tag_indicators.append(find_wallet_transactions(wallet=match, wallet_type="btc"))
+        btc_indicators.extend(find_wallet_transactions(wallet=match, wallet_type="btc"))
 
+    # Get transaction data for the address from the BlockCypher API
     bch_address_regex = re.compile(r"^[qQ][a-km-zA-HJ-NP-Z1-9]{41}$")
     bch_matches = set(re.findall(bch_address_regex, text))
-    # Get transaction data for the address from the BlockCypher API
+    bch_indicators = []
     for match in bch_matches:
-        tag_indicators.append(find_wallet_transactions(wallet=match, wallet_type="bch"))
+        bch_indicators.extend(find_wallet_transactions(wallet=match, wallet_type="bch"))
 
-    tag_indicators.extend(
-        find_with_regex(crypto_wallet_pattern, text, "1-crypto-wallet")
-    )
-    return tag_indicators
+    crypto_wallet_pattern = r"[^a-zA-Z0-9](0x[a-fA-F0-9]{40}|[13][a-zA-Z0-9]{24,33}|[4][a-zA-Z0-9]{95}|[qp][a-zA-Z0-9]{25,34})[^a-zA-Z0-9]"
+    crypto_indicators = find_with_regex(crypto_wallet_pattern, text, "1-crypto-wallet")
+
+    return btc_indicators + bch_indicators + crypto_indicators
 
 
-def find_wallet_transactions(wallet_type, wallet):
+@return_empty_if_fails
+def find_wallet_transactions(wallet_type, wallet) -> list[Indicator]:
     tx_data = blockcypher.get_address_full(wallet, coin_symbol=wallet_type)
-    tag_indicators = []
 
     # Check if transaction data exists for the address
     if tx_data:
@@ -652,17 +533,15 @@ def find_wallet_transactions(wallet_type, wallet):
         for input in tx_data["txs"]:
             for address in input["addresses"]:
                 addresses.add(address)
-        for address in addresses:
-            tag_indicators.append(add_indicator("2-crypto-transacation", address))
-    return tag_indicators
+        return [Indicator("2-crypto-transacation", address) for address in addresses]
+    return []
 
 
-def add_associated_domains_from_cert(url):
-    tag_indicators = []
+@return_empty_if_fails
+def add_associated_domains_from_cert(url) -> list[Indicator]:
+    port = 443
+
     try:
-        port = 443
-
-
         cert = ssl.get_server_certificate((get_domain_name(url), port))
         x509 = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
 
@@ -673,15 +552,13 @@ def add_associated_domains_from_cert(url):
                 ext_val = ext.__str__()
                 sans = ext_val.replace("DNS:", "").split(",")
 
-        for san in sans:
-            tag_indicators.append(add_indicator("1-cert-domain", san))
+        return [Indicator("1-cert-domain", san) for san in sans]
     except Exception as e:
-        print(f"Error in add_associated_domains_from_cert for {url}. Will continue. Traceback below.")
-        traceback.print_exc()
-    finally:
-        return tag_indicators
+        logging.error(f"add_associated_domains_from_cert failed for {url}")
+        return []
 
-def parse_id_patterns(response, id_patterns: dict[str,str]):
+@return_empty_if_fails
+def parse_id_patterns(response, id_patterns: dict[str,str]) -> list[Indicator]:
     tag_indicators = []
     for id_type, pattern in id_patterns.items():
         id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
@@ -689,9 +566,8 @@ def parse_id_patterns(response, id_patterns: dict[str,str]):
     return tag_indicators
 
 
-def add_cdn_domains(soup):
-    tag_indicators = []
-
+@return_empty_if_fails
+def add_cdn_domains(soup) -> list[Indicator]:
     img_tags = soup.find_all("img")
     domains = set()
     for img_tag in img_tags:
@@ -699,43 +575,25 @@ def add_cdn_domains(soup):
         if src:
             domain = urlsplit(src).hostname
             domains.add(domain)
-    for domain in domains:
-        tag_indicators.append(add_indicator("3-cdn-domain", domain))
-    return tag_indicators
-
-
-def add_domain_suffix(domain_suffix):
-    return {
-        "indicator_type": "1-domain_suffix",
-        "indicator_content": domain_suffix,
-    }
+    return [Indicator("3-cdn-domain", domain) for domain in domains]
 
 
 # getting domain and suffix, eg -  “google.com”
-def find_domain_suffix(url):
-    tag_indicators = []
+@return_empty_if_fails
+def find_domain_suffix(url) -> list[Indicator]:
     ext = tldextract.extract(url)
-    domain_suffix = ext.suffix + "." + ext.domain
-    tag_indicators.append(add_domain_suffix(domain_suffix))
-    return tag_indicators  # joins the strings
+    domain_suffix = f"{ext.suffix}.{ext.domain}"
+    return [Indicator(type="1-domain_suffix", content=domain_suffix)]
 
 
-def add_second_level_domain(domain):
-    return {
-        "indicator_type": "1-domain",
-        "indicator_content": domain,
-    }
-
-
-def find_second_level_domain(url):
-    tag_indicators = []
+@return_empty_if_fails
+def find_second_level_domain(url) -> list[Indicator]:
     ext = tldextract.extract(url)
-    domain = ext.domain
-    tag_indicators.append(add_second_level_domain(domain))
-    return tag_indicators
+    return [Indicator(type="1-domain", content=ext.domain)]
 
 
-def parse_domain_name(url):
+@return_empty_if_fails
+def parse_domain_name(url) -> list[Indicator]:
     tag_indicators = []
     tag_indicators.extend(find_domain_suffix(url))
     tag_indicators.extend(find_second_level_domain(url))
@@ -745,7 +603,7 @@ def parse_domain_name(url):
 def start_urlscan(url):
     urlscan_key = URLSCAN_API_KEY
     if not urlscan_key:
-        print("No urlscan API key provided. Passing...")
+        logging.warn("No urlscan API key provided. Passing...")
         return None
     headers = {"API-Key": urlscan_key, "Content-Type": "application/json"}
     data = {"url": url, "visibility": "public"}
@@ -757,32 +615,30 @@ def start_urlscan(url):
 
 
 # todo: add more indicators from urlscan
-def add_urlscan_indicators(data):
+@return_empty_if_fails
+def add_urlscan_indicators(data) -> list[Indicator]:
     urlscan_indicators = []
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_globalvariable",
-            "indicator_content": [
+        Indicator("2-urlscan_globalvariable",
+            [
                 f"{item['prop']}|{item['type']}" for item in data["data"]["globals"]
-            ],
-        }
+            ]
+        )
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_cookies",
-            "indicator_content": [
+        Indicator("2-urlscan_cookies",
+            [
                 f"{item['name']}|{item['domain']}" for item in data["data"]["cookies"]
-            ],
-        }
+            ]
+        )
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_consolemessages",
-            "indicator_content": [
+        Indicator("2-urlscan_consolemessages",
+            [
                 f"{item['message']['level']}|{item['message']['text']}"
                 for item in data["data"]["console"]
-            ],
-        }
+            ]
+        )
     )
     if "asn" in data["page"]:
         urlscan_indicators.append(
@@ -792,16 +648,10 @@ def add_urlscan_indicators(data):
             }
         )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_domainsonpage",
-            "indicator_content": data["lists"]["domains"],
-        }
+        Indicator("2-urlscan_domainsonpage", data["lists"]["domains"])
     )
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscan_urlssonpage",
-            "indicator_content": data["lists"]["urls"],
-        }
+        Indicator("2-urlscan_urlssonpage", data["lists"]["urls"])
     )
 
     links = data["data"]["links"]
@@ -809,19 +659,13 @@ def add_urlscan_indicators(data):
     for link in links:
         hrefs.append(link["href"] + "|" + link["text"])
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-urlscanhrefs",
-            "indicator_content": hrefs,
-        }
+        Indicator("2-urlscanhrefs", hrefs)
     )
 
     # wappalyzer is used to detect tech used in the website
     detected_tech = data["meta"]["processors"]["wappa"]["data"]
     urlscan_indicators.append(
-        {
-            "indicator_type": "2-techstack",
-            "indicator_content": [tech["app"] for tech in detected_tech],
-        }
+        Indicator("2-techstack", [tech["app"] for tech in detected_tech])
     )
     return urlscan_indicators
 
@@ -835,10 +679,10 @@ def get_endpoints(url, endpoints):
     return ''
 
 
-def parse_cms(url):
+@return_empty_if_fails
+def parse_cms(url) -> list[Indicator]:
     # TODO: add more CMSs
     cms_indicators = []
-    cms = None
 
     # Endpoints to check for
     wp_endpoints = ["wp-login.php", "wp-admin/"]
@@ -847,24 +691,22 @@ def parse_cms(url):
     bitrix_endpoints = ["bitrix/admin/"]
 
     # Check for endpoints
-    if get_endpoints(url, wp_endpoints) is not None:
+    if get_endpoints(url, wp_endpoints):
         cms_indicators.extend(parse_wordpress(url))
-        cms = "WordPress"
-    if get_endpoints(url, joomla_endpoints) is not None:
-        cms = "Joomla"
-    if get_endpoints(url, drupal_endpoints) is not None:
-        cms = "Drupal"
-    if get_endpoints(url, bitrix_endpoints) is not None:
-        cms = "Bitrix"
-
-    if cms is not None:
-        cms_indicators.append(add_indicator("3-cms", cms))
+        cms_indicators.append(Indicator("3-cms", "WordPress"))
+    if get_endpoints(url, joomla_endpoints):
+        cms_indicators.append(Indicator("3-cms", "Joomla"))
+    if get_endpoints(url, drupal_endpoints):
+        cms_indicators.append(Indicator("3-cms", "Drupal"))
+    if get_endpoints(url, bitrix_endpoints):
+        cms_indicators.append(Indicator("3-cms", "Bitrix"))
 
     return cms_indicators
 
 
 # For WordPress, check for endpoints, if they exist, get the items and add them as indicators
-def parse_wordpress(url):
+@return_empty_if_fails
+def parse_wordpress(url) -> list[Indicator]:
     wp_indicators = []
     endpoints = {
         "tags": "/wp-json/wp/v2/tags",
@@ -881,37 +723,41 @@ def parse_wordpress(url):
             wp_items_string = ""
             for wp_item in wp_items:
                 wp_items_string += wp_item["slug"] + ","
-            wp_indicators.append(add_indicator("3-wp-" + key, wp_items_string))
+            wp_indicators.append(Indicator("3-wp-" + key, wp_items_string))
         except Exception as e:
-            traceback.print_exc()
+            logging.error(e, exc_info=True)
             continue
     return wp_indicators
 
 
-def detect_and_parse_feed_content(url):
+# TODO: this function is broken
+@return_empty_if_fails
+def detect_and_parse_feed_content(url) -> list[Indicator]:
     feed_indicators = []
     feed = None
 
     feed_endpoints = ["rss.xml", "feed/", "rss/"]
     feed = get_endpoints(url, feed_endpoints)
 
-    if feed is not None and feed != "":
+    if feed:
         feed = feedparser.parse(url)
         for entry in feed.entries:
             feed_indicators.append(
-                add_indicator("4-content-title", entry.title)
+                Indicator("4-content-title", entry.title)
             )
-            feed_indicators.append(add_indicator("4-content-link", entry.link))
+            feed_indicators.append(Indicator("4-content-link", entry.link))
             feed_indicators.append(
-                add_indicator("4-content-summary", entry.summary)
+                Indicator("4-content-summary", entry.summary)
             )
             feed_indicators.append(
-                add_indicator("4-content-published", entry.published)
+                Indicator("4-content-published", entry.published)
             )
 
     return feed_indicators
 
-def get_outbound_domains(url, soup):
+
+@return_empty_if_fails
+def get_outbound_domains(url, soup) -> list[Indicator]:
     outbound_domains = set()
     domain_extract = tldextract.extract(url)
     _ = domain_extract.subdomain
@@ -923,14 +769,14 @@ def get_outbound_domains(url, soup):
         if not link_url or link_url.startswith('tel') or link_url.startswith('mail'):
             continue
         link_extract = tldextract.extract(link_url)
-        _ = domain_extract.subdomain
-        td = domain_extract.domain
-        tsu = domain_extract.suffix
+        _ = link_extract.subdomain
+        td = link_extract.domain
+        tsu = link_extract.suffix
         if tsu and td:
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
                 outbound_domains.add(link_domain)
-    return [add_indicator(indicator_content=domain, indicator_type="4-outbound-domain") for domain in outbound_domains]
+    return [Indicator(content=domain, type="4-outbound-domain") for domain in outbound_domains]
 
 
 def scrape_url(url):
@@ -939,15 +785,15 @@ def scrape_url(url):
         try:
             payload = {"api_key": SCRAPER_API_KEY, "url": url}
             return requests.get("https://api.scraperapi.com/", params=payload)
-        except requests.exceptions.ConnectionError:
-            print("Unable to use scraper, will use vanilla requests.get")
-            traceback.print_exc()
+        except requests.exceptions.ConnectionError as e:
+            logging.warn("Unable to use scraper, will use vanilla requests.get")
+            logging.error(e, exc_info=True)
             return requests.get(url, verify=False)
     else:
         return requests.get(url, verify=False)
 
 
-def crawl(url, run_urlscan=False):
+def crawl(url, run_urlscan=False) -> list[Indicator]:
     indicators = []
     url_submission = None
 
@@ -965,11 +811,11 @@ def crawl(url, run_urlscan=False):
     # Run indicators
     indicators.extend(add_response_headers(response=response))
     indicators.extend(add_ip_address(domain_name=url))
-    indicators.extend(parse_meta_tags(url, soup))
-    indicators.extend(parse_script_tags(url, soup))
+    indicators.extend(parse_meta_tags(soup))
+    indicators.extend(parse_script_tags(soup))
     indicators.extend(parse_iframe_ids(soup))
     indicators.extend(parse_id_attributes(soup))
-    indicators.extend(parse_link_tags(url, soup))
+    indicators.extend(parse_link_tags(soup))
     indicators.extend(parse_footer(soup))
     indicators.extend(parse_id_patterns(response=response, id_patterns=EMBEDDED_IDS))
     indicators.extend(parse_id_patterns(response=response, id_patterns=FINANCIAL_IDS))
@@ -995,13 +841,13 @@ def crawl(url, run_urlscan=False):
         while True:
             # Check if 2 minutes have passed
             if time.time() - start_time > 120:
-                print("Timeout: Results not available within 2 minutes.")
+                logging.warn("Timeout: Results not available within 2 minutes.")
                 break
             response = requests.get(
                 url_submission, headers={"API-Key": URLSCAN_API_KEY}
             )
             if response.status_code == 404:
-                print("Results not ready, retrying in 10 seconds...")
+                logging.warn("Results not ready, retrying in 10 seconds...")
                 time.sleep(10)  # Wait for 10 seconds before retrying
             else:
                 indicators.extend(add_urlscan_indicators(response.json()))
@@ -1012,12 +858,12 @@ def crawl(url, run_urlscan=False):
 
 def crawl_one_or_more_urls(
     urls, run_urlscan=False
-):
+) -> list[Indicator]:
     indicators = []
     for url in urls:
         parsed_url = urlparse(url)
         base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        print('Fingerprinting:',base_domain)
+        logging.info('Fingerprinting:',base_domain)
         url_indicators = crawl(
             base_domain,
             run_urlscan=run_urlscan,
@@ -1025,7 +871,7 @@ def crawl_one_or_more_urls(
         domain_name = get_domain_name(url)
         
         for indicator in url_indicators:
-            indicator['domain_name'] = domain_name
+            indicator.domain = domain_name
         
         indicators.extend(url_indicators)
     return indicators
@@ -1034,7 +880,7 @@ def crawl_one_or_more_urls(
 def write_domain_indicators(domain, indicators, output_file):
     attribution_table = pd.DataFrame(
         columns=["indicator_type", "indicator_content"],
-        data=indicators,
+        data=(indicator.to_dict() for indicator in indicators),
     )
     attribution_table['domain_name'] = domain
     # this is done so if anything bad happens to break the script, we still get partial results
@@ -1083,6 +929,13 @@ if __name__ == "__main__":
         required=False,
         default=os.path.join(".", "indicators_output_dmi.csv"),
     )
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
 
     args = parser.parse_args()
     domain_col = args.domain_column
@@ -1096,5 +949,5 @@ if __name__ == "__main__":
             indicators = crawl(domain, run_urlscan=run_urlscan)
             write_domain_indicators(domain_name, indicators, output_file=output_file)
         except Exception as e:
-            print(f"Failing error on {domain}. See traceback below. Soldiering on...")
-            traceback.print_exc()
+            logging.error(f"Failing error on {domain}. See traceback below. Soldiering on...")
+            logging.error(e, exc_info=True)

@@ -16,6 +16,7 @@ FINANCIAL_IDS = {
     '3-fundly': r"https:\/\/fundly\.com\/[a-zA-Z0-9_-]+",
     '3-mightycause': r"https:\/\/www\.mightycause\.com\/story\/[a-zA-Z0-9_-]+",
     '3-onlyfans': r"https:\/\/onlyfans\.com\/[a-zA-Z0-9_-]+",
+    '3-donorbox': r"https:\/\/donorbox\.org\/(?:embed/)?[a-zA-Z0-9_\-?&=]+",
     # Affiliate links
     "3-amazonassociate": r"http:\/\/www\.amazon\.com\/(?:dp|gp\/product)\/[A-Z0-9]+\/ref=nosim\?tag=([a-zA-Z0-9_-]+)",
     "3-ebaypartner": r"https:\/\/rover\.ebay\.com\/rover\/1\/[0-9]+-[0-9]+-[0-9]+-[0-9]+\/[0-9]\?mpre=https%3A%2F%2Fwww\.ebay\.com%2Fulk%2Fitm%2F([0-9]+)",

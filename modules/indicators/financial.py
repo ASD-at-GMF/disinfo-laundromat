@@ -20,7 +20,7 @@ FINANCIAL_IDS = {
     '3-stripe-donate': r"https:\/\/donate.stripe.com\/[a-zA-Z0-9]+",
     # Store/Retail
     '3-zazzle': r"https:\/\/www\.zazzle\.com\/[a-zA-Z0-9_\-\/]+",
-    '3-cafepress': r"https:\/\/www\.cafepress\.com\/[a-zA-Z0-9_\-\/]+",
+    '3-cafepress': r"https:\/\/www\.cafepress\.com\/[a-zA-Z0-9_\-\.]+",
     '3-shopify': r"https:\/\/[a-zA-Z0-9-]+.myshopify.com",
     # Affiliate links
     "3-amazonassociate": r"http:\/\/www\.amazon\.com\/(?:dp|gp\/product)\/[A-Z0-9]+\/ref=nosim\?tag=([a-zA-Z0-9_-]+)",

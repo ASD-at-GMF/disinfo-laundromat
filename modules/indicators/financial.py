@@ -17,6 +17,11 @@ FINANCIAL_IDS = {
     '3-mightycause': r"https:\/\/www\.mightycause\.com\/story\/[a-zA-Z0-9_-]+",
     '3-onlyfans': r"https:\/\/onlyfans\.com\/[a-zA-Z0-9_-]+",
     '3-donorbox': r"https:\/\/donorbox\.org\/(?:embed/)?[a-zA-Z0-9_\-?&=.]+",
+    '3-stripe-donate': r"https:\/\/donate.stripe.com\/[a-zA-Z0-9]+",
+    # Store/Retail
+    '3-zazzle': r"https:\/\/www\.zazzle\.com\/[a-zA-Z0-9_\-\/]+",
+    '3-cafepress': r"https:\/\/www\.cafepress\.com\/[a-zA-Z0-9_\-\/]+",
+    '3-shopify': r"https:\/\/[a-zA-Z0-9-]+.myshopify.com",
     # Affiliate links
     "3-amazonassociate": r"http:\/\/www\.amazon\.com\/(?:dp|gp\/product)\/[A-Z0-9]+\/ref=nosim\?tag=([a-zA-Z0-9_-]+)",
     "3-ebaypartner": r"https:\/\/rover\.ebay\.com\/rover\/1\/[0-9]+-[0-9]+-[0-9]+-[0-9]+\/[0-9]\?mpre=https%3A%2F%2Fwww\.ebay\.com%2Fulk%2Fitm%2F([0-9]+)",

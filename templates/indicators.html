@@ -5,12 +5,28 @@
     <!-- Bootstrap CSS -->
     <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
     <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"></script>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.2/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.2/js/dataTables.bootstrap4.js"></script>
+    <link href="https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.0.2/css/dataTables.bootstrap4.css" rel="stylesheet">
     <script>
         $(document).ready(function () {
-            $('#indicatorsTable').DataTable();
+            $('#indicatorsTable').DataTable(
+                {
+                    responsive: true,
+                    pageLength: 50,
+                    autoWidth: false,
+                    columnDefs: [
+                        { targets: 0, width: "20%" },
+                        { targets: 1, width: "30%" },
+                        { targets: 2, width: "50%" },
+
+                    ],
+                    order: [[2, 'asc'], [1, 'asc']]
+                }
+            );
             populateAllExplanations();
             var selectedType = $('#indicatorTypeSelect').val();
             var explainerText = indicatorMetadata[selectedType] ? '<div class="alert alert-info" role="alert"><h6><strong>' + indicatorMetadata[selectedType].name + ' (' + selectedType + ')</strong>: ' + indicatorMetadata[selectedType]['description'] +
@@ -37,9 +53,41 @@
     </script>
 </head>
 
-<body>
+<body class="bg-dark-gray ">
+    <div class="ml-5 mr-5 text-light-gray ">
+        <div class="py-5">
+            <div class="row top-nav">
+                <div class="col-md-9">
+                    <div class=" mb-4">
+                        <h2 class="lead">The Information Laundromat</h2>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="/">Search</a>
+                        </h2>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="{{ url_for('about') }}">About</a>
+                        </h2>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="{{ url_for('indicators_gui') }}"><strong>Indicators</strong></a>
+                        </h2>
+                    </div>
+                </div>
 
-    <div class="container mt-4">
+            </div>
+        </div>
+    </div>
+    <div class="container mt-4 indicator-page">
         <h2>Website Indicators</h2>
 
         <!-- Dropdown for selecting indicator type -->
@@ -60,17 +108,20 @@
             Select an indicator type to see its description.
         </div>
 
-        <table id="indicatorsTable" class="table table-striped table-bordered" style="width:100%">
-            <thead>
+
+        <table id="indicatorsTable" class="table table-striped table-hover" style="width:100%">
+            <thead class="thead-light">
                 <tr>
+                    <th>Domain Name</th>
+
                     <th>Indicator Type</th>
                     <th>Indicator Content</th>
-                    <th>Domain Name</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in data %}
-                <tr>
+                <tr class="table-light">
+                    <td>{{ row['domain_name'] }}</td>
                     <td>
                         {% if row['indicator_type'] in indicator_metadata %}
                         {{ row['indicator_type'] }} ({{ indicator_metadata[row['indicator_type']].name }})
@@ -79,7 +130,7 @@
                         {% endif %}
                     </td>
                     <td>{{ row['indicator_content'] }}</td>
-                    <td>{{ row['domain_name'] }}</td>
+
                 </tr>
                 {% endfor %}
             </tbody>
@@ -89,4 +140,223 @@
     </div>
 </body>
 
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(128, 128, 128, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        top: 25%;
+        text-align: center;
+    }
+
+    table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    td {
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+    .highlight-gdelt {
+        background-color: lightgreen;
+    }
+
+    /* Style the tab */
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    /* Style the buttons inside the tab */
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+        background-color: #ddd;
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    .card {
+        color: #333;
+    }
+
+    .bg-dark-gray {
+        background-color: #333;
+    }
+
+    .text-light-gray {
+        color: #aaa;
+    }
+
+    .card-text {
+        color: #333;
+    }
+
+    .tab-active,
+    .tab-inactive {
+        padding: 0.75rem 1.25rem;
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .tab-active {
+        background-color: #fff;
+        /* Active tab with default background */
+        color: #333;
+        /* Text color for active tab */
+    }
+
+    .tab-inactive {
+        background-color: #555;
+        /* Inactive tab with darker background */
+        color: #fff;
+        /* Text color for inactive tab */
+    }
+
+    .nav-tabs .nav-item.show .nav-link,
+    .nav-tabs .nav-link.active {
+        color: #495057;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+
+    .nav-link {
+        background-color: #555;
+        color: #fff;
+        border: none;
+    }
+
+    .nav-link:hover {
+        background-color: #555;
+        color: #fff;
+        border: none;
+    }
+
+    .nav-tabs {
+        border-bottom: none;
+    }
+
+    .info-dot {
+        display: inline-block;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    /* Custom styles for the popover */
+    .popover {
+        max-width: 100%;
+        /* Max width of the popover */
+    }
+
+    /* Larger font size for the popover content */
+    .popover-body {
+        font-size: 1rem;
+        /* Adjust font size as needed */
+    }
+
+    /* Ensure info icon is aligned with the input */
+    .input-group-text {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style for info icon */
+    .fas.fa-info-circle {
+        cursor: pointer;
+        /* Change cursor to indicate it's clickable */
+    }
+
+    .caret {
+        display: none;
+    }
+
+    .btn-group .multiselect {
+        border: 1px solid #ced4da;
+    }
+
+    .card-body-400 {
+        min-height: 400px;
+        overflow-y: auto;
+    }
+
+    table a {
+        color: #45648f;
+    }
+
+    table a:hover {
+        color: #45648f;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .background {
+        position: absolute;
+        display: block;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        opacity: 30%;
+    }
+
+    #dynamic-content span {
+        display: inline-block;
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+        /* Smooth transition for the opacity change */
+    }
+
+    .top-nav a {
+        color: #fff;
+    }
+    .top-nav a:hover {
+        color: lightgray;
+    }
+    .indicator-page {
+        color: lightgray;
+    }
+    .indicator-page a {
+        color: lightblue;
+    }
+    .indicator-page a:hover {
+        color: lightgray;
+    }
+    
+    
+</style>
 </html> 

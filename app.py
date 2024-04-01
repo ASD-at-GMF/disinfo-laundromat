@@ -367,10 +367,12 @@ def content_api():
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
 @app.route('/content-search', methods=['POST'])
+@app.route('/api/content-search', methods=['POST'])
 @clean_inputs
 def parse_content_search():
     if request.method == 'POST':
         contentToSearch = request.form.get('contentToSearch')
+        isApi = request.form.get('isApi', 'false')
         # Parse the URL
         parsed_url = urlparse(contentToSearch)
         if parsed_url.scheme and parsed_url.netloc:
@@ -379,7 +381,10 @@ def parse_content_search():
             title_query = contentToSearch
             content_query = contentToSearch
             results, csv_data = content(request, title_query, content_query)
-        return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+        if isApi == 'true':
+            return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
+        else:
+            return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 
 def content(request, title_query=None, content_query=None):
@@ -392,9 +397,11 @@ def content(request, title_query=None, content_query=None):
 
     print("Engines: ", engines, "Title Query: ", title_query, "Content Query: ", content_query, "Combine Operator: ", combineOperator, "Language: ", language, "Country: ", country)
     if engines == 'all' or engines == ['all'] or engines == []:
-        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
+    if any(isinstance(sublist, list) for sublist in engines):
+        engines = [item for sublist in engines for item in sublist]  
 
         # Extracting article data-
     if not title_query and not content_query:
@@ -448,17 +455,24 @@ def parse_url(request, urlToParse=None):
     language = request.form.get('language', 'en')
     country = request.form.get('country', 'us')
     if engines == 'all' or engines == ['all'] or engines == []:
-        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
+    if any(isinstance(sublist, list) for sublist in engines):
+        engines = [item for sublist in engines for item in sublist]  
+    
 
         # Extracting article data-
-    article = Article(url)
-    article.download()
-    article.parse()
+    try:
+        article = Article(url)
+        article.download()
+        article.parse()
 
-    return fetch_content_results(
-            article.title, article.text, combineOperator, language, country, engines=engines)
+        return fetch_content_results(
+                article.title, article.text, combineOperator, language, country, engines=engines)
+    #TODO: Add error handling on the frontend
+    except Exception as e:
+        return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
 
 @app.route('/batch-search-metadata', methods=['POST'])
 @clean_inputs
@@ -493,7 +507,7 @@ def upload_file(request):
         # Use StringIO to create an in-memory file-like object
         output_stream = io.StringIO()
 
-        results_df = pd.DataFrame(columns=['SearchedURL', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
+        results_df = pd.DataFrame(columns=['SearchedURL', 'SearchedTitle', 'SearchedContent', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
         # Process each URL in the CSV
         for row in csv_input:
             searched_url = row.get("url")
@@ -504,18 +518,18 @@ def upload_file(request):
             country = row.get("country")
             engines = row.get("engines").split(',')
             if engines == ['all'] or engines == [] or engines == '':
-                engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
+                engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yandex', 'gdelt', 'copyscape']
             if language == '':
                 language = 'en'
             if country == '':
                 country = 'us'
             try:
                 if title_query is not None or content_query is not None :
-                    title_query = row.get("title")
+                    title_query = row.get("\ufefftitle")
                     content_query = row.get("content")
 
                     results, csv_data = fetch_content_results(
-                        title_query, content_query, combineOperator, combineOperator,  language, country, engines=engines)
+                        title_query, content_query, combineOperator,  language, country, engines=engines)
                 elif searched_url:
                     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0'
 
@@ -537,7 +551,8 @@ def upload_file(request):
                 for result in results:
                     logging.debug(f"Processing result: {result}")
                     new_row = [searched_url,
-
+                            title_query, 
+                            content_query,
                             result['domain'],
                             ', '.join(result['source']),
                             result['url'],
@@ -568,8 +583,7 @@ def upload_file(request):
         results_df.to_csv(output_stream, index=False)
         output_stream.seek(0) 
         try:
-            send_results_email(
-             email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_content_results.csv')
+            send_results_email(email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_content_results.csv')
         except Exception as e:
             app.logger.error(f"Error sending email: {e}")
             print(f"Error sending email: {e}, continuing...")
@@ -656,6 +670,12 @@ def download_csv():
 def indicators_gui():
     data, unique_types, selected_type = indicators(request)
     return render_template('indicators.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
+
+@app.route('/about')
+@clean_inputs
+def about():
+    data, unique_types, selected_type = indicators(request)
+    return render_template('about.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/indicators')
 @clean_inputs
@@ -853,6 +873,7 @@ def format_gdelt_output(data):
     return output
 
 def fetch_serp_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
+    
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github(
         'https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')

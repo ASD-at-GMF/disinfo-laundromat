@@ -11,6 +11,8 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.2/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.2/js/dataTables.bootstrap4.js"></script>
+    <link href="https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.0.2/css/dataTables.bootstrap4.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
 
     <script
@@ -23,6 +25,14 @@
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.bootstrap4.css" rel="stylesheet">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YC7N6ZZD7P"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-YC7N6ZZD7P');
+    </script>
     <script>
         $(function () {
             $('[data-toggle="popover"]').popover()
@@ -177,8 +187,69 @@
                 $('#myTab .nav-link').removeClass('active show');
                 $(this).addClass('active show');
             });
+            $('#file').on('change',function(){
+                //get the file name
+                var fileName = $(this).val().split('\\').pop();
+                //replace the "Choose a file" label
+                $(this).next('.custom-file-label').html(fileName);
+            })
+            $('#fingerprint-file').on('change',function(){
+                //get the file name
+                var fileName = $(this).val().split('\\').pop();
+                //replace the "Choose a file" label
+                $(this).next('.custom-file-label').html(fileName);
+            })
+
+            const verbs = ["Discover", "Investigate", "Track"];
+            const nouns = [
+                "content relationships",
+                "content laundering",
+                "shared metadata",
+                "information networks",
+                "site architecture"
+            ];
+
+
+            function getRandomElement(arr, current) {
+                let randomElement = current;
+                while (randomElement === current) {
+                    randomElement = arr[Math.floor(Math.random() * arr.length)];
+                }
+                return randomElement;
+            }
+            function swapVerb() {
+                let currentVerb = document.getElementById('lead-verb').textContent;
+                let nextVerb = getRandomElement(verbs, currentVerb);
+
+                document.getElementById('lead-verb').style.opacity = '0';
+
+                setTimeout(function () {
+                    document.getElementById('lead-verb').textContent = nextVerb;
+                    document.getElementById('lead-verb').style.opacity = '1';
+                }, 500);
+            }
+            function swapNoun() {
+                let currentNoun = document.getElementById('lead-noun').textContent;
+                let nextNoun = getRandomElement(nouns, currentNoun);
+
+                document.getElementById('lead-noun').style.opacity = '0';
+
+                setTimeout(function () {
+                    document.getElementById('lead-noun').textContent = nextNoun;
+                    document.getElementById('lead-noun').style.opacity = '1';
+                }, 500);
+            }
+
+            // Start the swapping with verbs and set intervals
+            swapVerb();
+            setInterval(function () {
+                // Swap verb, wait 5 seconds, then swap noun, to ensure one changes at a time
+                swapVerb();
+                setTimeout(swapNoun, 3000);
+            }, 6000);
 
         });
+
     </script>
 </head>
 
@@ -194,30 +265,43 @@
     <!--  -->
     <div class="ml-5 mr-5 text-light-gray ">
         <div class="py-5">
-            <div class="row">
-                <div class="col-md-8">
+            <div class="row top-nav">
+                <div class="col-md-9">
                     <div class=" mb-4">
                         <h2 class="lead">The Information Laundromat</h2>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class=" mb-4 text-right">
                         <h2 class="lead">
-                            <strong>Search</strong>
+                            <a href="/"><strong>Search</strong></a>
                         </h2>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <div class=" mb-4 text-right">
-                        <h2 class="lead">About</h2>
+                        <h2 class="lead">
+                            <a href="{{ url_for('about') }}">About</a>
+                        </h2>
                     </div>
                 </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="{{ url_for('indicators_gui') }}">Indicators</a>
+                        </h2>
+                    </div>
+                </div>
+
             </div>
 
             <div class="row">
                 <div class="col-lg-4 mb-5 mt-5">
-                    <div class="col text-center">
-                        <h3 class="display-4">Discover content relationships from across the infosphere</h3>
+                    <div class="col text-center " id=dynamic-content>
+                        <h3 class="display-4">
+                            <span id="lead-verb">Discover </span>
+                            <span id="lead-noun">content relationships</span> from across the infosphere
+                        </h3>
                     </div>
                 </div>
                 <div class="col-lg-8 mb-3">
@@ -907,39 +991,40 @@
                                 alt="MJRC Logo" height="256"
                                 data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/02/EMIF_Horizontal_logo_Black.png"
                                 style="width: 100%;height:auto">
-                            </a>
+                        </a>
                     </div>
                 </div>
                 <div class="col-md-9">
                     <div class="row">
                         <div class="col-md-4 mt-5">
-                            <a href="https://securingdemocracy.gmfus.org/"
-                            rel="nofollow">
-                            <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2023/05/ASD-Logo.png"
-                                alt="ASD Logo"
-                                data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ASD_Logo_Black.png"
-                                style="width: 100%;height:auto">
+                            <a href="https://securingdemocracy.gmfus.org/" rel="nofollow">
+                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2023/05/ASD-Logo.png"
+                                    alt="ASD Logo"
+                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ASD_Logo_Black.png"
+                                    style="width: 100%;height:auto">
                             </a>
                         </div>
                         <div class="col-md-4">
                             <a href="https://www.isdglobal.org/" rel="nofollow">
-                            <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/ISD-logo-ISD-Red.png"
-                                alt="ISD Logo"
-                                data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ISD_Logo_Black.png"
-                                style="width: 100%;height:auto"></a>
+                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/ISD-logo-ISD-Red.png"
+                                    alt="ISD Logo"
+                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ISD_Logo_Black.png"
+                                    style="width: 100%;height:auto"></a>
                         </div>
                         <div class="col-md-4">
                             <a href="https://www.uva.nl/en" rel="nofollow">
-                            <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/uva-logo-uvamerken_eng-1406x236-300dpi.png"
-                                alt="UvA Logo"
-                                data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/UvA_Logo_Black.png"
-                                style="width: 100%;height:auto"></a>
+                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/uva-logo-uvamerken_eng-1406x236-300dpi.png"
+                                    alt="UvA Logo"
+                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/UvA_Logo_Black.png"
+                                    style="width: 100%;height:auto"></a>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="row">
-                The sole responsibility for any content supported by the European Media and Information Fund lies with the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund Partners, the Calouste Gulbenkian Foundation and the European University Institute.
+                The sole responsibility for any content supported by the European Media and Information Fund lies with
+                the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund Partners, the
+                Calouste Gulbenkian Foundation and the European University Institute.
             </div>
         </div>
     </div>
@@ -1138,7 +1223,21 @@
         left: 0;
         z-index: -1;
         opacity: 30%;
+    }
 
+    #dynamic-content span {
+        display: inline-block;
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+        /* Smooth transition for the opacity change */
+    }
+
+    .top-nav a {
+        color: #fff;
+    }
+
+    .top-nav a:hover {
+        color: lightgray;
     }
 </style>
 

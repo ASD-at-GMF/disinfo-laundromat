@@ -22,6 +22,7 @@ import imagehash
 import pandas as pd
 import requests
 import whois
+
 import yaml
 from bs4 import BeautifulSoup
 from OpenSSL import crypto
@@ -30,8 +31,7 @@ from tldextract import tldextract
 from usp.tree import sitemap_tree_for_homepage
 
 from modules.indicator import Indicator
-from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
-                                TRACKING_IDS)
+from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS)
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY', '')
@@ -244,6 +244,7 @@ def parse_script_tags(soup) -> list[Indicator]:
             if match and match.group(1) not in script_tags:
                 script_tag_srcs.append(match.group(1))
     return [Indicator("3-script_src", script_src) for script_src in script_tag_srcs]
+
 
 @return_empty_if_fails
 def parse_id_attributes(soup) -> list[Indicator]:
@@ -778,12 +779,37 @@ def get_outbound_domains(url, soup) -> list[Indicator]:
                 outbound_domains.add(link_domain)
     return [Indicator(content=domain, type="4-outbound-domain") for domain in outbound_domains]
 
+# parses <domain>.ads.txt file for associated ad networks, exchanges, and other ad-related entities
+def parse_ads_txt(url, soup):
+    ads_txt_indicators = []
+    ads_txt_list = []
+    ads_txt_url = f"{url}/ads.txt"
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"}
+        response = requests.get(ads_txt_url, headers=headers, verify=False)
+        #iterate accross the lines of the ads.txt file
+        for line in response.text.split("\n"):
+            if line.startswith("#") or line.startswith((' ', '\t')) or len(line) == 0:
+                continue
+            line_parts = line.split(",")
+            if len(line_parts) < 3:
+                continue
+            ad_network = line_parts[0]
+            ad_network_id = line_parts[1]
+            ad_network_type = line_parts[2]
+            ads_txt_list.append(f"{ad_network}|{ad_network_id}|{ad_network_type}")
+        ads_txt_indicators.append(add_indicator("2-ads_txt", ads_txt_list))
+    except Exception as e:
+        print(f"Error in parse_ads_txt for {url}. Will continue. Traceback below.")
+        traceback.print_exc()
+    return ads_txt_indicators
+
 
 def scrape_url(url):
     # Send a GET request to the specified URL, ignoring bad SSL certificates]
     if len(SCRAPER_API_KEY) > 0:
         try:
-            payload = {"api_key": SCRAPER_API_KEY, "url": url}
+            payload = {"api_key": SCRAPER_API_KEY, "url": url,'premium': True, 'render': True, 'ultra_premium': True}
             return requests.get("https://api.scraperapi.com/", params=payload)
         except requests.exceptions.ConnectionError as e:
             logging.warn("Unable to use scraper, will use vanilla requests.get")
@@ -828,6 +854,7 @@ def crawl(url, run_urlscan=False) -> list[Indicator]:
     indicators.extend(get_shodan_indicators(url))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(get_outbound_domains(url, soup))
+    indicators.extend(parse_ads_txt(url, response))
     ## Uncomment the following if needed
     # indicators.extend(add_who_is(url))
     # indicators.extend(parse_images(url, soup, response))
@@ -871,10 +898,22 @@ def crawl_one_or_more_urls(
         domain_name = get_domain_name(url)
         
         for indicator in url_indicators:
+            indicator['domain_name'] = domain_name
+            if isinstance(indicator['indicator_content'], str):
+                indicator['indicator_content'] = remove_json_like_strings(indicator['indicator_content'])
+            if isinstance(indicator['indicator_content'], set):
+                indicator['indicator_content'] = list(indicator['indicator_content'])
             indicator.domain = domain_name
         
         indicators.extend(url_indicators)
     return indicators
+
+def remove_json_like_strings(text):
+    # This pattern matches simple JSON objects '{...}'
+    # It's a very basic pattern and might need adjustments based on your specific needs.
+    # Replace curly braces and newline characters with an empty string
+    text = text.replace('{', '').replace('}', '').replace('\n', '').replace('[', '').replace(']', '').replace('",', '')
+    return text
 
 
 def write_domain_indicators(domain, indicators, output_file):

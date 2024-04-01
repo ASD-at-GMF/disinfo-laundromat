@@ -8,7 +8,7 @@ DEFAULTS = {
 ENGINES = {
     "google": "Google",
     "bing": "Bing",
-    "yahoo": "Yahoo",
+    "duckduckgo": "DuckDuckGo",
     "yandex": "Yandex",
     "gdelt": "GDELT",
     "copyscape": "Copyscape",

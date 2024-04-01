@@ -386,7 +386,6 @@ def parse_content_search():
         else:
             return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
-
 def content(request, title_query=None, content_query=None):
     title_query = title_query if title_query is not None else  request.form.get('titleQuery')
     content_query = content_query if content_query is not None else request.form.get('contentQuery')
@@ -400,6 +399,7 @@ def content(request, title_query=None, content_query=None):
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
+
     if any(isinstance(sublist, list) for sublist in engines):
         engines = [item for sublist in engines for item in sublist]  
 
@@ -460,7 +460,6 @@ def parse_url(request, urlToParse=None):
         engines = [engines]
     if any(isinstance(sublist, list) for sublist in engines):
         engines = [item for sublist in engines for item in sublist]  
-    
 
         # Extracting article data-
     try:
@@ -473,6 +472,18 @@ def parse_url(request, urlToParse=None):
     #TODO: Add error handling on the frontend
     except Exception as e:
         return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
+
+@app.route('/batch-search-metadata', methods=['POST'])
+@clean_inputs
+def parse_batch_search_metadata():
+    if request.files['fingerprint-file'].filename != '':
+        return fingerprint_file(request)
+    
+@app.route('/batch-search-content', methods=['POST'])
+@clean_inputs
+def parse_batch_search_content():
+    if request.files['file'].filename != '':
+        return upload_file(request)
 
 @app.route('/batch-search-metadata', methods=['POST'])
 @clean_inputs
@@ -507,7 +518,9 @@ def upload_file(request):
         # Use StringIO to create an in-memory file-like object
         output_stream = io.StringIO()
 
+
         results_df = pd.DataFrame(columns=['SearchedURL', 'SearchedTitle', 'SearchedContent', 'Domain', 'Source', 'URL', 'Title', 'Snippet', 'LinkCount', 'Engines', 'DomainCount', 'Score'])
+
         # Process each URL in the CSV
         for row in csv_input:
             searched_url = row.get("url")
@@ -525,11 +538,13 @@ def upload_file(request):
                 country = 'us'
             try:
                 if title_query is not None or content_query is not None :
-                    title_query = row.get("\ufefftitle")
+
+                    title_query = row.get("title")
                     content_query = row.get("content")
 
                     results, csv_data = fetch_content_results(
                         title_query, content_query, combineOperator,  language, country, engines=engines)
+
                 elif searched_url:
                     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0'
 

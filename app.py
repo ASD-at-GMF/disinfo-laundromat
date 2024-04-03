@@ -47,7 +47,7 @@ CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
-from modules.crawler import crawl_one_or_more_urls
+from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
 from modules.email_utils import send_results_email
 
@@ -303,8 +303,7 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     indicators_df = indicators_df.rename(columns={'content': 'indicator_content', 'domain': 'domain_name', 'type': 'indicator_type'})
     filter_mask = ~indicators_df['indicator_content'].isin(MATCH_VALUES_TO_IGNORE)
     indicators_df = indicators_df[filter_mask]
-
-    #insert_indicators(indicators)
+    indicators_df = annotate_indicators(indicators_df)
 
     if internal_only:
         comparison_indicators = indicators_df

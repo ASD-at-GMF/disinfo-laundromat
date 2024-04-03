@@ -32,6 +32,7 @@ from usp.tree import sitemap_tree_for_homepage
 
 from modules.indicator import Indicator
 from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS)
+from modules.reference import LEAD_GEN_INDICATORS
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY', '')
@@ -917,6 +918,25 @@ def remove_json_like_strings(text):
     # Replace curly braces and newline characters with an empty string
     text = text.replace('{', '').replace('}', '').replace('\n', '').replace('[', '').replace(']', '').replace('",', '')
     return text
+
+# Add a column to the dataframe that indicates if its included in each of FINANCIAL_IDS, EMBEDDED_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS
+def annotate_indicators(indicators_df):
+    # iterate across the indicators dataframe, if indicator_type is in the keys of FINANCIAL_IDS, add 'financial' to the indicator_annotation column
+    for index, row in indicators_df.iterrows():
+        if row['indicator_type'] in FINANCIAL_IDS.keys():
+            indicators_df.at[index, 'indicator_annotation'] = 'financial'
+        elif row['indicator_type'] in EMBEDDED_IDS.keys():
+            indicators_df.at[index, 'indicator_annotation'] = 'embedded'
+        elif row['indicator_type'] in SOCIAL_MEDIA_IDS.keys():
+            indicators_df.at[index, 'indicator_annotation'] = 'social_media'
+        elif row['indicator_type'] in TRACKING_IDS.keys():
+            indicators_df.at[index, 'indicator_annotation'] = 'tracking'
+        elif row['indicator_type'] in LEAD_GEN_INDICATORS:
+            indicators_df.at[index, 'indicator_annotation'] = 'lead_gen'
+        else:
+            indicators_df.at[index, 'indicator_annotation'] = ''
+
+    return indicators_df
 
 
 def write_domain_indicators(domain, indicators, output_file):

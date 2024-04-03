@@ -1154,3 +1154,10 @@ MATCH_VALUES_TO_IGNORE = [
     'viewport|width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
 
 ]
+
+LEAD_GEN_INDICATORS = [
+    '2-ads_txt',
+    '4-outbound-domain',
+    '3-cdn-domain',
+    '3-meta_generic'
+]

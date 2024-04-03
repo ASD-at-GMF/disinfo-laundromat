@@ -6,7 +6,7 @@ import traceback
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Callable
 
 import numpy as np
 import pandas as pd
@@ -130,6 +130,7 @@ def direct_match(
     matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches.reset_index(drop=True)
 
+# TODO: Add a partial string match function
 
 def iou_match(
     feature_df: pd.DataFrame,
@@ -269,7 +270,7 @@ FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataF
 "1-verification_id" : direct_match,
 "1-yandex_tag_id" : direct_match,
 "2-subnet" : direct_match,
-"3-cdn-domain" : direct_match,
+"3-cdn-domain" : iou_match,
 "3-cms" : direct_match,
 "3-css_classes" : iou_match,
 "3-header-nonstd-value" : direct_match,
@@ -297,7 +298,11 @@ FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataF
 "2-urlscan_domainsonpage": iou_match,
 "2-urlscan_urlssonpage" : iou_match,
 "2-urlscanhrefs" : iou_match,
-"2-techstack" : iou_match
+"2-techstack" : iou_match,
+"3-footer-text": direct_match,
+"4-outbound-domain": iou_match,
+"2-ads_txt": iou_match
+
 }
 
 FEATURE_MATCHING.update({financial_id: direct_match for financial_id in FINANCIAL_IDS})
@@ -333,8 +338,8 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
             continue
         try:
             logging.info(f"Matching {feature} with method: {match_func.__name__}")
-        except AttributeError:
-            logging.info(f"Matching {feature} with method: {match_func.func.__name__}, {match_func.keywords}")
+        except AttributeError as e:
+            logging.info(f"Matching {feature} with method: {match_func.func.__name__}, {match_func.keywords}, {e}")
         feature_df = data[data[INDICATOR_TYPE] == feature]
         comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
         try:
@@ -349,7 +354,7 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                     f"{result_dir}/{feature}_matches.csv", index=False
                 )
         except Exception as e:
-            logging.error(f"Error matching feature {feature}: {traceback.print_stack()}")
+            logging.error(f"Error ({e}) matching feature {feature}: {traceback.print_stack()}")
             continue
     all_matches = pd.concat(matches_per_feature)
     return all_matches

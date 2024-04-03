@@ -9,8 +9,13 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.6/dist/umd/popper.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.2/js/dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.2/js/dataTables.bootstrap4.js"></script>
+    <script src="https://cdn.datatables.net/buttons/3.0.1/js/dataTables.buttons.js"></script>
+    <script src="https://cdn.datatables.net/buttons/3.0.1/js/buttons.dataTables.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/3.0.1/js/buttons.html5.js"></script>
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.bootstrap4.css" rel="stylesheet">
+    
     <script>
         $(document).ready(function () {
             $('#indicatorsTable').DataTable(
@@ -24,6 +29,11 @@
                         { targets: 2, width: "50%" },
 
                     ],
+                    layout: {
+                        topStart: {
+                            buttons: ['pageLength','copy', 'csv', 'excel']
+                        },
+                    },
                     order: [[2, 'asc'], [1, 'asc']]
                 }
             );

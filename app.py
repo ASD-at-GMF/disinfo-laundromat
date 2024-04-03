@@ -299,14 +299,12 @@ def fingerprint(request):
 def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False):
     indicators = crawl_one_or_more_urls(urls, run_urlscan = run_urlscan)
     indicator_summary = summarize_indicators(indicators)
-    indicators_df = pd.DataFrame(
-        columns=["indicator_type", "indicator_content", "domain_name"],
-        data=indicators,
-    )
+    indicators_df = pd.DataFrame([o.__dict__ for o in indicators])
+    indicators_df = indicators_df.rename(columns={'content': 'indicator_content', 'domain': 'domain_name', 'type': 'indicator_type'})
     filter_mask = ~indicators_df['indicator_content'].isin(MATCH_VALUES_TO_IGNORE)
     indicators_df = indicators_df[filter_mask]
 
-    insert_indicators(indicators)
+    #insert_indicators(indicators)
 
     if internal_only:
         comparison_indicators = indicators_df
@@ -484,19 +482,6 @@ def parse_batch_search_metadata():
 def parse_batch_search_content():
     if request.files['file'].filename != '':
         return upload_file(request)
-
-@app.route('/batch-search-metadata', methods=['POST'])
-@clean_inputs
-def parse_batch_search_metadata():
-    if request.files['fingerprint-file'].filename != '':
-        return fingerprint_file(request)
-    
-@app.route('/batch-search-content', methods=['POST'])
-@clean_inputs
-def parse_batch_search_content():
-    if request.files['file'].filename != '':
-        return upload_file(request)
-
 
 @app.route('/content-csv', methods=['POST'])
 @clean_inputs
@@ -1173,7 +1158,10 @@ def sequence_match_score(title1, title2):
     return round(score*100,1)
 
 def summarize_indicators(results, column='indicator_type'):
-    tier_counts = Counter([item[column].split('-')[0] for item in results])
+    try:
+        tier_counts = Counter([item.type.split('-')[0] for item in results])
+    except AttributeError:
+        tier_counts = Counter([item[column].split('-')[0] for item in results])
 
     # Sort the tier as 1, 2, 3
     tier_counts = {k: v for k, v in sorted(tier_counts.items(), key=lambda item: int(item[0]))}

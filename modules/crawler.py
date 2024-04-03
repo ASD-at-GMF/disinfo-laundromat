@@ -228,7 +228,7 @@ def parse_meta_tags(soup) -> list[Indicator]:
         elif (name or prop) and content:
             name = name or prop
             generic_metas.append(name + "|" + content)
-    generic_indicators = [Indicator("3-meta_generic", g_m) for g_m in generic_metas]
+    generic_indicators = [Indicator("3-meta_generic", generic_metas) ]
     return tag_indicators + generic_indicators
 
 @return_empty_if_fails
@@ -243,24 +243,31 @@ def parse_script_tags(soup) -> list[Indicator]:
             match = re.search(r"/([^/]+)$", source)
             if match and match.group(1) not in script_tags:
                 script_tag_srcs.append(match.group(1))
-    return [Indicator("3-script_src", script_src) for script_src in script_tag_srcs]
+    return [Indicator("3-script_src", script_tag_srcs)]
 
 
 @return_empty_if_fails
 def parse_id_attributes(soup) -> list[Indicator]:
-    return [Indicator("3-id_tags", element["id"]) for element in soup.find_all(id=True)]
+    id_tags= [
+        element["id"] for element in soup.find_all(id=True)
+    ]
+    return [Indicator("3-id_tags", id_tags)]
 
 @return_empty_if_fails
 def parse_iframe_ids(soup) -> list[Indicator]:
     iframe_ids = [
         iframe["id"] for iframe in soup.find_all("iframe") if "id" in iframe.attrs
     ]
-    return [Indicator("3-iframe_id_tags", iframe) for iframe in iframe_ids]
+    return [Indicator("3-iframe_id_tags", iframe_ids)]
 
 @return_empty_if_fails
 def parse_link_tags(soup) -> list[Indicator]:
     link_tags = soup.find_all("link")
-    return [Indicator("3-link_href", link["href"]) for link in link_tags if link.has_attr("href")]
+    link_hrefs = []
+    for link in link_tags:
+        if link.has_attr("href"):
+            link_hrefs.append(link["href"])
+    return [Indicator("3-link_href", link_hrefs) ]
 
 @return_empty_if_fails
 def bulk_builtwith_query(domains: list[str], save_matches: bool = False) -> list[Indicator]:
@@ -576,7 +583,7 @@ def add_cdn_domains(soup) -> list[Indicator]:
         if src:
             domain = urlsplit(src).hostname
             domains.add(domain)
-    return [Indicator("3-cdn-domain", domain) for domain in domains]
+    return [Indicator("3-cdn-domain", domains)]
 
 
 # getting domain and suffix, eg -  “google.com”
@@ -641,13 +648,9 @@ def add_urlscan_indicators(data) -> list[Indicator]:
             ]
         )
     )
-    if "asn" in data["page"]:
-        urlscan_indicators.append(
-            {
-                "indicator_type": "2-urlscan_asn",
-                "indicator_content": data["page"]["asn"],
-            }
-        )
+    urlscan_indicators.append(
+        Indicator("2-urlscan_asn", data["page"]["asn"])
+    )
     urlscan_indicators.append(
         Indicator("2-urlscan_domainsonpage", data["lists"]["domains"])
     )
@@ -777,7 +780,7 @@ def get_outbound_domains(url, soup) -> list[Indicator]:
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
                 outbound_domains.add(link_domain)
-    return [Indicator(content=domain, type="4-outbound-domain") for domain in outbound_domains]
+    return [Indicator("4-outbound-domain", outbound_domains) ]
 
 # parses <domain>.ads.txt file for associated ad networks, exchanges, and other ad-related entities
 def parse_ads_txt(url, soup):
@@ -798,7 +801,7 @@ def parse_ads_txt(url, soup):
             ad_network_id = line_parts[1]
             ad_network_type = line_parts[2]
             ads_txt_list.append(f"{ad_network}|{ad_network_id}|{ad_network_type}")
-        ads_txt_indicators.append(add_indicator("2-ads_txt", ads_txt_list))
+        ads_txt_indicators.append(Indicator("2-ads_txt", ads_txt_list))
     except Exception as e:
         print(f"Error in parse_ads_txt for {url}. Will continue. Traceback below.")
         traceback.print_exc()
@@ -890,20 +893,20 @@ def crawl_one_or_more_urls(
     for url in urls:
         parsed_url = urlparse(url)
         base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        logging.info('Fingerprinting:',base_domain)
+        print(f"Processing {base_domain}")
         url_indicators = crawl(
             base_domain,
             run_urlscan=run_urlscan,
         )
         domain_name = get_domain_name(url)
-        
+    
         for indicator in url_indicators:
-            indicator['domain_name'] = domain_name
-            if isinstance(indicator['indicator_content'], str):
-                indicator['indicator_content'] = remove_json_like_strings(indicator['indicator_content'])
-            if isinstance(indicator['indicator_content'], set):
-                indicator['indicator_content'] = list(indicator['indicator_content'])
+            if isinstance(indicator.content, str):
+                indicator.content = remove_json_like_strings(indicator.content)
+            if isinstance(indicator.content, set):
+                indicator.content = list(indicator.content)
             indicator.domain = domain_name
+
         
         indicators.extend(url_indicators)
     return indicators

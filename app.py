@@ -43,6 +43,7 @@ COPYSCAPE_USER = os.getenv('COPYSCAPE_USER', '')
 PATH_TO_OUTPUT_CSV = os.getenv('PATH_TO_OUTPUT_CSV', '')
 MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
+GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
 
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
@@ -675,6 +676,69 @@ def indicators_gui():
 def about():
     data, unique_types, selected_type = indicators(request)
     return render_template('about.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
+
+@app.route('/domain_labels')
+@clean_inputs
+def parse_gate_domain_labels(request=None, text=None):
+    if request is not None:
+        text = request.form.get('text')
+    elif text is not None:
+        text = text
+    else:
+        return jsonify({'error': 'No text provided'})
+
+    # Define the API endpoint
+    api_url = "https://cloud-api.gate.ac.uk/process/url-domain-analysis"
+    payload = {
+        "text": text,
+        "annotations": ":URL, :SourceCredibility"
+    }
+    headers = {
+    "Content-Type": "text/plain",
+    # Add other necessary headers like Authorization if needed
+    }   
+        # Making a POST request to the API
+    response = requests.post(api_url, json=payload, headers=headers)
+
+    if response.status_code == 200:
+        json_response = response.json()
+        source_credibility = json_response["entities"]["SourceCredibility"]
+        domain_labels = {}
+
+        for item in source_credibility:
+            domain = item.get("resolved-domain")
+            label = item.get("labels")
+            if domain:
+                if domain in domain_labels:
+                    if label not in domain_labels[domain]:
+                        domain_labels[domain].append(label)
+                else:
+                    domain_labels[domain] = [label]
+
+        return  domain_labels
+    else:
+        return jsonify({'error': f'Error: {response.status_code}'})
+    
+def verify_captcha(request):
+     # The response from reCAPTCHA
+    captcha_response = request.form['g-recaptcha-response']
+    
+    # Verify the captcha response
+    response = requests.post('https://www.google.com/recaptcha/api/siteverify', data={
+        'secret': GCAPTCHA_SECRET,
+        'response': captcha_response
+    })
+    
+    response_data = response.json()
+    
+    if response_data['success']:
+        # reCAPTCHA verified successfully
+        # Process the rest of your form here
+        return True
+    else:
+        # Failed verification
+        return False
+
 
 @app.route('/api/indicators')
 @clean_inputs

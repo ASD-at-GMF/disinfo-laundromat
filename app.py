@@ -6,6 +6,7 @@ from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from functools import wraps
 
+import concurrent.futures
 import json
 import re
 from io import BytesIO
@@ -902,7 +903,8 @@ def fetch_content_results(title_query, content_query, combineOperator, language,
 def format_copyscape_output(data):
     output = {}
     for article in data:
-        domain = urlparse(article["url"]).netloc
+        parsed_url = urlparse(url)
+        domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
         if domain not in output:
             output[domain] = {"count": 0, "links": [],
                               "concern": False, "source": []}
@@ -920,7 +922,8 @@ def format_copyscape_output(data):
 def format_gdelt_output(data):
     output = {}
     for article in data.get("articles", []):
-        domain = urlparse(article["url"]).netloc
+        parsed_url = urlparse(article["url"])
+        domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
         if domain not in output:
             output[domain] = {"count": 0, "links": [],
                               "concern": False, "source": []}
@@ -936,126 +939,105 @@ def format_gdelt_output(data):
     return output
 
 def fetch_serp_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
-    
     local_domains = load_domains_of_concern()
     github_domains = fetch_domains_from_github(
         'https://raw.githubusercontent.com/ASD-at-GMF/state-media-profiles/main/State_Media_Matrix.csv')
-    results_gdelt = None
-    if 'gdelt' in engines:
-        logging.debug(f"Fetching GDELT results for {title_query} and {content_query}")
-        results_gdelt = fetch_gdelt_results(
-            title_query, content_query, combineOperator, language, country)
-    results_cs = None
-    if COPYSCAPE_API_KEY and COPYSCAPE_USER and 'copyscape' in engines:
-        logging.debug(f"Fetching CopyScape results for {title_query} and {content_query}")
-        results_cs = fetch_copyscape_results(
-            title_query, content_query, combineOperator, language, country)
-
-    paramsList = customize_params_by_platform(
-        title_query, content_query, combineOperator, language, country)
+    paramsList = customize_params_by_platform(title_query, content_query, combineOperator, language, country)
+    all_results = []
     aggregated_results = {}
-    for params in paramsList:
-        logging.debug(f"Fetching SERP results for {title_query} and {content_query} for params: {params}")
-        search_engine = params["engine"]
-        if search_engine not in engines:
-            continue
-
-        base_url = "https://serpapi.com/search"  # base url of the API
-        response = requests.get(base_url, params=params)
-        data = response.json()
-        organic_results = data.get("organic_results", [])
-        print(params)
-        app.logger.info(f"Searching SERP with params: {params}")
-
-        logging.debug(f"Results found: {organic_results.__len__()} for {search_engine}")
-        # Aggregate by domain, link, title, and count occurrences
-        for result in organic_results:
-            
-            domain = urlparse(result.get('link')).netloc
-            link_data = {'link': result.get('link'), 'title': result.get(
-                'title'), 'snippet': result.get('snippet') , 'count': 1, 'engines': [search_engine]}
-
-            if domain not in aggregated_results:
-                aggregated_results[domain] = {'count': 0, 'links': []}
-
-            # Check if the link already exists in the list
-            existing_link = next(
-                (l for l in aggregated_results[domain]['links'] if l['link'] == link_data['link']), None)
-            if existing_link:
-                existing_link['count'] += 1
-                if search_engine not in existing_link['engines']:
-                    existing_link['engines'].append(search_engine)
+    
+    def fetch_results_for_engine(engine):
+        nonlocal title_query, content_query, combineOperator, language, country, aggregated_results
+        if engine == 'gdelt':
+            return fetch_gdelt_results(title_query, content_query, combineOperator, language, country)
+        elif engine == 'copyscape' and COPYSCAPE_API_KEY and COPYSCAPE_USER:
+            return fetch_copyscape_results(title_query, content_query, combineOperator, language, country)
+        else:
+            params = paramsList[engine]
+            print(params)
+            app.logger.info(f"Searching SERP with params: {params}")
+            base_url = "https://serpapi.com/search"
+            response = requests.get(base_url, params=params)
+            return response.json()
+    
+    def normalize_results(results, engine):
+        normalized_data = []
+        if engine != 'copyscape' and engine != 'gdelt':
+            results = results.get("organic_results", [])
+        else:
+            if results is None:
+                return []
+        for result in results:
+            if engine == 'copyscape':
+                parsed_url = urlparse(result['url'])
+                domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+                normalized_data.append({'domain':domain, 'url': result['url'], 'title': result['title'], 'snippet': result['textsnippet'],  'engine': engine})
+            elif engine == 'gdelt':
+                parsed_url = urlparse(result['url'])
+                domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+                normalized_data.append({'domain':domain, 'url': result['url'], 'title': result['title'], 'snippet': '',  'engine': engine})
             else:
-                aggregated_results[domain]['links'].append(link_data)
+                parsed_url = urlparse(result['link'])
+                domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+                normalized_data.append({'domain':domain,'url': result.get('link'), 'title': result.get(
+                'title'), 'snippet': result.get('snippet') , 'engine': [engine]})
+        return normalized_data
 
-            aggregated_results[domain]['count'] += 1
-    if results_gdelt and results_gdelt is not None:
-        for key, value in results_gdelt.items():
-            if key in aggregated_results:
-                # Sum the 'count' for overlapping keys
-                aggregated_results[key]['count'] += value['count']
-                combined_links = aggregated_results[key]['links'] + value['links']
-                aggregated_results[key]['links'] = combined_links
-            else:
-                # If the key is not in the first dictionary, add it
-                aggregated_results[key] = value
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # Submit tasks to the executor for each engine
+        future_to_engine = {executor.submit(fetch_results_for_engine, engine): engine for engine in engines}
+        
+        for future in concurrent.futures.as_completed(future_to_engine):
+            engine = future_to_engine[future]
+            try:
+                data = future.result()
+                if data is not None:
+                    normalized_data = normalize_results(data, engine)
+                    all_results.extend(normalized_data)
+                print(f"Results for {engine}: {data}")
+            except Exception as exc:
+                print(f"{engine} generated an exception: {exc}")
+                continue
 
-    if COPYSCAPE_API_KEY and COPYSCAPE_USER and results_cs and results_cs is not None:
-        for key, value in results_cs.items():
-            if key in aggregated_results:
-                # Sum the 'count' for overlapping keys
-                aggregated_results[key]['count'] += value['count']
-                combined_links = aggregated_results[key]['links'] + value['links']
-                aggregated_results[key]['links'] = combined_links
-            else:
-                # If the key is not in the first dictionary, add it
-                aggregated_results[key] = value
-
-    logging.debug(f"Aggregated results: {aggregated_results.__len__()}")
+    # Aggregate by domain, link, title, and count
     local_domains_dict = {domain: source for domain, source in local_domains}
-    # Flagging domains of concern and tracking their source
-    for domain, data in aggregated_results.items():
-        local_source = local_domains_dict.get(domain) or local_domains_dict.get(domain.split('.')[1])  # Check for FQDN and no subdomain
-        github_source = "statemedia" if domain in github_domains else None
-
-        # Set concern flag and sources
-        data["concern"] = bool(local_source or github_source)
-        data["source"] = []
-
-        if local_source:
-            data["source"].append(local_source)
-        if github_source:
-            data["source"].append(github_source)
-
-    aggregated_results = dict(sorted(aggregated_results.items(
-    ), key=lambda item: item[1]['count'], reverse=True))
-
-    # FLATTEN DOMAINS Iterate over each domain in the JSON data
-
-    flattened_data = []
-    logging.debug(f"Flattening results: {aggregated_results.__len__()}")
-    for domain, domain_data in aggregated_results.items():
-        for link in domain_data['links']:
-            # Create a dictionary for each link with the required information
-            link_info = {
-                'domain': domain,
-                'source': domain_data['source'],
-                'url': link['link'],
-                'title': link['title'],
-                'snippet': link['snippet'],
-                'link_count': link['count'],
-                'engines': link['engines'],
-                'domain_count': domain_data['count'],
-                'score' : max(sequence_match_score(title_query, link['title']), sequence_match_score(content_query, link['snippet']))
+    for idx,result in enumerate(all_results):
+        domain = result['domain']
+        local_source = local_domains_dict.get(result['domain']) or local_domains_dict.get(result['domain'].split('.')[1])  # Check for FQDN and no subdomain
+        github_source = "statemedia" if urlparse(domain).netloc.strip() in github_domains else None
+        if domain not in aggregated_results:
+            aggregated_results[domain] = {
+                'count': 0,
+                'links': [],
+                'concern':  bool(local_source or github_source),
+                'source': []
             }
-            # Add the dictionary to the list
-            flattened_data.append(link_info)
+            if local_source is not None:
+                #aggregated_results["source"].append(local_source)
+                all_results[idx]['source'] = [local_source]
+            if github_source is not None:
+                #aggregated_results["source"].append(github_source)
+                all_results[idx]['source'] = [github_source]
+        
+        aggregated_results[domain]['count'] += 1
+        aggregated_results[domain]['links'].append({
+            'link': result['url'],
+            'title': result['title'],
+            'snippet': result['snippet'],
+            'count': 1,
+            'engines': [engine]
+        })
+
+        #TODO combine engines to list, add counts
+        all_results[idx]['engines'] = result['engine']
+        all_results[idx]['link_count'] = 1
+        all_results[idx]['domain_count'] = 1
+        all_results[idx]['score'] = max(sequence_match_score(title_query, all_results[idx]['title']), sequence_match_score(content_query, all_results[idx]['snippet']))
 
     # Assuming flattened_data is your list of dictionaries
-    flattened_data = sorted(flattened_data, key=lambda x: x['score'], reverse=True)
+    all_results = sorted(all_results, key=lambda x: x['score'], reverse=True)
 
-
-    return flattened_data
+    return all_results
 
 
 def customize_params_by_platform(title_query, content_query, combineOperator, language, country):
@@ -1082,8 +1064,8 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
     if country_language not in COUNTRY_LANGUAGE_DUCKDUCKGO:
         country_language = 'wt-wt'
 
-    paramsList = [
-        {
+    paramsList = {
+        "google": {
             "engine": "google",
             "location": location,
             "hl": language,
@@ -1091,7 +1073,8 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
             "google_domain": google_domain,
             "num": 40,
             "api_key": SERP_API_KEY
-        }, {
+        }, 
+        "google_news":{
             "engine": "google",
             "location": location,
             "hl": language,
@@ -1100,36 +1083,41 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
             "num": 40,
             "tbm": "nws",
             "api_key": SERP_API_KEY
-        }, {
+        }, 
+        "bing":{
             "engine": "bing",
             "location": location,
             "mkt": language_country,
             "count": 40,
             "api_key":  SERP_API_KEY
-        }, {
+        }, 
+        "bing_news":{
             "engine": "bing_news",
             "mkt": language_country,
             "location": location,
             "count": 40,
             "api_key":  SERP_API_KEY
-        }, {
+        }, 
+        "duckduckgo":{
             "engine": "duckduckgo",
             "kl": country_language,
             "api_key":  SERP_API_KEY
-        }, {
+        }, 
+        "yahoo":{
             "engine": "yahoo",
             "api_key":  SERP_API_KEY,
             "vs": country_yahoo,
             "vl": "lang_" + lang_yahoo,
-        }, {
+        }, 
+        "yandex":{
             "engine": "yandex",
             "api_key":  SERP_API_KEY,
             "lang": lang_yandex,
             "lr": 84
         }
-    ]
+    }
 
-    for idx, params in enumerate(paramsList):
+    for key, params in paramsList.items():
         platform = params['engine']
         base_query = ''
         if platform == 'google' or platform == 'duckduckgo':
@@ -1140,7 +1128,7 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
                 if base_query:
                     base_query += " " + combineOperator + " "  # Combining title and content queries
                 base_query += "intext:\"" + content_query + "\""
-            paramsList[idx]['q'] = base_query
+            paramsList[key]['q'] = base_query
         if platform == 'bing' or platform == 'bing_news':
             if title_query:
                 base_query += "intitle:\"" + title_query + "\""
@@ -1149,7 +1137,7 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
                 if base_query:
                     base_query += " " + combineOperator + " "  # Combining title and content queries
                 base_query += "inbody:\"" + content_query + "\""
-            paramsList[idx]['q'] = base_query
+            paramsList[key]['q'] = base_query
 
         if platform == 'yandex' or platform == 'yahoo':
             if title_query:
@@ -1160,9 +1148,9 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
                     base_query += " " + combineOperator + " "  # Combining title and content queries
                 base_query += "\"" + content_query + "\""
             if platform == 'yandex':
-                paramsList[idx]['text'] = base_query
+                paramsList[key]['text'] = base_query
             if platform == 'yahoo':
-                paramsList[idx]['p'] = base_query
+                paramsList[key]['p'] = base_query
 
     return paramsList
 
@@ -1259,4 +1247,3 @@ if __name__ == "__main__":
     init_db()
     port = int(os.getenv("PORT", 8000))  # Default to 8000 if not set
     app.run(host='0.0.0.0', port=port)
- 

@@ -206,8 +206,39 @@
                 var fileName = $(this).val().split('\\').pop();
                 //replace the "Choose a file" label
                 $(this).next('.custom-file-label').html(fileName);
-            })
+                })
+            // == === == GDPR consent modal 
+                // Function to check the consent cookie
+            function checkConsent() {
+                return document.cookie.split(';').some(function(item) {
+                    return item.trim().startsWith('gdprConsent=');
+                });
+            }
 
+            // Function to set the consent cookie
+            function setConsent(value) {
+                document.cookie = "gdprConsent=" + value + "; path=/; max-age=" + 60 * 60 * 24 * 365;
+            }
+
+            // Show modal if consent not given
+            if (!checkConsent()) {
+                $('#gdprConsentModal').show();
+            }
+
+            // Accept button handler
+            $('#gdprAccept').click(function() {
+                setConsent(true);
+                $('#gdprConsentModal').hide();
+            });
+
+            // Reject button handler
+            $('#gdprReject').click(function() {
+                setConsent(false);
+                $('#gdprConsentModal').hide();
+            });
+            //== === end GDPR consent modal 
+            // == === == Rotating Text Animation
+                
             const verbs = ["Discover", "Investigate", "Track"];
             const nouns = [
                 "content relationships",
@@ -255,6 +286,7 @@
                 swapVerb();
                 setTimeout(swapNoun, 3000);
             }, 6000);
+            // == === == End Rotating Text Animation
 
         });
     </script>
@@ -978,7 +1010,7 @@
 
 
     </div>
-    <div class="card mr-5 ml-5">
+    <div class="card mr-5 ml-5 mt-5">
         <div class="card-body">
             <div class="row">
 
@@ -1036,7 +1068,44 @@
             </div>
         </div>
     </div>
-
+    <div id="gdprConsentModal" class="modal" tabindex="-1" role="dialog" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">GDPR Compliance Notice</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>The Information Laundromat tool is committed to protecting and respecting your privacy in compliance
+                        with the General Data Protection Regulation (GDPR). This disclaimer outlines the nature of the data
+                        processing activities conducted by our tool. Selecting 'Accept' consents to the data collection </p>
+                    <h4 id="data-collection-and-use">Data Collection and Use</h4>
+                    <p>The Information Laundromat tool collects data through two forms, as part of its functions: Content
+                        Similarity Search and Domain Forensics Matching.</p>
+                    <ul>
+                        <li>
+                            <p><strong>Content Similarity Search</strong>: This function processes URLs and text snippets
+                                provided by the user to detect occurrences of the given text across various websites.</p>
+                        </li>
+                        <li>
+                            <p><strong>Domain Forensics Matching</strong>: This function processes a domain URL and analyzes
+                                aspects of website architecture, design, and usage to identify unique indicators.</p>
+                        </li>
+                    </ul>
+                    <p>Additional data—IPs, pages visited, and time of visit—are collected automatically as part of website analytics and logging. Logs are deleted after 30 days and analytics are anonymized.</p>
+                    <h4 id="purpose-of-processing">Purpose of Processing</h4>
+                    <p>The form data and results are collected and are solely used for the purpose of usage analytics and
+                        potential corpus expansion. </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="gdprReject">Reject</button>
+                    <button type="button" class="btn btn-primary" id="gdprAccept">Accept</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <canvas class="background"></canvas>
 </body>
 <style>

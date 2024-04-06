@@ -395,7 +395,7 @@ def content(request, title_query=None, content_query=None):
 
     print("Engines: ", engines, "Title Query: ", title_query, "Content Query: ", content_query, "Combine Operator: ", combineOperator, "Language: ", language, "Country: ", country)
     if engines == 'all' or engines == ['all'] or engines == []:
-        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yandex', 'gdelt', 'copyscape']
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
 
@@ -420,9 +420,7 @@ def parse_url_gui():
         return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     try:
         results, csv_data = parse_url(request)
-
         return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
-
     except Exception as e:
         response = requests.get(url)
         if response.status_code == 200:
@@ -454,7 +452,7 @@ def parse_url(request, urlToParse=None):
     language = request.form.get('language', 'en')
     country = request.form.get('country', 'us')
     if engines == 'all' or engines == ['all'] or engines == []:
-        engines = ['google', 'google_news', 'bing', 'bing_news', 'yandex', 'gdelt', 'copyscape']
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
     if any(isinstance(sublist, list) for sublist in engines):
@@ -517,7 +515,7 @@ def upload_file(request):
             country = row.get("country")
             engines = row.get("engines").split(',')
             if engines == ['all'] or engines == [] or engines == '':
-                engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yandex', 'gdelt', 'copyscape']
+                engines = ['google', 'google_news', 'bing', 'bing_news', 'yahoo', 'duckduckgo', 'yandex', 'gdelt', 'copyscape']
             if language == '':
                 language = 'en'
             if country == '':
@@ -903,7 +901,7 @@ def fetch_content_results(title_query, content_query, combineOperator, language,
 def format_copyscape_output(data):
     output = {}
     for article in data:
-        parsed_url = urlparse(url)
+        parsed_url = urlparse(article["url"])
         domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
         if domain not in output:
             output[domain] = {"count": 0, "links": [],

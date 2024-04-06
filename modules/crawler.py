@@ -15,7 +15,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Callable
 from urllib.parse import urlsplit, urlparse
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import blockcypher
 import feedparser
 import imagehash
@@ -887,30 +887,44 @@ def crawl(url, run_urlscan=False) -> list[Indicator]:
     return indicators
 
 
-def crawl_one_or_more_urls(
-    urls, run_urlscan=False
-) -> list[Indicator]:
+def crawl_one_or_more_urls(urls, run_urlscan=False):
     indicators = []
-    for url in urls:
-        parsed_url = urlparse(url)
-        base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        print(f"Processing {base_domain}")
-        url_indicators = crawl(
-            base_domain,
-            run_urlscan=run_urlscan,
-        )
-        domain_name = get_domain_name(url)
-    
-        for indicator in url_indicators:
-            if isinstance(indicator.content, str):
-                indicator.content = remove_json_like_strings(indicator.content)
-            if isinstance(indicator.content, set):
-                indicator.content = list(indicator.content)
-            indicator.domain = domain_name
+    # Determine the number of workers based on the task's nature and the expected platform limits
+    # For I/O bound tasks, like web crawling, having more threads than CPU cores can be beneficial
+    # Adjust this number based on the limitations of your environment
+    num_workers = 10  # Example: 4 threads, adjust based on your environment's capability
 
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        # Create a future to URL mapping
+        future_to_url = {executor.submit(crawl_this_url, url, run_urlscan): url for url in urls}
         
-        indicators.extend(url_indicators)
+        for future in as_completed(future_to_url):
+            url = future_to_url[future]
+            try:
+                url_indicators = future.result()
+                indicators.extend(url_indicators)
+            except Exception as exc:
+                print(f"{url} generated an exception: {exc}")
+
     return indicators
+
+def crawl_this_url(url, run_urlscan):
+    """Crawl a single URL and return the indicators."""
+    parsed_url = urlparse(url)
+    base_domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    print(f"Processing {base_domain}")
+    
+    url_indicators = crawl(base_domain, run_urlscan=run_urlscan)
+    domain_name = get_domain_name(url)
+
+    for indicator in url_indicators:
+        if isinstance(indicator.content, str):
+            indicator.content = remove_json_like_strings(indicator.content)
+        if isinstance(indicator.content, set):
+            indicator.content = list(indicator.content)
+        indicator.domain = domain_name
+
+    return url_indicators
 
 def remove_json_like_strings(text):
     # This pattern matches simple JSON objects '{...}'

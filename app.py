@@ -401,6 +401,10 @@ def content(request, title_query=None, content_query=None):
 
     if any(isinstance(sublist, list) for sublist in engines):
         engines = [item for sublist in engines for item in sublist]  
+    if combineOperator == 'False':
+        combineOperator = 'OR'
+    elif combineOperator == 'True':
+        combineOperator = 'AND'
 
         # Extracting article data-
     if not title_query and not content_query:
@@ -456,7 +460,11 @@ def parse_url(request, urlToParse=None):
     if isinstance(engines, str):
         engines = [engines]
     if any(isinstance(sublist, list) for sublist in engines):
-        engines = [item for sublist in engines for item in sublist]  
+        engines = [item for sublist in engines for item in sublist]
+    if combineOperator == 'False':
+        combineOperator = 'OR'
+    elif combineOperator == 'True':
+        combineOperator = 'AND'
 
         # Extracting article data-
     try:
@@ -520,6 +528,10 @@ def upload_file(request):
                 language = 'en'
             if country == '':
                 country = 'us'
+            if combineOperator == 'False':
+                combineOperator = 'OR'
+            elif combineOperator == 'True':
+                combineOperator = 'AND'
             try:
                 if title_query is not None or content_query is not None :
 

@@ -401,9 +401,9 @@ def content(request, title_query=None, content_query=None):
 
     if any(isinstance(sublist, list) for sublist in engines):
         engines = [item for sublist in engines for item in sublist]  
-    if combineOperator == 'False':
+    if combineOperator == 'False' or combineOperator == 'false':
         combineOperator = 'OR'
-    elif combineOperator == 'True':
+    elif combineOperator == 'True' or combineOperator == 'true':
         combineOperator = 'AND'
 
         # Extracting article data-
@@ -445,7 +445,7 @@ def parse_url_api():
     try:
         results, csv_data = parse_url(request)
         return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
-
+    
     except Exception as e:
         return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
         
@@ -461,9 +461,9 @@ def parse_url(request, urlToParse=None):
         engines = [engines]
     if any(isinstance(sublist, list) for sublist in engines):
         engines = [item for sublist in engines for item in sublist]
-    if combineOperator == 'False':
+    if combineOperator == 'False' or combineOperator == 'false':
         combineOperator = 'OR'
-    elif combineOperator == 'True':
+    elif combineOperator == 'True' or combineOperator == 'true':
         combineOperator = 'AND'
 
         # Extracting article data-
@@ -528,9 +528,9 @@ def upload_file(request):
                 language = 'en'
             if country == '':
                 country = 'us'
-            if combineOperator == 'False':
+            if combineOperator == 'False' or combineOperator == 'false':
                 combineOperator = 'OR'
-            elif combineOperator == 'True':
+            elif combineOperator == 'True' or combineOperator == 'true':
                 combineOperator = 'AND'
             try:
                 if title_query is not None or content_query is not None :

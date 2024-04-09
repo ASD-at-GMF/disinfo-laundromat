@@ -44,10 +44,10 @@
         window.onload = function () {
             Particles.init({
                 selector: '.background',
-                color: ['#DA0463', '#404B69', '#DBEDF3'],
+                color: ['#DA0463', '#C2D3FC', '#F5F3CE'],
                 speed: 0.3,
                 connectParticles: true,
-                minDistance: 150,
+                minDistance: 130,
             });
         };
 
@@ -97,7 +97,51 @@
                 scrollToResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('autoFillMirrorButton').addEventListener('click', function() {
+                // Set the URL input value
+                document.getElementById('url').value = 'https://actualidad.rt.com,https://actualidad-rt.com,https://esrt.online,https://esrt.press';
+                
+                // Toggle checkboxes
+                document.getElementById('run_urlscan').checked = true;
+                document.getElementById('internal_only').checked = true;
+                $('#myTab a[href="#metadataTab"]').click();
+                var searchButton = document.getElementById('metadataSearchButton');
+                searchButton.classList.add('pulse-effect');
+                searchButton.addEventListener('click', function() {
+                    searchButton.classList.remove('pulse-effect');
+                });
+            });
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('autoFillRTLaunderingButton').addEventListener('click', function() {
+                // Set the content input value
+                document.getElementById('contentToSearch').value = 'https://www.rt.com/news/594935-us-uk-ukraine-moscow-terrorism/';
 
+                $('#myTab a[href="#contentTab"]').click();
+                var searchButton = document.getElementById('contentSearchButton');
+                searchButton.classList.add('pulse-effect');
+                searchButton.addEventListener('click', function() {
+                    searchButton.classList.remove('pulse-effect');
+                });
+            });
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('autoFillIntelButton').addEventListener('click', function() {
+                // Set the URL input value
+                document.getElementById('url').value = 'https://globalresearch.ca/';
+                
+                // Toggle checkboxes
+                document.getElementById('run_urlscan').checked = true;
+                $('#myTab a[href="#metadataTab"]').click();
+                var searchButton = document.getElementById('metadataSearchButton');
+                searchButton.classList.add('pulse-effect');
+                searchButton.addEventListener('click', function() {
+                    searchButton.classList.remove('pulse-effect');
+                });
+                
+            });
+        });
 
         $(document).ready(function () {
 
@@ -117,7 +161,7 @@
                     ],
                     layout: {
                         topStart: {
-                            buttons: ['pageLength','copy', 'csv', 'excel']
+                            buttons: ['pageLength', 'copy', 'csv', 'excel']
                         },
                     },
                     order: [[4, 'desc']]
@@ -135,7 +179,7 @@
                     ],
                     layout: {
                         topStart: {
-                            buttons: ['pageLength','copy', 'csv', 'excel']
+                            buttons: ['pageLength', 'copy', 'csv', 'excel']
                         },
                     },
                     order: [[1, 'asc'], [0, 'asc']]
@@ -154,7 +198,7 @@
                     ],
                     layout: {
                         topStart: {
-                            buttons: ['pageLength','copy', 'csv', 'excel']
+                            buttons: ['pageLength', 'copy', 'csv', 'excel']
                         },
                     },
                     order: [[2, 'asc'], [0, 'asc'], [1, 'asc']]
@@ -195,22 +239,37 @@
                 $('#myTab .nav-link').removeClass('active show');
                 $(this).addClass('active show');
             });
-            $('#file').on('change',function(){
+            $('#file').on('change', function () {
                 //get the file name
                 var fileName = $(this).val().split('\\').pop();
                 //replace the "Choose a file" label
                 $(this).next('.custom-file-label').html(fileName);
             })
-            $('#fingerprint-file').on('change',function(){
+            $('#fingerprint-file').on('change', function () {
                 //get the file name
                 var fileName = $(this).val().split('\\').pop();
                 //replace the "Choose a file" label
                 $(this).next('.custom-file-label').html(fileName);
-                })
+            })
+            $('#url').on('input', function () {
+                var urls = $(this).val().split(',');
+                var allValid = urls.every(function (url) {
+                    return url.trim().startsWith('https://');
+                });
+
+                var warningElement = $('#urlWarning');
+
+                if (!allValid) {
+                    warningElement.text('All URLs must start with "https://". Separate multiple URLs with a comma.'); // Set the warning message
+                    warningElement.show(); // Show the Bootstrap alert
+                } else {
+                    warningElement.hide(); // Hide the Bootstrap alert if all URLs are valid
+                }
+            });
             // == === == GDPR consent modal 
-                // Function to check the consent cookie
+            // Function to check the consent cookie
             function checkConsent() {
-                return document.cookie.split(';').some(function(item) {
+                return document.cookie.split(';').some(function (item) {
                     return item.trim().startsWith('gdprConsent=');
                 });
             }
@@ -226,19 +285,19 @@
             }
 
             // Accept button handler
-            $('#gdprAccept').click(function() {
+            $('#gdprAccept').click(function () {
                 setConsent(true);
                 $('#gdprConsentModal').hide();
             });
 
             // Reject button handler
-            $('#gdprReject').click(function() {
+            $('#gdprReject').click(function () {
                 setConsent(false);
                 $('#gdprConsentModal').hide();
             });
             //== === end GDPR consent modal 
             // == === == Rotating Text Animation
-                
+
             const verbs = ["Discover", "Investigate", "Track"];
             const nouns = [
                 "content relationships",
@@ -351,17 +410,17 @@
                         <div class="card-header p-0 text-center">
                             <ul class="nav nav-tabs" id="myTab" role="tablist">
                                 <li class="nav-item col-4 p-0">
-                                    <a class="nav-link active" data-toggle="tab" href="#contentTab">
+                                    <a class="nav-link active" data-toggle="tab" href="#contentTab" >
                                         <h3>Content Similarity</h3>
                                     </a>
                                 </li>
                                 <li class="nav-item col-4 p-0">
-                                    <a class="nav-link" data-toggle="tab" href="#metadataTab">
+                                    <a class="nav-link" data-toggle="tab" href="#metadataTab" >
                                         <h3>Metadata Similarity</h3>
                                     </a>
                                 </li>
                                 <li class="nav-item col-4 p-0">
-                                    <a class="nav-link" data-toggle="tab" href="#batchTab">
+                                    <a class="nav-link" data-toggle="tab" href="#batchTab" >
                                         <h3>Batch Similarity</h3>
                                     </a>
                                 </li>
@@ -464,7 +523,7 @@
                                         </div>
 
                                         <div class="col-sm">
-                                            <button class="btn btn-secondary btn-block">Search</button>
+                                            <button class="btn btn-secondary btn-block" id="contentSearchButton">Search</button>
                                         </div>
                                     </div>
                                 </form>
@@ -482,7 +541,14 @@
                                                 comma
                                             </p>
                                         </div>
+
                                     </div>
+                                    <div class="row mt-3 ">
+                                        <div id="urlWarning" class="alert alert-warning" role="alert"
+                                            style="display: none;">
+                                            <!-- Warning message will be inserted here -->
+                                        </div>
+                                        </div>
                                     <div class="row mt-3 ">
                                         <div class="col-sm input-group">
                                             <input type="text" class="form-control" aria-describedby="basic-addon6"
@@ -521,7 +587,7 @@
                                         <div class="col-sm">
                                         </div>
                                         <div class="col-sm">
-                                            <button class="btn btn-secondary btn-block">Search</button>
+                                            <button class="btn btn-secondary btn-block" id="metadataSearchButton">Search</button>
                                         </div>
                                     </div>
 
@@ -644,68 +710,53 @@
             </div>
             <div class="row">
                 <!-- 3 evenly spaced cards with usage scenarios written in them -->
+
+
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Prove content laundering from state-owned outlets
+                            <h5 class="card-title">Investigate the laundering of Russian content and narratives
                             </h5>
-                            <p class="card-text">Researchers from two European Universities, supported by the
-                                Alliance
-                                for
-                                Securing Democracy, reveal evidence of a small network operating in Poland and
-                                Germany
-                                that
-                                launders Russian state media content into the media mainstream. A sample of articles
-                                from
-                                problematic outlets, criticizing Ukraine President Zelensky was run through the
-                                Laundromat’s
-                                Content Search. The tool revealed that all the articles in the sample were lifted
-                                from
-                                Ria
-                                Novosti, an outlet belonging to the Russia Segodnya group. Read the report.</p>
+                            <p class="card-text">
+                                This search shows how the Laundromat can be used to identify sites that are laundering content from Russian state media. It lists sample of articles from with a high degree of similarity, sharing much of their content with the original article. 
+                                The report below digs into this phenomenon at scale and provides a detailed analysis of the network of sites that are laundering content from Russian state media. 
+                                
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="https://securingdemocracy.gmfus.org/from-russia-with-spin-how-content-from-russian-state-media-is-laundered-by-polish-blogs/" target="_blank" class="btn btn-secondary">Read the Report</a>
+                            <button type="button" id="autoFillRTLaunderingButton" class="btn btn-primary float-right">Try the Search</button>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Find proxy websites that exist to overcome DNS bans
+                            <h5 class="card-title">Generate OSINT leads and intelligence
                             </h5>
-                            <p class="card-text">Both Russia Today and Sputnik News sites are currently subjected to
-                                DNS
-                                bans imposed by the European Commission. However, despite these restrictions, each
-                                site
-                                employs sophisticated techniques to reach audiences in Member Countries. Read the
-                                report
-                                to
-                                learn how researchers were able to utilize the Laundromat's website fingerprinting
-                                service
-                                to map the entire network of Russia Today proxy websites, using altered or entirely
-                                new
-                                domain names.</p>
+                            <p class="card-text">
+                                In addition to identifying sites that are laundering content from Russian state media, 
+                                the Laundromat can be used to generate leads and intelligence about how sites are made, who's advertising on them, their associated social media accounts, and more.
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <button type="button" id="autoFillIntelButton" class="btn btn-primary float-right">Try the Search</button>
                         </div>
                     </div>
                 </div>
-
-
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Tell if a site produces original content
+                            <h5 class="card-title">Explore RT's network of mirror websites
                             </h5>
-                            <p class="card-text">Content laundering occurs when individuals or entities replicate
-                                website
-                                content without proper attribution and, in some cases, authorization. This method is
-                                commonly employed by disinformation operatives to disseminate problematic content
-                                and
-                                political propaganda efficiently. The Laundromat tool serves as an effective means
-                                to
-                                detect
-                                duplicate content online and substantiate instances of content plagiarism. See how
-                                to
-                                use
-                                the Laundromat for proving gaps in editorial transparency. Read the guide.</p>
+                            <p class="card-text">
+                                Researchers from the Instute for Strategic Dialoguee have uncovered several domain names that explicitly mirror (including branding, code, etc) a network of mirror websites of several RT websites. 
+                                The Laundromat's Metadata Similarity feature can be used to iodentify the shared characteristics of the network of websites.</p>
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="https://www.isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/" target="_blank" class="btn btn-secondary">Read the Report</a>
+                            <button type="button" id="autoFillMirrorButton" class="btn btn-primary float-right">Try the Search</button>
                         </div>
                     </div>
                 </div>
@@ -990,7 +1041,7 @@
                                     </strong>
                                 </div>
                                 {% else %}
-                                {{ row['match_type'] }} 
+                                {{ row['match_type'] }}
                                 {% endif %}
                             </td>
                             <td>{{ row['match_value'] }}
@@ -1007,8 +1058,6 @@
             </div>
             {% endif %}
         </div>
-
-
     </div>
     <div class="card mr-5 ml-5 mt-5">
         <div class="card-body">
@@ -1068,7 +1117,8 @@
             </div>
         </div>
     </div>
-    <div id="gdprConsentModal" class="modal" tabindex="-1" role="dialog" style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div id="gdprConsentModal" class="modal" tabindex="-1" role="dialog"
+        style="display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1078,25 +1128,34 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <p>The Information Laundromat tool is committed to protecting and respecting your privacy in compliance
-                        with the General Data Protection Regulation (GDPR). This disclaimer outlines the nature of the data
-                        processing activities conducted by our tool. Selecting 'Accept' consents to the data collection </p>
+                    <p>The Information Laundromat tool is committed to protecting and respecting your privacy in
+                        compliance
+                        with the General Data Protection Regulation (GDPR). This disclaimer outlines the nature of the
+                        data
+                        processing activities conducted by our tool. Selecting 'Accept' consents to the data collection
+                    </p>
                     <h4 id="data-collection-and-use">Data Collection and Use</h4>
-                    <p>The Information Laundromat tool collects data through two forms, as part of its functions: Content
+                    <p>The Information Laundromat tool collects data through two forms, as part of its functions:
+                        Content
                         Similarity Search and Domain Forensics Matching.</p>
                     <ul>
                         <li>
-                            <p><strong>Content Similarity Search</strong>: This function processes URLs and text snippets
-                                provided by the user to detect occurrences of the given text across various websites.</p>
+                            <p><strong>Content Similarity Search</strong>: This function processes URLs and text
+                                snippets
+                                provided by the user to detect occurrences of the given text across various websites.
+                            </p>
                         </li>
                         <li>
-                            <p><strong>Domain Forensics Matching</strong>: This function processes a domain URL and analyzes
+                            <p><strong>Domain Forensics Matching</strong>: This function processes a domain URL and
+                                analyzes
                                 aspects of website architecture, design, and usage to identify unique indicators.</p>
                         </li>
                     </ul>
-                    <p>Additional data—IPs, pages visited, and time of visit—are collected automatically as part of website analytics and logging. Logs are deleted after 30 days and analytics are anonymized.</p>
+                    <p>Additional data—IPs, pages visited, and time of visit—are collected automatically as part of
+                        website analytics and logging. Logs are deleted after 30 days and analytics are anonymized.</p>
                     <h4 id="purpose-of-processing">Purpose of Processing</h4>
-                    <p>The form data and results are collected and are solely used for the purpose of usage analytics and
+                    <p>The form data and results are collected and are solely used for the purpose of usage analytics
+                        and
                         potential corpus expansion. </p>
                 </div>
                 <div class="modal-footer">
@@ -1318,6 +1377,14 @@
     .top-nav a:hover {
         color: lightgray;
 
+    }
+    @keyframes pulseAnimation {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+    }
+    .pulse-effect {
+        animation: pulseAnimation 2s infinite;
     }
 </style>
 

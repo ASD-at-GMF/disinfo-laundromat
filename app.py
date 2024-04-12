@@ -17,9 +17,9 @@ from urllib.parse import urlparse, urlunparse
 import csv
 import sys
 from newspaper import Article, Config
-import sqlite3
-from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
+from flask_login import LoginManager, login_user, logout_user, login_required
 from flask_bcrypt import Bcrypt
+from flask_sqlalchemy import SQLAlchemy
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 from collections import Counter
@@ -28,7 +28,6 @@ import zipfile
 import numpy as np
 import traceback
 import os
-import ast
 import bleach
 import logging
 
@@ -49,6 +48,8 @@ GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
+from modules.db.utils import get_db
+from modules.db.user import User
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
 from modules.email_utils import send_results_email
@@ -62,6 +63,9 @@ app.config['DEBUG'] = True
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['REMEMBER_COOKIE_SECURE'] = True
+# TODO: automate this, add environments for development vs production
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///Users/aliciabargar/projects/disinfo-laundromat/database.db"
+db = SQLAlchemy(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -73,39 +77,9 @@ logging.basicConfig(filename='debug.log',
                         )
 
 
-DATABASE = 'database.db'
-
-#### USER METHODS ####
-# TODO: Move to separate file
-class User(UserMixin):
-    def __init__(self, id, username, password):
-        self.id = id
-        self.username = username
-        self.password = password
-
-    @classmethod
-    def get(cls, id):
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (id,))
-        user = cursor.fetchone()
-        if user:
-            return cls(id=user[0], username=user[1], password=user[2])
-        return None
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
-
-
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(SQLLITE_DB_PATH)
-        # This enables column access by name: row['column_name']
-        db.row_factory = sqlite3.Row
-    return db
 
 
 @app.teardown_appcontext

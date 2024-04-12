@@ -18,6 +18,7 @@ import sys
 from newspaper import Article, Config
 from flask_login import LoginManager, login_user, logout_user, login_required
 from flask_bcrypt import Bcrypt
+from flask_sqlalchemy import SQLAlchemy
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 from collections import Counter
@@ -47,6 +48,8 @@ from init_app import db, init_app
 from models import RegistrationKey, SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
+from modules.db.utils import get_db
+from modules.db.user import User
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
 from modules.email_utils import send_results_email
@@ -54,6 +57,14 @@ from modules.email_utils import send_results_email
 app = init_app(os.getenv("CONFIG_MODE"))
 Bootstrap(app)
 bcrypt = Bcrypt(app)
+app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
+app.config['DEBUG'] = True
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SECURE'] = True
+# TODO: automate this, add environments for development vs production
+app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///Users/aliciabargar/projects/disinfo-laundromat/database.db"
+db = SQLAlchemy(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -67,7 +78,7 @@ logging.basicConfig(filename='debug.log',
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, user_id)
+    return User.get(user_id)
 
 
 @app.teardown_appcontext

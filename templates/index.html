@@ -3,6 +3,8 @@
 
 
 <head>
+    <link rel="shortcut icon" type="image/x-icon"
+        href="data:image/x-icon;base64,AAABAAEAEBAAAAEACABoBQAAFgAAACgAAAAQAAAAIAAAAAEACAAAAAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAeFQYA+/v7AAwKAAAZEQAAGRACABsRAAAqHQMA/f39ABsTAgAcEwIAYlpNAB0TAgAfFAAA9vb2ABUNAAAWDQAA////AC4fBQD9/P4A/v38AB8WAgAZEQUAHRMBAAAA/wAhGAQAKx0BAB8VAwAYDwEADAgBACofAwAUDAAA//7/AC0fAwApHAIAKRsEACEWAAAaEgEAHBIBABYPAAAtIQUACwgAAPz+/gANBwIAFAsBAP7+/gD//v4ALR4EACMYAgD8+/0A/wANAB4UAwAgFQEADwsAAPb2+QAcEgAAEwsAAC8lEAD+/f8AIBcDAAAAHAAKBAAAJxoEAC8eAwD5+fkAHhQCACAVAAAZEQEAIBQCADEjBgAzIwYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPCooAjQ0NDQ0NjY2Njs2NhwCLCwsLCwsLCwsLDssLDYCNCwsLCwsLCwsLDssECw2NCssLCwsAwMDNjssASw2NjcOLCw7Aw0sLDUsLCw7Dh4ODywsAz82NjY2LCwDLBsODkIsAywVDEEWFhYsAxAEJhsDLAMsAzsxOzszLAMQAxsDJCw6LAM7OxcDAywDEAkEBUAsIywGOzsDAxkQLxBAAyU6MDA9ECcDRUQsISwQGiUyGDkHOx0sLBATIDsSEEALCxoQEBA5Awo4AywsEBBDCwgUEAAJAxAQHzkQEBAQQyQDQBAiLhEQAykDED4GEEAEDiUtEBAQEBAQEBAQEBAlJgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Disinformation Laundromat</title>
@@ -366,9 +368,13 @@
 
             <div class="row top-nav">
                 <div class="col-md-9">
+                    <!--Logo-->
 
                     <div class=" mb-4">
-                        <h2 class="lead">The Information Laundromat</h2>
+
+                        <h2 class="lead"> <img
+                                src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/04/il_logo_nobg.png"
+                                class="img-fluid" alt="logo" style="max-width: 50px;">The Information Laundromat</h2>
                     </div>
                 </div>
 
@@ -535,7 +541,9 @@
                                         letter code, e.g. en) country, (2 letter code, e.g. us), engines (comma
                                         separated list of search engines, e.g. google,bing), and your choice of EITHER
                                         url (full url, e.g. https://tech.cnn.com/article-title.html) or titleQuery and
-                                        contentQuery (text snippets).&nbsp;<a href="{{ url_for('download_content_csv_example') }}" download>Download the template</a>.
+                                        contentQuery (text snippets).&nbsp;<a
+                                            href="{{ url_for('download_content_csv_example') }}" download>Download the
+                                            template</a>.
 
                                     </div>
                                     <div class="row mt-3">
@@ -548,8 +556,8 @@
 
                                         <div class="col-md-4 input-group">
                                             <input type="email" class="form-control" id="email" name="email"
-                                                aria-describedby="emailHelp"
-                                                placeholder="Email, e.g name@example.com" required>
+                                                aria-describedby="emailHelp" placeholder="Email, e.g name@example.com"
+                                                required>
 
                                         </div>
 
@@ -639,7 +647,10 @@
                                         <h5 class="card-title">Batch Metadata Search</h5>
                                     </div>
                                     <div class="row mt-3  ml-1">
-                                        Requires only one column: url. Must be a full url, e.g. https://tech.cnn.com/.&nbsp;<a href="{{ url_for('download_domain_metadata_example') }}" download> Download the template</a>.
+                                        Requires only one column: url. Must be a full url, e.g.
+                                        https://tech.cnn.com/.&nbsp;<a
+                                            href="{{ url_for('download_domain_metadata_example') }}" download> Download
+                                            the template</a>.
                                     </div>
                                     <div class="row mt-3">
                                         <div class="col-md-6  input-group">
@@ -677,8 +688,8 @@
                                     <div class="row mt-3">
                                         <div class="col-md-6 input-group">
                                             <input type="email" class="form-control" id="email" name="email"
-                                                aria-describedby="emailHelp"
-                                                placeholder="Email, e.g name@example.com" required>
+                                                aria-describedby="emailHelp" placeholder="Email, e.g name@example.com"
+                                                required>
 
                                         </div>
                                         <div class="col-md-3">
@@ -938,8 +949,8 @@
                     aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
                 {% else %}
-                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%" aria-valuenow="{{count}}"
-                    aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%"
+                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
 
                 {% endif %}
@@ -1030,8 +1041,8 @@
                     aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
                 {% else %}
-                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%" aria-valuenow="{{count}}"
-                    aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%"
+                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
                 {% endif %}
                 {% endfor %}

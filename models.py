@@ -1,9 +1,11 @@
-from ..app import db
+from init_app import db
 from datetime import datetime
 from flask_login import UserMixin
 from modules.db.utils import get_db
 
 class Query(db.Model):
+    __tablename__ = 'content_queries'
+
     # Auto Generated Fields:
     id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
@@ -18,6 +20,8 @@ class Query(db.Model):
 
 
 class Result(db.Model):
+    __tablename__ = 'content_queries_results'
+
     # Auto Generated Fields:
     id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
@@ -33,6 +37,8 @@ class Result(db.Model):
     cq_id        = db.Column(db.String(100), nullable=True, unique=False)
 
 class SiteIndicator(db.Model):
+    __tablename__ = 'site_fingerprint'
+
     # Auto Generated Fields:
     id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
@@ -44,6 +50,8 @@ class SiteIndicator(db.Model):
     domain        = db.Column(db.String(100), nullable=False, unique=False)
 
 class SiteBase(db.Model):
+    __tablename__ = 'sites_base'
+
     # Auto Generated Fields:
     id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
@@ -54,6 +62,8 @@ class SiteBase(db.Model):
     source       = db.Column(db.String(100), nullable=False, unique=False)
 
 class SiteUser(db.Model):
+    __tablename__ = 'sites_user'
+
     # Auto Generated Fields:
     id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
@@ -64,6 +74,8 @@ class SiteUser(db.Model):
     source       = db.Column(db.String(100), nullable=False, unique=False)
 
 class User(UserMixin):
+    __tablename__ = 'users'
+
     def __init__(self, id, username, password):
         self.id = id
         self.username = username

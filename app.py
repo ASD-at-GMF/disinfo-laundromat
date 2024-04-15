@@ -1,9 +1,8 @@
 from dotenv import load_dotenv
-load_dotenv()  
+load_dotenv()
 
 from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
 from flask_bootstrap import Bootstrap
-from flask_cors import CORS
 from functools import wraps
 
 import concurrent.futures
@@ -19,7 +18,6 @@ import sys
 from newspaper import Article, Config
 from flask_login import LoginManager, login_user, logout_user, login_required
 from flask_bcrypt import Bcrypt
-from flask_sqlalchemy import SQLAlchemy
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
 from collections import Counter
@@ -45,27 +43,18 @@ MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
-
+from init_app import db, init_app
+from models import SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.db.utils import get_db
-from modules.db.user import User
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
 from modules.email_utils import send_results_email
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-bootstrap = Bootstrap(app)
+app = init_app(os.getenv("CONFIG_MODE"))
+Bootstrap(app)
 bcrypt = Bcrypt(app)
-app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
-app.config['DEBUG'] = True
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['REMEMBER_COOKIE_SECURE'] = True
-# TODO: automate this, add environments for development vs production
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///Users/aliciabargar/projects/disinfo-laundromat/database.db"
-db = SQLAlchemy(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -100,23 +89,27 @@ def init_db():
 
 
 def insert_sites_of_concern(local_domains):
-    db = get_db()
     app.logger.info("Inserting indicators: %s", local_domains)
-    # Check if the table is empty
-    if db.execute('SELECT COUNT(*) FROM sites_base').fetchone()[0] == 0:
-        # If empty, insert the local_domains
-        db.executemany('INSERT INTO sites_base (domain, source) VALUES (?, ?)',
-                       [(domain, source) for domain, source in local_domains])
+    # Check if the table is empty.
+    if SiteBase.query.first() is None:
+        engine = db.session.get_bind()
+        engine.execute(
+            SiteBase.__table__.insert(),
+            [{"domain": domain, "source": source} for domain, source in local_domains]
+        )
         db.commit()
 
 
 def insert_indicators(indicators):
-    db = get_db()
     app.logger.info("Inserting indicators: %s", indicators)
-
-    # If empty, insert the local_domains
-    db.executemany('INSERT INTO site_fingerprint (domain_name, indicator_type, indicator_content) VALUES (?, ?, ?)',
-                   [(indicator['domain_name'], indicator['indicator_type'], str(indicator['indicator_content'])) for indicator in indicators])
+    engine = db.session.get_bind()
+    engine.execute(
+        SiteIndicator.__table__.insert(),
+        [{"domain": indicator['domain_name'], 
+          "indicator_type": indicator['indicator_type'], 
+          "indicator_content": str(indicator['indicator_content'])}
+        for indicator in indicators]
+    )
     db.commit()
 
 # TODO move to a utils or decorators file

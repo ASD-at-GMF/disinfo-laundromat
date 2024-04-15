@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()  
 
-from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify
+from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
 from functools import wraps
@@ -13,7 +13,7 @@ from io import BytesIO
 import pandas as pd
 import requests
 from io import StringIO
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 import csv
 import sys
 from newspaper import Article, Config
@@ -209,12 +209,27 @@ def login(request):
     is_logged_in = False
     username = request.form['username']
     password = request.form['password']
+    reg_key = request.form.get('reg_key', None)
+
+
     db = get_db()
     cursor = db.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     user = cursor.fetchone()
 
-    if user and bcrypt.check_password_hash(user['password'], password):
+    if reg_key is not None and user is None: 
+        cursor.execute("SELECT registration_keys FROM registration_keys where registration_keys = ?", (reg_key,))
+        reg_key_db = cursor.fetchone()
+        if reg_key_db is not None:
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
+                        (username, hashed_password))
+            db.commit()
+            user_obj = User(id=cursor.lastrowid, username=username, password=hashed_password)
+            login_user(user_obj)
+            is_logged_in = True
+        
+    elif user and bcrypt.check_password_hash(user['password'], password):
         user_obj = User(
             id=user['id'], username=user['username'], password=user['password'])
         login_user(user_obj)
@@ -239,10 +254,27 @@ def logout_api():
 @app.route('/register', methods=['GET','POST'])
 @clean_inputs
 def register_gui():
-    if request.method == 'POST':
-        register(request)
-    return render_template('login.html')
-    # Save the username and hashed_password to the database
+    is_logged_in = False
+    username = request.form['username']
+    password = request.form['password']
+    reg_key = request.form['reg_key']
+
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute("SELECT registration_keys FROM registration_keys", (reg_key,))
+    reg_keys = cursor.fetchall
+    if reg_key in reg_keys:
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
+                       (username, hashed_password))
+        db.commit()
+        user_obj = User(id=cursor.lastrowid, username=username, password=hashed_password)
+        login_user(user_obj)
+        is_logged_in = True
+    else:
+        app.logger.warning('Unauthorized login attempt for user: %s', username)
+    return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/register', methods=['POST'])
 @clean_inputs
@@ -295,7 +327,7 @@ def fingerprint(request):
     url = request.form['url']
     run_urlscan =  'run_urlscan' in request.form
     internal_only = 'internal_only' in request.form
-    urls = url.split(',')
+    urls = url_string_to_valid_urls(url)
     return find_indicators_and_matches(urls, run_urlscan = run_urlscan, internal_only = internal_only)
 
 def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False):
@@ -373,12 +405,11 @@ def parse_content_search():
         contentToSearch = request.form.get('contentToSearch')
         isApi = request.form.get('isApi', 'false')
         # Parse the URL
-        parsed_url = urlparse(contentToSearch)
-        if parsed_url.scheme and parsed_url.netloc:
+        parsed_url = format_url(contentToSearch)
+        if parsed_url is not None: 
             results, csv_data = parse_url(request, contentToSearch)
         else:
-            title_query = contentToSearch
-            content_query = contentToSearch
+            title_query, content_query = parse_title_content(contentToSearch)
             results, csv_data = content(request, title_query, content_query)
         if isApi == 'true':
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
@@ -419,6 +450,7 @@ def content(request, title_query=None, content_query=None):
 @clean_inputs
 def parse_url_gui():
     url = request.form['url']
+    url = format_url(url)
 
     if not url:
         return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
@@ -451,6 +483,7 @@ def parse_url_api():
         
 def parse_url(request, urlToParse=None):
     url = urlToParse if urlToParse is not None else request.form.get('url', '')
+    url = format_url(url)
     engines = request.form.getlist('search_engines')
     combineOperator = request.form.get('combineOperator', 'OR')
     language = request.form.get('language', 'en')
@@ -468,6 +501,7 @@ def parse_url(request, urlToParse=None):
 
         # Extracting article data-
     try:
+        
         article = Article(url)
         article.download()
         article.parse()
@@ -544,6 +578,7 @@ def upload_file(request):
                 elif searched_url:
                     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0'
 
+                    searched_url = format_url(searched_url)
                     config = Config()
                     config.browser_user_agent = user_agent
                     config.request_timeout = 15
@@ -729,6 +764,19 @@ def parse_gate_domain_labels(request=None, text=None):
         return  domain_labels
     else:
         return jsonify({'error': f'Error: {response.status_code}'})
+
+@app.route('/download_content_csv_example', methods=['GET'])
+def download_content_csv_example():
+    directory = os.path.join(app.root_path, 'examples')  # Adjust the path as needed
+    filename = 'content_csv_example.csv'
+    return send_from_directory(directory, filename, as_attachment=True)
+
+
+@app.route('/download_domain_metadata_example', methods=['GET'])
+def download_domain_metadata_example():
+    directory = os.path.join(app.root_path, 'examples')  # Adjust the path as needed
+    filename = 'domain_metadata_example.csv'
+    return send_from_directory(directory, filename, as_attachment=True)
     
 def verify_captcha(request):
      # The response from reCAPTCHA
@@ -864,7 +912,7 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         print(f"Error during request: {e}")
         return None
 
-
+# Trunk content recievind
 def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
     
     title_query = truncate_text(title_query)
@@ -1251,6 +1299,75 @@ def fetch_domains_from_github(url):
     next(reader)  # skip header
     # Assuming the URL column is the second column
     return [urlparse(row[4]).netloc.strip() for row in reader]
+
+def url_string_to_valid_urls(url_string):
+    urls = url_string.split(",")
+    valid_urls = []
+
+    for url in urls:
+        url = format_url(url)
+        if url is not None:
+            valid_urls.append(url)
+
+    return valid_urls
+
+def format_url(url):
+    url = url.strip()  # Remove leading/trailing whitespace
+    parsed_url = urlparse(url)
+
+    # If the URL lacks both scheme and netloc, attempt to prepend "http://".
+    if parsed_url.scheme == "" and parsed_url.netloc == "":
+        # This handles cases where the entire URL might be in the path component.
+        if parsed_url.path:
+            fixed_url = "http://" + url
+            parsed_fixed_url = urlparse(fixed_url)
+            # If fixing the URL provides a valid netloc, update the URL.
+            if parsed_fixed_url.netloc:
+                return urlunparse(parsed_fixed_url)
+            else:
+                # If the fix doesn't yield a valid netloc, return None.
+                return None
+        else:
+            # If there's no path (and thus no domain was found), return None.
+            return None
+    elif parsed_url.scheme and parsed_url.netloc:
+        # The URL is already well-formed; return it as-is.
+        return urlunparse(parsed_url)
+    else:
+        # For other malformed cases, return None.
+        return None
+
+def parse_title_content(input_string):
+    title_marker = "_title:"
+    content_marker = "_content:"
+
+    # Default values if neither title nor content is found
+    title = content = input_string
+
+    # Search for the markers in the string
+    title_start = input_string.find(title_marker)
+    content_start = input_string.find(content_marker)
+
+    if title_start != -1 or content_start != -1:
+        # Initialize indices for slicing
+        title_end = content_end = len(input_string)
+
+        # Adjust indices if markers are found
+        if title_start != -1:
+            content_start = input_string.find(content_marker, title_start + len(title_marker))
+            title_end = content_start if content_start != -1 else content_end
+            title = input_string[title_start + len(title_marker):title_end].strip()
+        
+        if content_start != -1:
+            title_start = input_string.find(title_marker, content_start + len(content_marker))
+            content_end = title_start if title_start != -1 else content_end
+            content = input_string[content_start + len(content_marker):content_end].strip()
+
+        # Handle cases where only one marker is found
+        if title_start == -1: title = input_string
+        if content_start == -1: content = input_string
+
+    return title, content
 
 
 if __name__ == "__main__":

@@ -97,49 +97,49 @@
                 scrollToResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('autoFillMirrorButton').addEventListener('click', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('autoFillMirrorButton').addEventListener('click', function () {
                 // Set the URL input value
                 document.getElementById('url').value = 'https://actualidad.rt.com,https://actualidad-rt.com,https://esrt.online,https://esrt.press';
-                
+
                 // Toggle checkboxes
                 document.getElementById('run_urlscan').checked = true;
                 document.getElementById('internal_only').checked = true;
                 $('#myTab a[href="#metadataTab"]').click();
                 var searchButton = document.getElementById('metadataSearchButton');
                 searchButton.classList.add('pulse-effect');
-                searchButton.addEventListener('click', function() {
+                searchButton.addEventListener('click', function () {
                     searchButton.classList.remove('pulse-effect');
                 });
             });
         });
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('autoFillRTLaunderingButton').addEventListener('click', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('autoFillRTLaunderingButton').addEventListener('click', function () {
                 // Set the content input value
                 document.getElementById('contentToSearch').value = 'https://www.rt.com/news/594935-us-uk-ukraine-moscow-terrorism/';
 
                 $('#myTab a[href="#contentTab"]').click();
                 var searchButton = document.getElementById('contentSearchButton');
                 searchButton.classList.add('pulse-effect');
-                searchButton.addEventListener('click', function() {
+                searchButton.addEventListener('click', function () {
                     searchButton.classList.remove('pulse-effect');
                 });
             });
         });
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('autoFillIntelButton').addEventListener('click', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('autoFillIntelButton').addEventListener('click', function () {
                 // Set the URL input value
                 document.getElementById('url').value = 'https://globalresearch.ca/';
-                
+
                 // Toggle checkboxes
                 document.getElementById('run_urlscan').checked = true;
                 $('#myTab a[href="#metadataTab"]').click();
                 var searchButton = document.getElementById('metadataSearchButton');
                 searchButton.classList.add('pulse-effect');
-                searchButton.addEventListener('click', function() {
+                searchButton.addEventListener('click', function () {
                     searchButton.classList.remove('pulse-effect');
                 });
-                
+
             });
         });
 
@@ -409,22 +409,16 @@
                     <div class="card">
                         <div class="card-header p-0 text-center">
                             <ul class="nav nav-tabs" id="myTab" role="tablist">
-                                <li class="nav-item col-4 p-0">
-                                    <a class="nav-link active" data-toggle="tab" href="#contentTab" >
+                                <li class="nav-item col-6 p-0">
+                                    <a class="nav-link active" data-toggle="tab" href="#contentTab">
                                         <h3>Content Similarity</h3>
                                     </a>
                                 </li>
-                                <li class="nav-item col-4 p-0">
-                                    <a class="nav-link" data-toggle="tab" href="#metadataTab" >
+                                <li class="nav-item col-6 p-0">
+                                    <a class="nav-link" data-toggle="tab" href="#metadataTab">
                                         <h3>Metadata Similarity</h3>
                                     </a>
                                 </li>
-                                <li class="nav-item col-4 p-0">
-                                    <a class="nav-link" data-toggle="tab" href="#batchTab" >
-                                        <h3>Batch Similarity</h3>
-                                    </a>
-                                </li>
-
                             </ul>
                         </div>
                         <div class="card-body card-body-400">
@@ -523,10 +517,54 @@
                                         </div>
 
                                         <div class="col-sm">
-                                            <button class="btn btn-secondary btn-block" id="contentSearchButton">Search</button>
+                                            <button class="btn btn-secondary btn-block"
+                                                id="contentSearchButton">Search</button>
                                         </div>
                                     </div>
                                 </form>
+                                <hr class="my-4">
+                                {% if current_user.is_authenticated %}
+                                <form method="POST" action="/batch-search-content" id="batch-search-content"
+                                    enctype="multipart/form-data">
+
+                                    <div class="row mt-3 ml-1">
+                                        <h5 class="card-title">Batch Content Search</h5>
+                                    </div>
+                                    <div class="row mt-3 ml-1">
+                                        Requires the following columns: combineOperator, (either AND or OR) language, (2
+                                        letter code, e.g. en) country, (2 letter code, e.g. us), engines (comma
+                                        separated list of search engines, e.g. google,bing), and your choice of EITHER
+                                        url (full url, e.g. https://tech.cnn.com/article-title.html) or titleQuery and
+                                        contentQuery (text snippets).&nbsp;<a href="{{ url_for('download_content_csv_example') }}" download>Download the template</a>.
+
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-5 input-group">
+                                            <div class="form-check form-check-inline">
+                                                <input type="file" class="custom-file-input" id="file" name="file">
+                                                <label class="custom-file-label" for="file">Content CSV</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4 input-group">
+                                            <input type="email" class="form-control" id="email" name="email"
+                                                aria-describedby="emailHelp"
+                                                placeholder="Email, e.g name@example.com" required>
+
+                                        </div>
+
+
+                                        <div class="col-md-3">
+                                            <button class="btn btn-secondary btn-block">Search</button>
+                                        </div>
+
+                                    </div>
+                                </form>
+                                {% else %}
+                                <div class=" ml-3">
+                                    <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
+                                </div>
+                                {% endif %}
                             </div>
                             <div id="metadataTab" class="container tab-pane fade d-none">
                                 <form method="POST" action="/url-search" class="tabcontent-fingerprint">
@@ -548,7 +586,7 @@
                                             style="display: none;">
                                             <!-- Warning message will be inserted here -->
                                         </div>
-                                        </div>
+                                    </div>
                                     <div class="row mt-3 ">
                                         <div class="col-sm input-group">
                                             <input type="text" class="form-control" aria-describedby="basic-addon6"
@@ -587,62 +625,21 @@
                                         <div class="col-sm">
                                         </div>
                                         <div class="col-sm">
-                                            <button class="btn btn-secondary btn-block" id="metadataSearchButton">Search</button>
+                                            <button class="btn btn-secondary btn-block"
+                                                id="metadataSearchButton">Search</button>
                                         </div>
                                     </div>
 
-                                </form>
-                            </div>
-                            <div id="batchTab" class="container tab-pane fade  d-none">
-
-                                <form method="POST" action="/batch-search-content" id="batch-search-content"
-                                    enctype="multipart/form-data">
-
-                                    <div class="row mt-3">
-                                        <h5 class="card-title">Batch Content Search</h5>
-                                    </div>
-                                    <div class="row mt-3">
-                                        Requires the following columns: combineOperator, (either AND or OR) language, (2
-                                        letter code, e.g. en) country, (2 letter code, e.g. us), engines (comma
-                                        separated list of search engines, e.g. google,bing), and your choice of EITHER
-                                        url (full url, e.g. https://tech.cnn.com/article-title.html) or titleQuery and
-                                        contentQuery (text snippets).
-
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col-md-6 input-group">
-                                            <div class="form-check form-check-inline">
-                                                <input type="file" class="custom-file-input" id="file" name="file">
-                                                <label class="custom-file-label" for="file">Content CSV</label>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row mt-3">
-                                        <div class="col-md-6 input-group">
-                                            <input type="email" class="form-control" id="email" name="email"
-                                                aria-describedby="emailHelp"
-                                                placeholder="Enter an email address: name@example.com" required>
-
-                                        </div>
-                                        <div class="col-md-3">
-
-                                        </div>
-
-                                        <div class="col-md-3">
-                                            <button class="btn btn-secondary btn-block">Search</button>
-                                        </div>
-
-                                    </div>
                                 </form>
                                 <hr class="my-4">
+                                {% if current_user.is_authenticated %}
                                 <form method="POST" action="/batch-search-metadata" id="batch-search-metadata"
                                     enctype="multipart/form-data">
-                                    <div class="row mt-3">
+                                    <div class="row mt-3  ml-1">
                                         <h5 class="card-title">Batch Metadata Search</h5>
                                     </div>
-                                    <div class="row mt-3">
-                                        Requires only one column: url. Must be a full url, e.g. https://tech.cnn.com/
+                                    <div class="row mt-3  ml-1">
+                                        Requires only one column: url. Must be a full url, e.g. https://tech.cnn.com/.&nbsp;<a href="{{ url_for('download_domain_metadata_example') }}" download> Download the template</a>.
                                     </div>
                                     <div class="row mt-3">
                                         <div class="col-md-6  input-group">
@@ -681,7 +678,7 @@
                                         <div class="col-md-6 input-group">
                                             <input type="email" class="form-control" id="email" name="email"
                                                 aria-describedby="emailHelp"
-                                                placeholder="Enter an email address: name@example.com" required>
+                                                placeholder="Email, e.g name@example.com" required>
 
                                         </div>
                                         <div class="col-md-3">
@@ -693,13 +690,20 @@
                                         </div>
 
                                     </div>
+                                    <div id="file-download-warning" class="alert alert-warning mt-3" role="alert"
+                                        style="display: none;">
+                                        <strong>Warning!</strong> Downloading the results of a batch search may take a
+                                        long
+                                        time and may not be successful for large datasets. The results will be emailed
+                                        to
+                                        the provided email address.
+                                    </div>
                                 </form>
-                                <div id="file-download-warning" class="alert alert-warning mt-3" role="alert"
-                                    style="display: none;">
-                                    <strong>Warning!</strong> Downloading the results of a batch search may take a long
-                                    time and may not be successful for large datasets. The results will be emailed to
-                                    the provided email address.
+                                {% else %}
+                                <div>
+                                    <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -718,29 +722,19 @@
                             <h5 class="card-title">Investigate the laundering of Russian content and narratives
                             </h5>
                             <p class="card-text">
-                                This search shows how the Laundromat can be used to identify sites that are laundering content from Russian state media. It lists sample of articles from with a high degree of similarity, sharing much of their content with the original article. 
-                                The report below digs into this phenomenon at scale and provides a detailed analysis of the network of sites that are laundering content from Russian state media. 
-                                
+                                This search shows how the Laundromat can be used to identify sites that are laundering
+                                content from Russian state media. It lists sample of articles from with a high degree of
+                                similarity, sharing much of their content with the original article.
+                                The report below digs into this phenomenon at scale and provides a detailed analysis of
+                                the network of sites that are laundering content from Russian state media.
+
                             </p>
                         </div>
                         <div class="card-footer">
-                            <a href="https://securingdemocracy.gmfus.org/from-russia-with-spin-how-content-from-russian-state-media-is-laundered-by-polish-blogs/" target="_blank" class="btn btn-secondary">Read the Report</a>
-                            <button type="button" id="autoFillRTLaunderingButton" class="btn btn-primary float-right">Try the Search</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Generate OSINT leads and intelligence
-                            </h5>
-                            <p class="card-text">
-                                In addition to identifying sites that are laundering content from Russian state media, 
-                                the Laundromat can be used to generate leads and intelligence about how sites are made, who's advertising on them, their associated social media accounts, and more.
-                            </p>
-                        </div>
-                        <div class="card-footer">
-                            <button type="button" id="autoFillIntelButton" class="btn btn-primary float-right">Try the Search</button>
+                            <a href="https://securingdemocracy.gmfus.org/from-russia-with-spin-how-content-from-russian-state-media-is-laundered-by-polish-blogs/"
+                                target="_blank" class="btn btn-secondary">Read the Report</a>
+                            <button type="button" id="autoFillRTLaunderingButton"
+                                class="btn btn-primary float-right">Try the Search</button>
                         </div>
                     </div>
                 </div>
@@ -750,17 +744,38 @@
                             <h5 class="card-title">Explore RT's network of mirror websites
                             </h5>
                             <p class="card-text">
-                                Researchers from the Instute for Strategic Dialoguee have uncovered several domain names that explicitly mirror (including branding, code, etc) a network of mirror websites of several RT websites. 
-                                The Laundromat's Metadata Similarity feature can be used to iodentify the shared characteristics of the network of websites.</p>
+                                Researchers from the Instute for Strategic Dialoguee have uncovered several domain names
+                                that explicitly mirror (including branding, code, etc) a network of mirror websites of
+                                several RT websites.
+                                The Laundromat's Metadata Similarity feature can be used to iodentify the shared
+                                characteristics of the network of websites.</p>
                             </p>
                         </div>
                         <div class="card-footer">
-                            <a href="https://www.isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/" target="_blank" class="btn btn-secondary">Read the Report</a>
-                            <button type="button" id="autoFillMirrorButton" class="btn btn-primary float-right">Try the Search</button>
+                            <a href="https://www.isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/"
+                                target="_blank" class="btn btn-secondary">Read the Report</a>
+                            <button type="button" id="autoFillMirrorButton" class="btn btn-primary float-right">Try the
+                                Search</button>
                         </div>
                     </div>
                 </div>
-
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Generate OSINT leads and intelligence
+                            </h5>
+                            <p class="card-text">
+                                In addition to identifying sites that are laundering content from Russian state media,
+                                the Laundromat can be used to generate leads and intelligence about how sites are made,
+                                who's advertising on them, their associated social media accounts, and more.
+                            </p>
+                        </div>
+                        <div class="card-footer">
+                            <button type="button" id="autoFillIntelButton" class="btn btn-primary float-right">Try the
+                                Search</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -769,6 +784,19 @@
             <h2>Interpreting the Laundromat Results <a href="{{ url_for('indicators_gui') }}"
                     class="btn btn-secondary ">View
                     All Indicators + Descriptions</a></h2>
+            <p>Results from the Laundromat are generated by comparing the content and metadata of websites to identify
+                similarities. It uses a three-tier system to categorize the indicators based on their strength and
+                reliability.</p>
+            <p> For help interpreting the results, please see the <a href="{{ url_for('indicators_gui') }}">About page.
+                </a></p>
+            <p>
+                For the metadata section, ChatGPT or other LLMs can be used to help interpret the results. We suggest
+                typing this prompt and copying the indicators table below using the 'Copy' button. Prompt: "Assist me in
+                interpreting these results from an OSINT tool that uses domain forensics 'indicators' to identify
+                potential aspects of the site that are unique or could assist in further OSINT investigations. Note good
+                inestigatory leads, social media, useful Ids, and indicators of how the website was made, as well as if
+                an indicator could be misleading. Results:"
+            </p>
             <!-- 
             <ul class="list-group">
                 <li class="list-group-item">
@@ -905,8 +933,12 @@
                 <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
                     aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
+                {% elif tier == '3' %}
+                <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
+                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                    }}%</div>
                 {% else %}
-                <div class="progress-bar bg-info" role="progressbar" style="width: {{count}}%" aria-valuenow="{{count}}"
+                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%" aria-valuenow="{{count}}"
                     aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
 
@@ -993,8 +1025,12 @@
                 <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
                     aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
+                {% elif tier == '3' %}
+                <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
+                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                    }}%</div>
                 {% else %}
-                <div class="progress-bar bg-info" role="progressbar" style="width: {{count}}%" aria-valuenow="{{count}}"
+                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%" aria-valuenow="{{count}}"
                     aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                     }}%</div>
                 {% endif %}
@@ -1110,7 +1146,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
+            <div class="row ml-3 mr-3">
                 The sole responsibility for any content supported by the European Media and Information Fund lies with
                 the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund Partners, the
                 Calouste Gulbenkian Foundation and the European University Institute.
@@ -1378,11 +1414,21 @@
         color: lightgray;
 
     }
+
     @keyframes pulseAnimation {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+
+        100% {
+            transform: scale(1);
+        }
     }
+
     .pulse-effect {
         animation: pulseAnimation 2s infinite;
     }

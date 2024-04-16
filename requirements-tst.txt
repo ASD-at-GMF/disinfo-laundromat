@@ -1,2 +1,4 @@
 -r requirements.txt
 pytest==8.0.*
+locust==2.25.*
+har2locust==0.9.*

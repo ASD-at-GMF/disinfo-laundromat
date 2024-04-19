@@ -1093,7 +1093,23 @@ INDICATOR_METADATA = {
     "name": "Technology Stack",
     "description": "The set of technologies used to build and run a website or application, including frameworks, languages, and software.",
     "interpretation": "Similar technology stacks can suggest shared development practices or preferences. However, certain technology combinations are widely popular and may be used by a vast range of unrelated websites or applications."
+    },
+    "2-ads_txt": {
+    "name": "Ads.txt File",
+    "description": "An ads.txt file is an initiative by the Interactive Advertising Bureau (IAB) to increase transparency in programmatic advertising by allowing publishers to list authorized digital sellers of their inventory.",
+    "interpretation": "Shared ads.txt files can indicate common advertising partners or monetization strategies. However, the use of third-party ad networks and resellers can lead to shared ads.txt entries across unrelated websites."
+    },
+    "3-footer-text": {
+    "name": "Footer Text",
+    "description": "Text content found in the footer section of a webpage.",
+    "interpretation": "Analysis of footer text can provide insights into the website's branding, copyright information, or contact details. Shared footer text might suggest common design elements or template usage. However, generic or widely used footer text can appear across diverse websites."
+    },
+    "4-outbound-domain": {
+    "name": "Outbound Domain",
+    "description": "A domain to which a website links or redirects its users.",
+    "interpretation": "Shared outbound domains can indicate common affiliations or content sources. However, links to popular websites or services can appear across a wide range of unrelated sites, limiting the significance of this data for direct connections."
     }
+
 }
 
 MATCH_VALUES_TO_IGNORE = [

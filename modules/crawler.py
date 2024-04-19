@@ -434,13 +434,13 @@ def get_ipms_domain_indicators(ipms_url) -> list[Indicator]:
                     data["owners"]["owner"]["address"],
                 )
             )
-        for dns in data.get("dns", []):
+        
             ipms_indicators.append(
-                Indicator("3-ipms_domain_nameserver", dns["nameserver"])
+                Indicator("3-ipms_domain_nameserver", [dns["nameserver"] for dns in data.get("dns", [])])
             )
-        unique_ips = {entry["ip_address"] for entry in data.get("ip_change_history", [])}
-        for ip in unique_ips:
-            ipms_indicators.append(Indicator("3-ipms_domain_otheripused", ip))
+        ipms_indicators.append(
+            Indicator("3-ipms_domain_nameserver", [entry["ip_address"] for entry in data.get("ip_change_history", [])])
+        )
 
         return ipms_indicators
 
@@ -457,22 +457,18 @@ def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
 
     try:
         data = json.loads(api_result.content)
-        for site in data.get("websites_on_ip_now", []):
-            ipms_indicators.append(
-                Indicator("3-ipms_siteonthisip_now", site["website"])
-            )
-        for site in data.get("websites_on_ip_before", []):
-            ipms_indicators.append(
-                Indicator("3-ipms_siteonthisip_before", site["website"])
-            )
-        for site in data.get("not_working_websites_on_ip", []):
-            ipms_indicators.append(
-                Indicator("3-ipms_siteonthisip_broken", site["website"])
-            )
-        for useragent in data.get("useragents_on_ip", []):
-            ipms_indicators.append(
-                Indicator("3-ipms_useragents", useragent["useragent"])
-            )
+        ipms_indicators.append(
+            Indicator("3-ipms_siteonthisip_now", [site["website"] for site in data.get("websites_on_ip_now", [])])
+        )
+        ipms_indicators.append(
+            Indicator("3-ipms_siteonthisip_before", [site["website"] for site in data.get("websites_on_ip_before", [])])
+        )
+        ipms_indicators.append(
+            Indicator("3-ipms_siteonthisip_broken", [site["website"] for site in data.get("not_working_websites_on_ip", [])])
+        )
+        ipms_indicators.append(
+            Indicator("3-ipms_useragents", [site["useragent"] for site in data.get("useragents_on_ip", [])])
+        )
 
         return ipms_indicators
     except IndexError as e:

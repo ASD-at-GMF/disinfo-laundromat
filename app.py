@@ -309,7 +309,7 @@ def fingerprint_gui():
             return render_template('index.html',  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
         except Exception as e:
             return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
-    return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+    return render_template('index.html', request=request, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint', methods=['POST'])
 #@login_required
@@ -414,7 +414,7 @@ def parse_content_search():
         if isApi == 'true':
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
         else:
-            return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+            return render_template('index.html', request=request, results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 def content(request, title_query=None, content_query=None):
     title_query = title_query if title_query is not None else  request.form.get('titleQuery')

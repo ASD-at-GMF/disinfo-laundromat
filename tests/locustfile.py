@@ -14,22 +14,22 @@ class WebUser(FastHttpUser):
 
     @task(3)
     def content_search(self):
-        data = {
+        form_data = {
             "contentToSearch": "https://www.rt.com/news/594935-us-uk-ukraine-moscow-terrorism/",
             "country": "us",
             "language": "en",
         }
 
-        with self.client.post("/content-search", data, catch_response=True) as response:
+        with self.client.post("/content-search", form_data, catch_response=True) as response:
             self.check_response_time(response)
 
     @task(3)
     def url_search(self):
-        data = {
+        form_data = {
             "url": "https://actualidad.rt.com,https://actualidad-rt.com,https://esrt.online,https://esrt.press",
             "run_urlscan": "no",
             "internal_only": "option1",
         }
 
-        with self.client.post("/url-search", data, catch_response=True) as response:
+        with self.client.post("/url-search", form_data, catch_response=True) as response:
             self.check_response_time(response, max_time_ms=20000)

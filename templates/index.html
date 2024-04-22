@@ -118,7 +118,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('autoFillRTLaunderingButton').addEventListener('click', function () {
                 // Set the content input value
-                document.getElementById('contentToSearch').value = 'https://www.rt.com/news/594935-us-uk-ukraine-moscow-terrorism/';
+                document.getElementById('contentToSearch').value = 'https://www.rt.com/russia/596195-ukrainian-children-kidnapped-germany/';
 
                 $('#myTab a[href="#contentTab"]').click();
                 var searchButton = document.getElementById('contentSearchButton');
@@ -738,22 +738,21 @@
                     </div>
                 </div>
             </div>
-
+            <div class="row">
+            <h2>Learn more about the laundromat</h2>
+            </div>
             <div class="row">
                 <!-- 3 evenly spaced cards with usage scenarios written in them -->
-
-
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Investigate the laundering of Russian content and narratives
+                            <h5 class="card-title">Investigate Content Laundering
                             </h5>
                             <p class="card-text">
-                                This search shows how the Laundromat can be used to identify sites that are laundering
-                                content from Russian state media. It lists sample of articles from with a high degree of
-                                similarity, sharing much of their content with the original article.
-                                The report below digs into this phenomenon at scale and provides a detailed analysis of
-                                the network of sites that are laundering content from Russian state media.
+                                Use the Laundromat to uncover websites republishing content from Russian state media.
+                                This function highlights articles that closely resemble the original sources, 
+                                enabling analysis of content laundering at a large scale. 
+                                A detailed report of the network involved is available below.
 
                             </p>
                         </div>
@@ -768,14 +767,11 @@
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Explore RT's network of mirror websites
+                            <h5 class="card-title">Uncover RT's Mirror Networks
                             </h5>
                             <p class="card-text">
-                                Researchers from the Instute for Strategic Dialoguee have uncovered several domain names
-                                that explicitly mirror (including branding, code, etc) a network of mirror websites of
-                                several RT websites.
-                                The Laundromat's Metadata Similarity feature can be used to iodentify the shared
-                                characteristics of the network of websites.</p>
+                                The Institute for Strategic Dialogue has identified domains that are mirror images of RT websites, down to branding and code. 
+                                Utilize the Laundromat's Metadata Similarity tool to detect common features across these mirrors.</p>
                             </p>
                         </div>
                         <div class="card-footer">
@@ -789,12 +785,11 @@
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Generate OSINT leads and intelligence
+                            <h5 class="card-title">Generate Open Source Intelligence Leads
                             </h5>
                             <p class="card-text">
-                                In addition to identifying sites that are laundering content from Russian state media,
-                                the Laundromat can be used to generate leads and intelligence about how sites are made,
-                                who's advertising on them, their associated social media accounts, and more.
+                                The Laundromat is also instrumental in producing OSINT leads regarding 
+                                the construction, sponsorship, and social media linkages of websites, regardless of their content's provenance.
                             </p>
                         </div>
                         <div class="card-footer">
@@ -810,13 +805,12 @@
 
         <div class="mt-4 ml-5 mr-5">
             <h2>Interpreting the Laundromat Results <a href="{{ url_for('indicators_gui') }}"
-                    class="btn btn-secondary ">View
+                    class="btn btn-secondary float-right">View
                     All Indicators + Descriptions</a></h2>
 
             <p>Results from the Laundromat are generated by comparing the content and metadata of websites to identify
                 similarities. It uses a three-tier system to categorize the indicators based on their strength and
-                reliability.</p>
-            <p> For help interpreting the results, please see the <a href="{{ url_for('indicators_gui') }}">About page.
+                reliability.  For detailed help interpreting the results, please see the <a href="{{ url_for('indicators_gui') }}">About page.
                 </a></p>
             <p>
                 For the metadata section, ChatGPT or other LLMs can be used to help interpret the results. We suggest
@@ -882,9 +876,6 @@
                             data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
                             Show/Hide Table
                         </button>
-                        <!-- Hidden input containing the CSV data -->
-                        <input type="hidden" name="csv_data" value="{{ csv_data|safe }}">
-                        <button type="submit" class="btn btn-secondary mr-3">Download Results as CSV</button>
                     </form>
                 </div>
             </div>

@@ -1059,39 +1059,38 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
 
     # Aggregate by domain, link, title, and count
     local_domains_dict = {domain: source for domain, source in local_domains}
-    for idx,result in enumerate(all_results):
-        domain = result['domain']
-        local_source = local_domains_dict.get(result['domain']) or local_domains_dict.get(result['domain'].split('.')[1])  # Check for FQDN and no subdomain
-        github_source = "statemedia" if urlparse(domain).netloc.strip() in github_domains else None
-        if domain not in aggregated_results:
-            aggregated_results[domain] = {
-                'count': 0,
-                'links': [],
-                'concern':  bool(local_source or github_source),
-                'source': []
-            }
+    # Temporary dictionary to hold the first occurrence index of each URL
+
+    url_indexes = {}
+    for idx in range(len(all_results) - 1, -1, -1):
+        result = all_results[idx]
+        url = result['url']
+        if url in url_indexes:
+        # This URL has been seen before; merge information and delete this occurrence
+            first_occurrence_idx = url_indexes[url]
+            all_results[first_occurrence_idx]['engines'].extend(result['engine'])
+            all_results[first_occurrence_idx]['link_count'] += 1
+            all_results[first_occurrence_idx]['score'] = max(
+                sequence_match_score(all_results[first_occurrence_idx]['title'], result['title']),
+                sequence_match_score(all_results[first_occurrence_idx]['snippet'], result['snippet'])
+            )
+            all_results.pop(idx)
+        else:
+            url_indexes[url] = idx
+            local_source = local_domains_dict.get(result['domain']) or local_domains_dict.get(result['domain'].split('.')[1])  # Check for FQDN and no subdomain
+            github_source = "statemedia" if urlparse(result['domain']).netloc.strip() in github_domains else None
             if local_source is not None:
                 #aggregated_results["source"].append(local_source)
                 all_results[idx]['source'] = [local_source]
             if github_source is not None:
                 #aggregated_results["source"].append(github_source)
                 all_results[idx]['source'] = [github_source]
-        
-        aggregated_results[domain]['count'] += 1
-        aggregated_results[domain]['links'].append({
-            'link': result['url'],
-            'title': result['title'],
-            'snippet': result['snippet'],
-            'count': 1,
-            'engines': [engine]
-        })
-
-        #TODO combine engines to list, add counts
-        all_results[idx]['engines'] = result['engine']
-        all_results[idx]['link_count'] = 1
-        all_results[idx]['domain_count'] = 1
-        all_results[idx]['score'] = max(sequence_match_score(title_query, all_results[idx]['title']), sequence_match_score(content_query, all_results[idx]['snippet']))
-
+            all_results[idx]['link_count'] = 1
+            all_results[idx]['domain_count'] = 1
+            all_results[idx]['engines'] = result['engine'] 
+            all_results[idx]['score'] = max(sequence_match_score(title_query, all_results[idx]['title']), sequence_match_score(content_query, all_results[idx]['snippet']))
+            
+            
     # Assuming flattened_data is your list of dictionaries
     all_results = sorted(all_results, key=lambda x: x['score'], reverse=True)
 

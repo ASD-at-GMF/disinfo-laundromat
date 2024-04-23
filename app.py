@@ -4,7 +4,7 @@ load_dotenv()
 from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
 from flask_bootstrap import Bootstrap
 from flask_cors import CORS
-from functools import wraps
+from functools import cache, wraps
 
 import concurrent.futures
 import json
@@ -288,7 +288,7 @@ def register(request):
     # Save the username and hashed_password to the database
     return jsonify({'message': 'Registered successfully'})
 
-@app.route('/url-search', methods=[ 'POST'])
+@app.route('/url-search', methods=['POST'])
 @clean_inputs
 def url_search():
     try:
@@ -1294,6 +1294,7 @@ def summarize_indicators(results, column='indicator_type'):
 
     return tier_percentages
 
+@cache
 def load_domains_of_concern(filename=SITES_OF_CONCERN):
     with open(filename, mode="r", encoding="utf-8") as file:
         reader = csv.reader(file)
@@ -1302,6 +1303,7 @@ def load_domains_of_concern(filename=SITES_OF_CONCERN):
         return [(urlparse(row[1]).netloc.strip(), row[3].strip()) for row in reader]
 
 
+@cache
 def fetch_domains_from_github(url):
     response = requests.get(url)
     response.raise_for_status()

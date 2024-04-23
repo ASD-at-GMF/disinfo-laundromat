@@ -15,6 +15,9 @@ from pandas.api.types import is_list_like
 from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
                                 TRACKING_IDS)
 
+
+pd.options.mode.chained_assignment = None
+
 ## Preprocessing
 
 DOMAIN = "domain_name"

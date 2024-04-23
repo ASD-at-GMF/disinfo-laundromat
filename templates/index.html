@@ -174,9 +174,11 @@
                     pageLength: 50,
                     autoWidth: false,
                     columnDefs: [
-                        { targets: 0, width: "20%" },
-                        { targets: 1, width: "30%" },
-                        { targets: 2, width: "50%" },
+                        { targets: 0, width: "5%" },
+
+                        { targets: 1, width: "20%" },
+                        { targets: 2, width: "30%" },
+                        { targets: 3, width: "45%" },
 
                     ],
                     layout: {
@@ -184,7 +186,7 @@
                             buttons: ['pageLength', 'copy', 'csv', 'excel']
                         },
                     },
-                    order: [[1, 'asc'], [0, 'asc']]
+                    order: [[2, 'asc'], [1, 'asc']]
                 });
             $('#matches_table').DataTable(
                 {
@@ -356,29 +358,44 @@
 <body class="bg-dark-gray ">
 
     <div id="loading" class="loading-overlay" style="display: none;">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" width="250" height="250" style="shape-rendering: auto; display: block; background: transparent;" xmlns:xlink="http://www.w3.org/1999/xlink"><g><g transform="translate(50 50)">
-            <g transform="scale(0.5)">
-              <g transform="translate(-50 -50)">
-                <g>
-                  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" values="0 50 50;360 50 50" keyTimes="0;1" dur="1.25s"></animateTransform>
-                  <path fill-opacity="0.5" fill="#000000" d="M50 50L50 0A50 50 0 0 1 100 50Z"></path>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" width="250"
+            height="250" style="shape-rendering: auto; display: block; background: transparent;"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+            <g>
+                <g transform="translate(50 50)">
+                    <g transform="scale(0.5)">
+                        <g transform="translate(-50 -50)">
+                            <g>
+                                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite"
+                                    values="0 50 50;360 50 50" keyTimes="0;1" dur="1.25s"></animateTransform>
+                                <path fill-opacity="0.5" fill="#000000" d="M50 50L50 0A50 50 0 0 1 100 50Z"></path>
+                            </g>
+                            <g>
+                                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite"
+                                    values="0 50 50;360 50 50" keyTimes="0;1" dur="1.6666666666666665s">
+                                </animateTransform>
+                                <path fill-opacity="0.5" fill="#f47660" d="M50 50L50 0A50 50 0 0 1 100 50Z"
+                                    transform="rotate(90 50 50)"></path>
+                            </g>
+                            <g>
+                                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite"
+                                    values="0 50 50;360 50 50" keyTimes="0;1" dur="2.5s"></animateTransform>
+                                <path fill-opacity="0.5" fill="#f8b26a" d="M50 50L50 0A50 50 0 0 1 100 50Z"
+                                    transform="rotate(180 50 50)"></path>
+                            </g>
+                            <g>
+                                <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite"
+                                    values="0 50 50;360 50 50" keyTimes="0;1" dur="5s"></animateTransform>
+                                <path fill-opacity="0.5" fill="#f9dd7f" d="M50 50L50 0A50 50 0 0 1 100 50Z"
+                                    transform="rotate(270 50 50)"></path>
+                            </g>
+                        </g>
+                    </g>
                 </g>
-                <g>
-                  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" values="0 50 50;360 50 50" keyTimes="0;1" dur="1.6666666666666665s"></animateTransform>
-                  <path fill-opacity="0.5" fill="#f47660" d="M50 50L50 0A50 50 0 0 1 100 50Z" transform="rotate(90 50 50)"></path>
-                </g>
-                <g>
-                  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" values="0 50 50;360 50 50" keyTimes="0;1" dur="2.5s"></animateTransform>
-                  <path fill-opacity="0.5" fill="#f8b26a" d="M50 50L50 0A50 50 0 0 1 100 50Z" transform="rotate(180 50 50)"></path>
-                </g>
-                <g>
-                  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" values="0 50 50;360 50 50" keyTimes="0;1" dur="5s"></animateTransform>
-                  <path fill-opacity="0.5" fill="#f9dd7f" d="M50 50L50 0A50 50 0 0 1 100 50Z" transform="rotate(270 50 50)"></path>
-                </g>
-              </g>
-            </g>
-          </g><g></g></g><!-- [ldio] generated by https://loading.io --></svg>
-          </div>
+                <g></g>
+            </g><!-- [ldio] generated by https://loading.io -->
+        </svg>
+    </div>
     </div>
     <!--  -->
     <div class="ml-5 mr-5 text-light-gray ">
@@ -427,6 +444,9 @@
                             <span id="lead-verb">Discover </span>
                             <span id="lead-noun">content relationships</span> from across the infosphere
                         </h3>
+                        <h2 class="lead mt-5"> The Information Laundromat is a lead generation tool used to determine if
+                            and how websites share architecture and content. It provides two core functions: content
+                            similarity and domain forensics matching</h2>
                     </div>
                 </div>
                 <div class="col-lg-8 mb-3">
@@ -451,20 +471,17 @@
                                     <div class="row mt-1">
                                         <div class="col-sm">
                                             <p class="card-text">
-                                                Search for instances of reposted content by title and/or content.
-                                                This
-                                                will
-                                                search search services, the GDELT database, and copyscape for text
-                                                that
-                                                closely
-                                                match your query. Searching by URL attempts to automatically parses
-                                                the
-                                                title
-                                                and content, but will not be successful for all articles
+                                                <em>This tool compares headlines, content snippets, or URLs with search
+                                                    engines, databases, and plagiarism checkers to find similar texts.
+                                                </em>
+                                                Enter a URL, the title, or content of an article to search for instances
+                                                of reposted & similar content on search engines,
+                                                GDELT, and a plagiarism database. Searching by URL automatically parses
+                                                the title and content, but may fail.
+                                                Title and content can be specified using _title: and _content:
                                             </p>
                                         </div>
                                     </div>
-                                    <hr class="my-4">
                                     <div class="row mt-3 ">
                                         <div class="col-sm input-group">
 
@@ -555,10 +572,11 @@
                                         <h5 class="card-title">Batch Content Search</h5>
                                     </div>
                                     <div class="row mt-3 ml-1">
-                                        Requires the following columns: combineOperator, (either AND or OR) language, (2
+                                        The CSV for batch searches requires the following columns: combineOperator,
+                                        (either AND or OR) language, (2
                                         letter code, e.g. en) country, (2 letter code, e.g. us), engines (comma
                                         separated list of search engines, e.g. google,bing), and your choice of EITHER
-                                        url (full url, e.g. https://tech.cnn.com/article-title.html) or titleQuery and
+                                        url (full url, e.g. https://tech.cnn.com/article-title.html) OR titleQuery and
                                         contentQuery (text snippets).&nbsp;<a
                                             href="{{ url_for('download_content_csv_example') }}" download>Download the
                                             template</a>.
@@ -597,12 +615,11 @@
                                     <div class="row mt-1">
                                         <div class="col-sm">
                                             <p class="card-text">
-                                                Enter Domain: Ensure you include https:// and any subdomain you're
-                                                interested in
-                                                (e.g. https://tech.cnn.com). Multiple sites can be specified,
-                                                seperated
-                                                by a
-                                                comma
+                                                <em>This function gathers technical information about a given site which
+                                                    indicate what makes it unique, give insight into its
+                                                    architecture/design, or show how it is used/tracked.</em>
+                                                Enter one or more domains, separated by commas. Include https:// and a
+                                                subdomain, if desired. (e.g. https://tech.cnn.com).
                                             </p>
                                         </div>
 
@@ -738,9 +755,7 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
-            <h2>Learn more about the laundromat</h2>
-            </div>
+
             <div class="row">
                 <!-- 3 evenly spaced cards with usage scenarios written in them -->
                 <div class="col-md-4">
@@ -750,8 +765,8 @@
                             </h5>
                             <p class="card-text">
                                 Use the Laundromat to uncover websites republishing content from Russian state media.
-                                This function highlights articles that closely resemble the original sources, 
-                                enabling analysis of content laundering at a large scale. 
+                                This function highlights articles that closely resemble the original sources,
+                                enabling analysis of content laundering at a large scale.
                                 A detailed report of the network involved is available below.
 
                             </p>
@@ -770,8 +785,10 @@
                             <h5 class="card-title">Uncover RT's Mirror Networks
                             </h5>
                             <p class="card-text">
-                                The Institute for Strategic Dialogue has identified domains that are mirror images of RT websites, down to branding and code. 
-                                Utilize the Laundromat's Metadata Similarity tool to detect common features across these mirrors.</p>
+                                The Institute for Strategic Dialogue has identified domains that are mirror images of RT
+                                websites, down to branding and code.
+                                Utilize the Laundromat's Metadata Similarity tool to detect common features across these
+                                mirrors.</p>
                             </p>
                         </div>
                         <div class="card-footer">
@@ -788,8 +805,9 @@
                             <h5 class="card-title">Generate Open Source Intelligence Leads
                             </h5>
                             <p class="card-text">
-                                The Laundromat is also instrumental in producing OSINT leads regarding 
-                                the construction, sponsorship, and social media linkages of websites, regardless of their content's provenance.
+                                The Laundromat is also instrumental in producing OSINT leads regarding
+                                the construction, sponsorship, and social media linkages of websites, regardless of
+                                their content's provenance.
                             </p>
                         </div>
                         <div class="card-footer">
@@ -809,9 +827,24 @@
                     All Indicators + Descriptions</a></h2>
 
             <p>Results from the Laundromat are generated by comparing the content and metadata of websites to identify
-                similarities. It uses a three-tier system to categorize the indicators based on their strength and
-                reliability.  For detailed help interpreting the results, please see the <a href="{{ url_for('indicators_gui') }}">About page.
+                similarities.
+                For detailed help interpreting the results, please see the <a
+                    href="{{ url_for('indicators_gui') }}">About page.
                 </a></p>
+            <p>
+                <strong>Content Similarity - </strong>This tool compares headlines, content snippets,
+                or URLs with search engines, databases, and plagiarism checkers to find similar texts.
+                It filters out unrelated content and assigns a match score to gauge similarity.
+                Scores of 50% or more typically mean a closer match, minimizing false positives.
+                Accuracy varies with text length and uniqueness; common phrases like "Donald Trump" yield less precise
+                results.
+            </p>
+            <p>
+                <strong>Metadata Similarity - </strong>This function gathers technical information about a given site
+                which indicate what makes it unique, give insight into its architecture/design, or show how it is
+                used/tracked. These indicators are compared with other sites to find similar items.
+                It uses a three-tier system to categorize the indicators based on their strength and reliability. Some
+                indicators can also serve as OSINT leads for further investigation.
             <p>
                 For the metadata section, ChatGPT or other LLMs can be used to help interpret the results. We suggest
                 typing this prompt and copying the indicators table below using the 'Copy' button. Prompt: "Assist me in
@@ -981,6 +1014,7 @@
                 <table id="indicators_table" class="table table-hover table-striped " style="width:100%">
                     <thead class="thead-light">
                         <tr>
+                            <th></th>
                             <th>Domain Name</th>
                             <th>Indicator Type</th>
                             <th>Indicator Content</th>
@@ -994,9 +1028,46 @@
                         <tr class="table-success">
                             {% elif row['indicator_type'][0] == '2' %}
                         <tr class="table-warning">
-                            {% else %}
+                            {% elif row['indicator_type'][0] == '3' %}
                         <tr class="table-info">
+                            {% else %}
+                        <tr class="table-light">
                             {% endif %}
+                            <td>
+                                {% if row['indicator_annotation'] == 'financial' %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    data-content="This indicator is related to financial transactions or services."
+                                    tabindex="0" role="button">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                {% elif row['indicator_annotation'] == 'embedded' %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    data-content="This indicator is extracted from an item embedded in the website's code."
+                                    tabindex="0" role="button">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                {% elif row['indicator_annotation'] == 'social_media' %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    data-content="This indicator is related to social media or social media services."
+                                    tabindex="0" role="button">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                {% elif row['indicator_annotation'] == 'tracking' %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    data-content="This indicator is related to tracking or analytics services."
+                                    tabindex="0" role="button">
+                                    <i class="fas fa-paw"></i>
+                                </div>
+                                {% elif row['indicator_annotation'] == 'lead_gen' %}
+                                <div data-toggle="popover" data-trigger="focus"
+                                    data-content="This indicator can be used for lead generation" tabindex="0"
+                                    role="button">
+                                    <i class="fas fa-search-location"></i>
+                                </div>
+                                {% else %}
+                                {% endif %}
+                            </td>
+
                             <td>{{ row['domain_name'] }}</td>
                             <td>
                                 {% if row['indicator_type'] in indicator_metadata %}

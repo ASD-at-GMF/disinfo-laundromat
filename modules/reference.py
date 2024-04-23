@@ -1108,6 +1108,16 @@ INDICATOR_METADATA = {
     "name": "Outbound Domain",
     "description": "A domain to which a website links or redirects its users.",
     "interpretation": "Shared outbound domains can indicate common affiliations or content sources. However, links to popular websites or services can appear across a wide range of unrelated sites, limiting the significance of this data for direct connections."
+    },
+    '3-twitter': {
+    "name": "Twitter Link",
+    "description": "A link to a Twitter profile or tweet found on a webpage.",
+    "interpretation": "Links to Twitter profiles or tweets can indicate social media engagement or content sharing strategies. Shared Twitter links might suggest common social media strategies or affiliations. However, links to popular social media platforms are widely used and may not be uniquely significant."
+    },
+    '3-facebook': {
+    "name": "Facebook Link",
+    "description": "A link to a Facebook page or post found on a webpage.",
+    "interpretation": "Links to Facebook pages or posts can indicate social media engagement or content sharing strategies. Shared Facebook links might suggest common social media strategies or affiliations. However, links to popular social media platforms are widely used and may not be uniquely significant."
     }
 
 }
@@ -1167,7 +1177,9 @@ MATCH_VALUES_TO_IGNORE = [
     'robots|index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
     'og:locale|en_GB',
     'viewport|width=device-width,minimum-scale=1,initial-scale=1',
-    'viewport|width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no'
+    'viewport|width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+    'pages',
+    []
 
 ]
 

@@ -37,6 +37,7 @@ from modules.reference import LEAD_GEN_INDICATORS
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
 SCRAPER_API_KEY = os.getenv('SCRAPER_API_KEY', '')
 MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH', '')
+MAX_THREADS = int(os.getenv('MAX_THREADS', 10))
 
 visited = set()
 
@@ -888,7 +889,7 @@ def crawl_one_or_more_urls(urls, run_urlscan=False):
     # Determine the number of workers based on the task's nature and the expected platform limits
     # For I/O bound tasks, like web crawling, having more threads than CPU cores can be beneficial
     # Adjust this number based on the limitations of your environment
-    num_workers = 10  # Example: 4 threads, adjust based on your environment's capability
+    num_workers = min(MAX_THREADS, len(urls))  # Example: 4 threads, adjust based on your environment's capability
 
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         # Create a future to URL mapping

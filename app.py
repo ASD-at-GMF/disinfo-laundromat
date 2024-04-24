@@ -652,11 +652,11 @@ def upload_file(request):
             bytes_stream = io.BytesIO(output_stream.getvalue().encode())
             #print("Finally Content Results")
             return send_file(
-            bytes_stream,
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name='laundromat_content_results.csv'
-        )
+                bytes_stream,
+                mimetype="text/csv",
+                as_attachment=True,
+                download_name="laundromat_content_results.csv",
+            )
 
 #TODO: Figure out a way to API-ify this
 @app.route('/fingerprint-csv', methods=['POST'])

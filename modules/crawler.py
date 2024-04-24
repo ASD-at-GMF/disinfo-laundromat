@@ -10,7 +10,7 @@ import ssl
 import subprocess
 import time
 import traceback
-from functools import wraps
+from functools import cache, wraps
 from io import BytesIO
 from pathlib import Path
 from typing import Callable
@@ -57,6 +57,7 @@ def valid_url(url):
     return url
 
 
+@cache
 def get_domain_name(url) -> str:
     domain_extract = tldextract.extract(url)
     sd = domain_extract.subdomain

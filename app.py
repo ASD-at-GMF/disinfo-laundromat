@@ -354,8 +354,7 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     if internal_only:
         comparison_indicators = indicators_df
     else:
-        comparison_indicators = pd.read_csv(
-            KNOWN_INDICATORS)  # read the csv file
+        comparison_indicators = read_csv(KNOWN_INDICATORS)
         
         comparison_indicators = pd.concat([indicators_df, comparison_indicators])
     filter_mask = ~comparison_indicators['indicator_content'].isin(MATCH_VALUES_TO_IGNORE)
@@ -378,6 +377,10 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
 
     return indicators_df, matches_df, indicator_summary, matches_summary
+
+@cache
+def read_csv(file_path):
+    return pd.read_csv(file_path)
 
 def convert_sets_to_lists(item):
     if isinstance(item, set):

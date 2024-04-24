@@ -928,7 +928,9 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         return None
 
 # Trunk content recievind
-def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
+def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=None):
+    if engines is None:
+        engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
     
     title_query = truncate_text(title_query)
     content_query = truncate_text(content_query)

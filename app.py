@@ -28,6 +28,7 @@ import traceback
 import os
 import bleach
 import logging
+from sqlalchemy import insert
 
 # Paramaterizable Variables
 SERP_API_KEY = os.getenv('SERP_API_KEY')
@@ -43,11 +44,10 @@ MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
-from init_app import db, init_app
+from init_app import db, init_app, get_db
 from models import SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
-from modules.db.utils import get_db
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
 from modules.email_utils import send_results_email
@@ -78,39 +78,31 @@ def close_connection(exception):
         db.close()
 
 
-def init_db():
-    with app.app_context():
-        db = get_db()
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-        # Insert local_domains into sites_base
-        insert_sites_of_concern(load_domains_of_concern())
-
-
 def insert_sites_of_concern(local_domains):
     app.logger.info("Inserting indicators: %s", local_domains)
     # Check if the table is empty.
-    if SiteBase.query.first() is None:
-        engine = db.session.get_bind()
-        engine.execute(
-            SiteBase.__table__.insert(),
-            [{"domain": domain, "source": source} for domain, source in local_domains]
-        )
-        db.commit()
+    engine = db.session.get_bind()
+    with engine.connect() as conn:
+        if SiteBase.query.first() is None:
+            conn.execute(
+                insert(SiteBase),
+                [{"domain": domain, "source": source} for domain, source in local_domains[:10]]
+            )
+            conn.commit()
 
 
 def insert_indicators(indicators):
     app.logger.info("Inserting indicators: %s", indicators)
     engine = db.session.get_bind()
-    engine.execute(
-        SiteIndicator.__table__.insert(),
-        [{"domain": indicator['domain_name'], 
-          "indicator_type": indicator['indicator_type'], 
-          "indicator_content": str(indicator['indicator_content'])}
-        for indicator in indicators]
-    )
-    db.commit()
+    with engine.connect() as conn:
+        conn.execute(
+            insert(SiteIndicator),
+            [{"domain": indicator['domain_name'],
+            "indicator_type": indicator['indicator_type'],
+            "indicator_content": str(indicator['indicator_content'])}
+            for indicator in indicators]
+        )
+        conn.commit()
 
 # TODO move to a utils or decorators file
 def clean_inputs(view_func):
@@ -1349,6 +1341,8 @@ def parse_title_content(input_string):
 
 
 if __name__ == "__main__":
-    init_db()
+    with app.app_context():
+        db.create_all()
+        insert_sites_of_concern(load_domains_of_concern())
     port = int(os.getenv("PORT", 8000))  # Default to 8000 if not set
     app.run(host='0.0.0.0', port=port)

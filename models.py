@@ -1,13 +1,14 @@
-from init_app import db
 from datetime import datetime
 from flask_login import UserMixin
-from modules.db.utils import get_db
+
+from init_app import get_db, db
+
 
 class Query(db.Model):
     __tablename__ = 'content_queries'
 
     # Auto Generated Fields:
-    id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
+    id           = db.Column(db.Integer, primary_key=True,  autoincrement=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
@@ -23,7 +24,7 @@ class Result(db.Model):
     __tablename__ = 'content_queries_results'
 
     # Auto Generated Fields:
-    id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
@@ -40,7 +41,7 @@ class SiteIndicator(db.Model):
     __tablename__ = 'site_fingerprint'
 
     # Auto Generated Fields:
-    id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
@@ -53,7 +54,7 @@ class SiteBase(db.Model):
     __tablename__ = 'sites_base'
 
     # Auto Generated Fields:
-    id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
@@ -65,7 +66,7 @@ class SiteUser(db.Model):
     __tablename__ = 'sites_user'
 
     # Auto Generated Fields:
-    id           = db.Column(db.String(50), primary_key=True, nullable=False, unique=True)
+    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
@@ -80,6 +81,7 @@ class User(UserMixin):
         self.id = id
         self.username = username
         self.password = password
+
 
     @classmethod
     def get(cls, id):

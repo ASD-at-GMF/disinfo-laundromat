@@ -1,7 +1,7 @@
 from datetime import datetime
 from flask_login import UserMixin
 
-from init_app import get_db, db
+from init_app import db
 
 
 class Query(db.Model):
@@ -86,14 +86,3 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     password = db.Column(db.String(255), nullable=False, default='')
-
-
-    @classmethod
-    def get(cls, id):
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (id,))
-        user = cursor.fetchone()
-        if user:
-            return cls(id=user[0], username=user[1], password=user[2])
-        return None

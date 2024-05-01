@@ -1,6 +1,5 @@
 import os
-import sqlite3
-from flask import Flask, g
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 # from flask_migrate import Migrate
@@ -25,11 +24,3 @@ def init_app(config_mode):
     # migrate.init_app(app, db)
 
     return app
-
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(SQLLITE_DB_PATH)
-        # This enables column access by name: row['column_name']
-        db.row_factory = sqlite3.Row
-    return db

@@ -67,7 +67,7 @@ logging.basicConfig(filename='debug.log',
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(user_id)
+    return db.session.get(User, user_id)
 
 
 @app.teardown_appcontext
@@ -173,7 +173,7 @@ def login(request):
 
 
     if reg_key is not None and user is None:
-        reg_key_db = RegistrationKey.query.get(reg_key)
+        reg_key_db = db.session.get(RegistrationKey, reg_key)
         if reg_key_db is not None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
             user = User(username=username, password=hashed_password)
@@ -209,10 +209,7 @@ def register_gui():
     password = request.form['password']
     reg_key = request.form['reg_key']
 
-    db = get_db()
-    cursor = db.cursor()
-
-    reg_key = RegistrationKey.query.get(reg_key)
+    reg_key = db.session.get(RegistrationKey, reg_key)
     if reg_key:
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         user = User(username=username, password=hashed_password)

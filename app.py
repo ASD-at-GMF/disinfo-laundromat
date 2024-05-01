@@ -1,11 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-<<<<<<< HEAD
 from flask import render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
-=======
-from flask import render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify
->>>>>>> 7791ae3 (doing some work that hopefully actually works...)
 from flask_bootstrap import Bootstrap
 from functools import wraps
 

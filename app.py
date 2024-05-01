@@ -49,7 +49,7 @@ CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
 from init_app import db, init_app, get_db
-from models import SiteBase, SiteIndicator, User
+from models import RegistrationKey, SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
@@ -72,7 +72,7 @@ logging.basicConfig(filename='debug.log',
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get(user_id)
+    return User.query.get(user_id)
 
 
 @app.teardown_appcontext
@@ -174,28 +174,20 @@ def login(request):
     password = request.form['password']
     reg_key = request.form.get('reg_key', None)
 
+    user = User.query.get({'username': username})
 
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-    user = cursor.fetchone()
 
-    if reg_key is not None and user is None: 
-        cursor.execute("SELECT registration_keys FROM registration_keys where registration_keys = ?", (reg_key,))
-        reg_key_db = cursor.fetchone()
+    if reg_key is not None and user is None:
+        reg_key_db = RegistrationKey.query.get(reg_key)
         if reg_key_db is not None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                        (username, hashed_password))
-            db.commit()
-            user_obj = User(id=cursor.lastrowid, username=username, password=hashed_password)
-            login_user(user_obj)
+            user = User(username=username, password=hashed_password)
+            db.session.add(user)
+            login_user(user)
             is_logged_in = True
         
-    elif user and bcrypt.check_password_hash(user['password'], password):
-        user_obj = User(
-            id=user['id'], username=user['username'], password=user['password'])
-        login_user(user_obj)
+    elif user and bcrypt.check_password_hash(user.password, password):
+        login_user(user)
         is_logged_in = True
     else:
         app.logger.warning('Unauthorized login attempt for user: %s', username)
@@ -225,15 +217,12 @@ def register_gui():
     db = get_db()
     cursor = db.cursor()
 
-    cursor.execute("SELECT registration_keys FROM registration_keys", (reg_key,))
-    reg_keys = cursor.fetchall
-    if reg_key in reg_keys:
+    reg_key = RegistrationKey.query.get(reg_key)
+    if reg_key:
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                       (username, hashed_password))
-        db.commit()
-        user_obj = User(id=cursor.lastrowid, username=username, password=hashed_password)
-        login_user(user_obj)
+        user = User(username=username, password=hashed_password)
+        db.session.add(user)
+        login_user(user)
         is_logged_in = True
     else:
         app.logger.warning('Unauthorized login attempt for user: %s', username)

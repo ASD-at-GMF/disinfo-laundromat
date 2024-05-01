@@ -37,6 +37,12 @@ class Result(db.Model):
     engines      = db.Column(db.String(100), nullable=True, unique=False)
     cq_id        = db.Column(db.String(100), nullable=True, unique=False)
 
+
+class RegistrationKey(db.Model):
+    __tablename__ = 'registration_keys'
+
+    registration_keys    = db.Column(db.String(100), nullable=False, unique=True)
+
 class SiteIndicator(db.Model):
     __tablename__ = 'site_fingerprint'
 
@@ -74,13 +80,12 @@ class SiteUser(db.Model):
     domain       = db.Column(db.String(100), nullable=False, unique=False)
     source       = db.Column(db.String(100), nullable=False, unique=False)
 
-class User(UserMixin):
+class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
-    def __init__(self, id, username, password):
-        self.id = id
-        self.username = username
-        self.password = password
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), index=True, unique=True)
+    password = db.Column(db.String(255), nullable=False, default='')
 
 
     @classmethod

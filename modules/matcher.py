@@ -193,6 +193,13 @@ def any_in_list_match(
         matches_df[MATCH_VALUE] = True
     return matches_df.reset_index(drop=True)
 
+def partial_text_match(
+        feature_df: pd.DataFrame,
+        comparison_df: pd.DataFrame,
+        feature: str,
+):
+    raise NotImplementedError
+
 def parse_whois_matches(
     feature_df: pd.DataFrame,
     comparison_df: pd.DataFrame,

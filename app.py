@@ -43,7 +43,7 @@ MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
-from init_app import db, init_app, get_db
+from init_app import db, init_app
 from models import RegistrationKey, SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
@@ -169,7 +169,7 @@ def login(request):
     password = request.form['password']
     reg_key = request.form.get('reg_key', None)
 
-    user = User.query.get({'username': username})
+    user = User.query.filter_by(username = username).first()
 
 
     if reg_key is not None and user is None:

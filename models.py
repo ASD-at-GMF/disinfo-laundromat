@@ -41,7 +41,7 @@ class Result(db.Model):
 class RegistrationKey(db.Model):
     __tablename__ = 'registration_keys'
 
-    registration_keys    = db.Column(db.String(100), nullable=False, unique=True)
+    registration_keys    = db.Column(db.String(100), primary_key=True, nullable=False, unique=True)
 
 class SiteIndicator(db.Model):
     __tablename__ = 'site_fingerprint'

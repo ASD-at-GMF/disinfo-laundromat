@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
+from flask import render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
 from flask_bootstrap import Bootstrap
 from functools import wraps
 

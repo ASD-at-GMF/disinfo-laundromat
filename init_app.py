@@ -1,4 +1,5 @@
 import os
+
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -22,5 +23,5 @@ def init_app(config_mode):
     app.config['REMEMBER_COOKIE_SECURE'] = True
     db.init_app(app)
     migrate.init_app(app, db)
-
     return app
+

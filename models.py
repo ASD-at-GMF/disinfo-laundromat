@@ -3,7 +3,6 @@ from flask_login import UserMixin
 
 from init_app import db
 
-
 class Query(db.Model):
     __tablename__ = 'content_queries'
 
@@ -36,7 +35,6 @@ class Result(db.Model):
     link_occurrences      = db.Column(db.Integer(), nullable=True, unique=False)
     engines      = db.Column(db.String(100), nullable=True, unique=False)
     cq_id        = db.Column(db.String(100), nullable=True, unique=False)
-
 
 class RegistrationKey(db.Model):
     __tablename__ = 'registration_keys'

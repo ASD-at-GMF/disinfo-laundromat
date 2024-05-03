@@ -69,7 +69,6 @@ logging.basicConfig(filename='debug.log',
 def load_user(user_id):
     return db.session.get(User, user_id)
 
-
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, '_database', None)

@@ -1,9 +1,8 @@
 from dotenv import load_dotenv
-load_dotenv()  
+load_dotenv()
 
-from flask import Flask, render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
+from flask import render_template, request, flash, make_response, g,  redirect, url_for, send_file, jsonify, send_from_directory
 from flask_bootstrap import Bootstrap
-from flask_cors import CORS
 from functools import wraps
 
 import concurrent.futures
@@ -17,8 +16,7 @@ from urllib.parse import urlparse, urlunparse
 import csv
 import sys
 from newspaper import Article, Config
-import sqlite3
-from flask_login import LoginManager, login_user, logout_user, login_required, UserMixin
+from flask_login import LoginManager, login_user, logout_user, login_required
 from flask_bcrypt import Bcrypt
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
@@ -28,9 +26,9 @@ import zipfile
 import numpy as np
 import traceback
 import os
-import ast
 import bleach
 import logging
+from sqlalchemy import insert
 
 # Paramaterizable Variables
 SERP_API_KEY = os.getenv('SERP_API_KEY')
@@ -46,22 +44,17 @@ MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
-
+from init_app import db, init_app, get_db
+from models import SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
 from modules.email_utils import send_results_email
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-bootstrap = Bootstrap(app)
+app = init_app(os.getenv("CONFIG_MODE"))
+Bootstrap(app)
 bcrypt = Bcrypt(app)
-app.secret_key = APP_SECRET_KEY  # Set a secret key for security purposes
-app.config['DEBUG'] = True
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['REMEMBER_COOKIE_SECURE'] = True
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -73,39 +66,9 @@ logging.basicConfig(filename='debug.log',
                         )
 
 
-DATABASE = 'database.db'
-
-#### USER METHODS ####
-# TODO: Move to separate file
-class User(UserMixin):
-    def __init__(self, id, username, password):
-        self.id = id
-        self.username = username
-        self.password = password
-
-    @classmethod
-    def get(cls, id):
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM users WHERE id = ?", (id,))
-        user = cursor.fetchone()
-        if user:
-            return cls(id=user[0], username=user[1], password=user[2])
-        return None
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
-
-
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(SQLLITE_DB_PATH)
-        # This enables column access by name: row['column_name']
-        db.row_factory = sqlite3.Row
-    return db
 
 
 @app.teardown_appcontext
@@ -115,35 +78,31 @@ def close_connection(exception):
         db.close()
 
 
-def init_db():
-    with app.app_context():
-        db = get_db()
-        with app.open_resource('schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
-        # Insert local_domains into sites_base
-        insert_sites_of_concern(load_domains_of_concern())
-
-
 def insert_sites_of_concern(local_domains):
-    db = get_db()
     app.logger.info("Inserting indicators: %s", local_domains)
-    # Check if the table is empty
-    if db.execute('SELECT COUNT(*) FROM sites_base').fetchone()[0] == 0:
-        # If empty, insert the local_domains
-        db.executemany('INSERT INTO sites_base (domain, source) VALUES (?, ?)',
-                       [(domain, source) for domain, source in local_domains])
-        db.commit()
+    # Check if the table is empty.
+    engine = db.session.get_bind()
+    with engine.connect() as conn:
+        if SiteBase.query.first() is None:
+            conn.execute(
+                insert(SiteBase),
+                [{"domain": domain, "source": source} for domain, source in local_domains[:10]]
+            )
+            conn.commit()
 
 
 def insert_indicators(indicators):
-    db = get_db()
     app.logger.info("Inserting indicators: %s", indicators)
-
-    # If empty, insert the local_domains
-    db.executemany('INSERT INTO site_fingerprint (domain_name, indicator_type, indicator_content) VALUES (?, ?, ?)',
-                   [(indicator['domain_name'], indicator['indicator_type'], str(indicator['indicator_content'])) for indicator in indicators])
-    db.commit()
+    engine = db.session.get_bind()
+    with engine.connect() as conn:
+        conn.execute(
+            insert(SiteIndicator),
+            [{"domain": indicator['domain_name'],
+            "indicator_type": indicator['indicator_type'],
+            "indicator_content": str(indicator['indicator_content'])}
+            for indicator in indicators]
+        )
+        conn.commit()
 
 # TODO move to a utils or decorators file
 def clean_inputs(view_func):
@@ -1382,6 +1341,8 @@ def parse_title_content(input_string):
 
 
 if __name__ == "__main__":
-    init_db()
+    with app.app_context():
+        db.create_all()
+        insert_sites_of_concern(load_domains_of_concern())
     port = int(os.getenv("PORT", 8000))  # Default to 8000 if not set
     app.run(host='0.0.0.0', port=port)

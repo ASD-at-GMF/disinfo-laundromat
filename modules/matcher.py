@@ -6,11 +6,12 @@ import traceback
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Callable
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_list_like
+from rapidfuzz import fuzz
 
 from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
                                 TRACKING_IDS)
@@ -130,7 +131,39 @@ def direct_match(
     matches = matches.rename(columns={indicator: MATCH_VALUE})
     return matches.reset_index(drop=True)
 
-# TODO: Add a partial string match function
+def partial_text_match(
+    feature_df: pd.DataFrame,
+    feature: str,
+    comparison_df: pd.DataFrame,
+    threshold: float = 0.9,
+) -> pd.DataFrame:
+
+    feature_df = feature_df[~feature_df.indicator_content.isna()]
+    feature_df = feature_df.drop_duplicates(['domain_name', 'indicator_content'])
+    comparison_df = comparison_df[~comparison_df.indicator_content.isna()]
+    comparison_df = comparison_df.drop_duplicates(['domain_name', 'indicator_content'])
+
+    match_data = [
+        {
+            "domain_name_x": f_row.domain_name,
+            "domain_name_y": c_row.domain_name,
+            MATCH_VALUE: fuzz.ratio(f_row.indicator_content, c_row.indicator_content) / 100.0,
+            "matched_on": feature
+
+        }
+        for f_row in feature_df.itertuples()
+        for c_row in comparison_df.itertuples()
+        if f_row.domain_name != c_row.domain_name # deduplicate
+    ]
+
+    # Create DataFrame from string matched data
+    result = pd.DataFrame(match_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_TYPE, MATCH_VALUE])
+    if not result.empty:
+        result[MATCH_TYPE] = feature
+        result = result[result[MATCH_VALUE] >= threshold]
+
+    return result
+
 
 def iou_match(
     feature_df: pd.DataFrame,
@@ -143,6 +176,10 @@ def iou_match(
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
     # Convert data to sets
+    feature_df = feature_df[~feature_df.indicator_content.isna()]
+    feature_df = feature_df.drop_duplicates(['domain_name', 'indicator_content'])
+    comparison_df = comparison_df[~comparison_df.indicator_content.isna()]
+    comparison_df = comparison_df.drop_duplicates(['domain_name', 'indicator_content'])
     feature_sets = group_indicators(feature_df).to_dict()
     comparison_sets = group_indicators(comparison_df).to_dict()
 
@@ -193,12 +230,6 @@ def any_in_list_match(
         matches_df[MATCH_VALUE] = True
     return matches_df.reset_index(drop=True)
 
-def partial_text_match(
-        feature_df: pd.DataFrame,
-        comparison_df: pd.DataFrame,
-        feature: str,
-):
-    raise NotImplementedError
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
@@ -306,7 +337,7 @@ FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataF
 "2-urlscan_urlssonpage" : iou_match,
 "2-urlscanhrefs" : iou_match,
 "2-techstack" : iou_match,
-"3-footer-text": direct_match,
+"3-footer-text": partial_text_match,
 "4-outbound-domain": iou_match,
 "2-ads_txt": iou_match
 

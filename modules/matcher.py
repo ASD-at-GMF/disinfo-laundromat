@@ -149,11 +149,10 @@ def partial_text_match(
             "domain_name_y": c_row.domain_name,
             MATCH_VALUE: fuzz.ratio(f_row.indicator_content, c_row.indicator_content) / 100.0,
             "matched_on": feature
-
         }
         for f_row in feature_df.itertuples()
         for c_row in comparison_df.itertuples()
-        if f_row.domain_name != c_row.domain_name # deduplicate
+        if f_row.domain_name != c_row.domain_name
     ]
 
     # Create DataFrame from string matched data

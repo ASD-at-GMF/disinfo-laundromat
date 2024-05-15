@@ -44,7 +44,7 @@ CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
 from init_app import db, init_app
-from models import RegistrationKey, SiteBase, SiteIndicator, User
+from models import RegistrationKey, Site, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
@@ -82,10 +82,10 @@ def insert_sites_of_concern(local_domains):
     # Check if the table is empty.
     engine = db.session.get_bind()
     with engine.connect() as conn:
-        if SiteBase.query.first() is None:
+        if Site.query.first() is None:
             conn.execute(
-                insert(SiteBase),
-                [{"domain": domain, "source": source} for domain, source in local_domains]
+                insert(Site),
+                [{"domain": domain, "source": source, "is_base": True} for domain, source in local_domains]
             )
             conn.commit()
 

@@ -36,7 +36,6 @@ SITES_OF_CONCERN = os.getenv('SITES_OF_CONCERN', '')
 KNOWN_INDICATORS = os.getenv('KNOWN_INDICATORS', '')
 MYIPMS_API_PATH = os.getenv('MYIPMS_API_PATH', '')
 APP_SECRET_KEY = os.getenv('APP_SECRET_KEY', '')
-SQLLITE_DB_PATH = os.getenv('SQLLITE_DB_PATH', '')
 COPYSCAPE_API_KEY = os.getenv('COPYSCAPE_API_KEY', '')
 COPYSCAPE_USER = os.getenv('COPYSCAPE_USER', '')
 PATH_TO_OUTPUT_CSV = os.getenv('PATH_TO_OUTPUT_CSV', '')
@@ -44,8 +43,8 @@ MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
-from init_app import db, init_app, get_db
-from models import SiteBase, SiteIndicator, User
+from init_app import db, init_app
+from models import RegistrationKey, SiteBase, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
@@ -68,7 +67,7 @@ logging.basicConfig(filename='debug.log',
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get(user_id)
+    return db.session.get(User, user_id)
 
 
 @app.teardown_appcontext
@@ -86,7 +85,7 @@ def insert_sites_of_concern(local_domains):
         if SiteBase.query.first() is None:
             conn.execute(
                 insert(SiteBase),
-                [{"domain": domain, "source": source} for domain, source in local_domains[:10]]
+                [{"domain": domain, "source": source} for domain, source in local_domains]
             )
             conn.commit()
 
@@ -170,28 +169,20 @@ def login(request):
     password = request.form['password']
     reg_key = request.form.get('reg_key', None)
 
+    user = User.query.filter_by(username = username).first()
 
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-    user = cursor.fetchone()
 
-    if reg_key is not None and user is None: 
-        cursor.execute("SELECT registration_keys FROM registration_keys where registration_keys = ?", (reg_key,))
-        reg_key_db = cursor.fetchone()
+    if reg_key is not None and user is None:
+        reg_key_db = db.session.get(RegistrationKey, reg_key)
         if reg_key_db is not None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-            cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                        (username, hashed_password))
-            db.commit()
-            user_obj = User(id=cursor.lastrowid, username=username, password=hashed_password)
-            login_user(user_obj)
+            user = User(username=username, password=hashed_password)
+            db.session.add(user)
+            login_user(user)
             is_logged_in = True
         
-    elif user and bcrypt.check_password_hash(user['password'], password):
-        user_obj = User(
-            id=user['id'], username=user['username'], password=user['password'])
-        login_user(user_obj)
+    elif user and bcrypt.check_password_hash(user.password, password):
+        login_user(user)
         is_logged_in = True
     else:
         app.logger.warning('Unauthorized login attempt for user: %s', username)
@@ -218,18 +209,12 @@ def register_gui():
     password = request.form['password']
     reg_key = request.form['reg_key']
 
-    db = get_db()
-    cursor = db.cursor()
-
-    cursor.execute("SELECT registration_keys FROM registration_keys", (reg_key,))
-    reg_keys = cursor.fetchall
-    if reg_key in reg_keys:
+    reg_key = db.session.get(RegistrationKey, reg_key)
+    if reg_key:
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                       (username, hashed_password))
-        db.commit()
-        user_obj = User(id=cursor.lastrowid, username=username, password=hashed_password)
-        login_user(user_obj)
+        user = User(username=username, password=hashed_password)
+        db.session.add(user)
+        login_user(user)
         is_logged_in = True
     else:
         app.logger.warning('Unauthorized login attempt for user: %s', username)

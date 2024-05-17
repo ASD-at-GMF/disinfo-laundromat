@@ -13,7 +13,7 @@ from io import BytesIO
 import pandas as pd
 import requests
 from io import StringIO
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse,unquote
 import csv
 import sys
 from newspaper import Article, Config
@@ -288,28 +288,15 @@ def register(request):
     # Save the username and hashed_password to the database
     return jsonify({'message': 'Registered successfully'})
 
-@app.route('/url-search', methods=[ 'POST'])
+@app.route('/url-search', methods=['GET','POST'])
 @clean_inputs
 def url_search():
     try:
         indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
-
         return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
     except Exception as e:
         return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
-    
-#deprecated
-@app.route('/fingerprint', methods=['GET', 'POST'])
-#@login_required
-@clean_inputs
-def fingerprint_gui():
-    if request.method == 'POST':
-        try:
-            indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
-            return render_template('index.html',  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
-        except Exception as e:
-            return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
-    return render_template('index.html', request=request, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+
 
 @app.route('/api/fingerprint', methods=['POST'])
 #@login_required
@@ -324,9 +311,14 @@ def fingerprint_api():
     return jsonify({'error': 'No URL provided'})
 
 def fingerprint(request):
-    url = request.form['url']
-    run_urlscan =  'run_urlscan' in request.form
-    internal_only = 'internal_only' in request.form 
+    if request.method == 'POST':
+        url = request.form['url']
+        run_urlscan =  'run_urlscan' in request.form
+        internal_only = 'internal_only' in request.form 
+    elif request.method == 'GET':
+        url = request.args.get('url')
+        run_urlscan =  'run_urlscan' in request.args
+        internal_only = 'internal_only' in request.args
     # Validation checks for internal_only and run_urlscan
     if internal_only:
         if request.form['internal_only'] == 'true' or request.form['internal_only'] == 'True' or request.form['internal_only'] == 'TRUE' or request.form['internal_only'] == '1':
@@ -395,6 +387,8 @@ def content_gui():
         else:
             results, csv_data = (None, None)
             results, csv_data = content(request)
+    if request.method == 'GET' and len(request.args) > 0:
+        results, csv_data = content(request)
             
     return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES,  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
@@ -409,32 +403,43 @@ def content_api():
             results, csv_data = content(request)
             return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
 
-@app.route('/content-search', methods=['POST'])
+@app.route('/content-search', methods=['GET','POST'])
 @app.route('/api/content-search', methods=['POST'])
 @clean_inputs
 def parse_content_search():
     if request.method == 'POST':
         contentToSearch = request.form.get('contentToSearch')
         isApi = request.form.get('isApi', 'false')
-        # Parse the URL
-        parsed_url = format_url(contentToSearch)
-        if parsed_url is not None: 
-            results, csv_data = parse_url(request, contentToSearch)
-        else:
-            title_query, content_query = parse_title_content(contentToSearch)
-            results, csv_data = content(request, title_query, content_query)
-        if isApi == 'true':
-            return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
-        else:
-            return render_template('index.html', request=request, results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+    if request.method == 'GET':
+        contentToSearch = request.args.get('contentToSearch')
+        isApi = request.args.get('isApi', 'false')
+    # Parse the URL
+    parsed_url = format_url(contentToSearch)
+    if parsed_url is not None: 
+        results, csv_data = parse_url(request, contentToSearch)
+    else:
+        title_query, content_query = parse_title_content(contentToSearch)
+        results, csv_data = content(request, title_query, content_query)
+    if isApi == 'true':
+        return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
+    else:
+        return render_template('index.html', request=request, results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 def content(request, title_query=None, content_query=None):
-    title_query = title_query if title_query is not None else  request.form.get('titleQuery')
-    content_query = content_query if content_query is not None else request.form.get('contentQuery')
-    combineOperator = request.form.get('combineOperator', 'OR')
-    language = request.form.get('language', 'en') 
-    country = request.form.get('country', 'us') 
-    engines = request.form.getlist('search_engines')
+    if request.method == 'POST':
+        title_query = title_query if title_query is not None else  request.form.get('titleQuery')
+        content_query = content_query if content_query is not None else request.form.get('contentQuery')
+        combineOperator = request.form.get('combineOperator', 'OR')
+        language = request.form.get('language', 'en') 
+        country = request.form.get('country', 'us') 
+        engines = request.form.getlist('search_engines')
+    elif request.method == 'GET':
+        title_query = title_query if title_query is not None else unquote(request.args.get('titleQuery'))
+        content_query = content_query if content_query is not None else unquote(request.args.get('contentQuery'))
+        combineOperator = request.args.get('combineOperator', 'OR')
+        language = request.args.get('language', 'en')
+        country = request.args.get('country', 'us')
+        engines = request.args.getlist('search_engines', ['all'] )
 
     print("Engines: ", engines, "Title Query: ", title_query, "Content Query: ", content_query, "Combine Operator: ", combineOperator, "Language: ", language, "Country: ", country)
     if engines == 'all' or engines == ['all'] or engines == []:
@@ -457,32 +462,6 @@ def content(request, title_query=None, content_query=None):
         return fetch_content_results(
             title_query, content_query, combineOperator, language, country, engines=engines)
 
-#Deprecated
-@app.route('/parse-url', methods=['POST'])
-@clean_inputs
-def parse_url_gui():
-    url = request.form['url']
-    url = format_url(url)
-
-    if not url:
-        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
-    try:
-        results, csv_data = parse_url(request)
-        return render_template('index.html', results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
-    except Exception as e:
-        response = requests.get(url)
-        if response.status_code == 200:
-            # Parse the HTML content
-            soup = BeautifulSoup(response.text, 'html.parser')
-            meta_title = soup.title.string or soup.find('meta', attrs={'name': 'title'})['content'] if soup.title else "" 
-            meta_description = soup.find('meta', attrs={'name': 'description'})['content'] if soup.find('meta', attrs={'name': 'description'}) else ""
-            flash(f"This page could not automatically be parsed for content, but a potential title and first paragraph have been extracted, copy and paste those below if correct: {meta_title} : {meta_description}")
-
-        else:
-            flash("This page could not automatically be parsed for content. Please enter a title and/or content query manually.")
-        
-        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
-    
 @app.route('/api/parse-url', methods=['POST'])
 @clean_inputs
 def parse_url_api():
@@ -494,13 +473,22 @@ def parse_url_api():
         return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
         
 def parse_url(request, urlToParse=None):
-    url = urlToParse if urlToParse is not None else request.form.get('url', '')
-    url = format_url(url)
-    engines = request.form.getlist('search_engines')
-    combineOperator = request.form.get('combineOperator', 'OR')
-    language = request.form.get('language', 'en')
-    country = request.form.get('country', 'us')
-    if engines == 'all' or engines == ['all'] or engines == []:
+    if request.method == 'POST':
+        url = urlToParse if urlToParse is not None else request.form.get('url', '')
+        url = format_url(url)
+        engines = request.form.getlist('search_engines', [])
+        combineOperator = request.form.get('combineOperator', 'OR')
+        language = request.form.get('language', 'en')
+        country = request.form.get('country', 'us')
+    elif request.method == 'GET':
+        url = urlToParse if urlToParse is not None else request.args.get('url', '')
+        url = format_url(url)
+        engines = request.args.getlist('search_engines', [])
+        combineOperator = request.args.get('combineOperator', 'OR')
+        language = request.args.get('language', 'en')
+        country = request.args.get('country', 'us')
+
+    if  engines == 'all' or engines == ['all'] or engines == []:
         engines = ['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']
     if isinstance(engines, str):
         engines = [engines]
@@ -561,7 +549,7 @@ def upload_file(request):
 
         # Process each URL in the CSV
         for row in csv_input:
-            searched_url = row.get("url")
+            searched_url = row.get("url") or row.get("\ufeffurl")
             title_query = row.get("title")
             content_query = row.get("content")
             combineOperator = row.get("combineOperator")
@@ -1091,6 +1079,7 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
             url_indexes[url] = idx
             local_source = local_domains_dict.get(result['domain']) or local_domains_dict.get(result['domain'].split('.')[1])  # Check for FQDN and no subdomain
             github_source = "statemedia" if urlparse(result['domain']).netloc.strip() in github_domains else None
+            all_results[idx]['source'] = []
             if local_source is not None:
                 #aggregated_results["source"].append(local_source)
                 all_results[idx]['source'] = [local_source]
@@ -1326,8 +1315,11 @@ def format_url(url):
     url = url.strip()  # Remove leading/trailing whitespace
     parsed_url = urlparse(url)
 
+    # If the URL lacks a domain, return None.
+    if '.' not in url:
+        return None
     # If the URL lacks both scheme and netloc, attempt to prepend "http://".
-    if parsed_url.scheme == "" and parsed_url.netloc == "":
+    elif parsed_url.scheme == "" and parsed_url.netloc == "":
         # This handles cases where the entire URL might be in the path component.
         if parsed_url.path:
             fixed_url = "http://" + url

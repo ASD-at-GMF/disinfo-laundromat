@@ -67,7 +67,7 @@ class Site(db.Model):
     # Input by Query Fields:
     domain       = db.Column(db.String(100), nullable=False, unique=False)
     source       = db.Column(db.String(100), nullable=False, unique=False)
-    is_base    = db.Column(db.Boolean, nullable=False, unique=False, default=False)
+    is_base      = db.Column(db.Boolean, nullable=True, unique=False, default=False)
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'

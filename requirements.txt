@@ -20,3 +20,6 @@ python-dotenv==1.0.0
 flask_cors==4.0.0
 lxml==5.1.0
 bleach==6.1.0
+psycopg2-binary==2.9.9
+Flask-SQLAlchemy==3.1.1
+flask_migrate==4.0.7

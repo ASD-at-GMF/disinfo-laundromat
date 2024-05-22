@@ -230,6 +230,8 @@ def register(request):
     plain_text_password = request.form['password']
     hashed_password = bcrypt.generate_password_hash(plain_text_password).decode('utf-8')
     # Save the username and hashed_password to the database
+    user = User(username=username, password=hashed_password)
+    db.session.add(user)
     return jsonify({'message': 'Registered successfully'})
 
 @app.route('/url-search', methods=['GET','POST'])

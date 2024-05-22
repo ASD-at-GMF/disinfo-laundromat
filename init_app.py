@@ -20,7 +20,10 @@ def init_app(config_mode):
     app.config['SESSION_COOKIE_SECURE'] = True
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['REMEMBER_COOKIE_SECURE'] = True
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
+    with app.app_context():
+        db.create_all()
     migrate.init_app(app, db)
 
     return app

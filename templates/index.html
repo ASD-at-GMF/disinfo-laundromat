@@ -118,7 +118,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('autoFillRTLaunderingButton').addEventListener('click', function () {
                 // Set the content input value
-                document.getElementById('contentToSearch').value = 'https://www.rt.com/news/597737-attack-slovak-robert-fico/0';
+                document.getElementById('contentToSearch').value = 'https://www.rt.com/russia/597937-zelensky-no-mandate-election/';
 
                 $('#myTab a[href="#contentTab"]').click();
                 var searchButton = document.getElementById('contentSearchButton');
@@ -365,7 +365,7 @@
     </script>
 </head>
 
-<body class="bg-dark-gray main-page">
+<body class="bg-dark-gray">
 
     <div id="loading" class="loading-overlay" style="display: none;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" width="250"
@@ -408,7 +408,7 @@
     </div>
     </div>
     <!--  -->
-    <div class="ml-5 mr-5 text-light-gray ">
+    <div class="ml-5 mr-5 text-light-gray  main-page">
         <div class="py-5">
 
             <div class="row top-nav">
@@ -460,6 +460,11 @@
                     </div>
                 </div>
                 <div class="col-lg-8 mb-3">
+                    {% if error_message %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error_message }}
+                      </div>
+                      {% endif %}
                     <div class="card">
                         <div class="card-header p-0 text-center">
                             <ul class="nav nav-tabs" id="myTab" role="tablist">

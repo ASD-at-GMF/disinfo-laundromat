@@ -359,8 +359,13 @@ def parse_content_search():
         isApi = request.args.get('isApi', 'false')
     # Parse the URL
     parsed_url = format_url(contentToSearch)
+
     if parsed_url is not None: 
-        results, csv_data = parse_url(request, contentToSearch)
+        try:
+            results, csv_data = parse_url(request, contentToSearch)
+        except Exception as e:
+            error_message = f"This URL could not automatically be parsed: {parsed_url} ; Manually enter a title and/or content query."
+            return render_template('index.html', error_message = error_message, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
     else:
         title_query, content_query = parse_title_content(contentToSearch)
         results, csv_data = content(request, title_query, content_query)
@@ -368,6 +373,9 @@ def parse_content_search():
         return jsonify({'results': results, 'csv_data': csv_data, 'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA})
     else:
         return render_template('index.html', request=request, results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+
+
+
 
 def content(request, title_query=None, content_query=None):
     if request.method == 'POST':
@@ -443,18 +451,14 @@ def parse_url(request, urlToParse=None):
     elif combineOperator == 'True' or combineOperator == 'true':
         combineOperator = 'AND'
 
-        # Extracting article data-
-    try:
         
-        article = Article(url)
-        article.download()
-        article.parse()
+    article = Article(url)
+    article.download()
+    article.parse()
 
-        return fetch_content_results(
-                article.title, article.text, combineOperator, language, country, engines=engines)
-    #TODO: Add error handling on the frontend
-    except Exception as e:
-        return jsonify({'error': "This page could not automatically be parsed for content. Please enter a title and/or content query manually."})
+    return fetch_content_results(
+            article.title, article.text, combineOperator, language, country, engines=engines)
+
 
 @app.route('/batch-search-metadata', methods=['POST'])
 @clean_inputs

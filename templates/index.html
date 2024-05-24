@@ -408,887 +408,889 @@
     </div>
     </div>
     <!--  -->
-    <div class="ml-5 mr-5 text-light-gray  main-page">
-        <div class="py-5">
+    <div class="main-page">
+        <div class="ml-5 mr-5 text-light-gray">
+            <div class="py-5">
 
-            <div class="row top-nav">
-                <div class="col-md-9">
-                    <!--Logo-->
+                <div class="row top-nav">
+                    <div class="col-md-9">
+                        <!--Logo-->
 
-                    <div class=" mb-4">
+                        <div class=" mb-4">
 
-                        <h2 class="lead"> <img
-                                src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/04/il_logo_nobg.png"
-                                class="img-fluid" alt="logo" style="max-width: 50px;">The Information Laundromat</h2>
-                    </div>
-                </div>
-
-                <div class="col-md-1">
-                    <div class=" mb-4 text-right">
-                        <h2 class="lead">
-                            <a href="/"><strong>Search</strong></a>
-                        </h2>
-                    </div>
-                </div>
-                <div class="col-md-1">
-                    <div class=" mb-4 text-right">
-                        <h2 class="lead">
-                            <a href="{{ url_for('about') }}">About</a>
-                        </h2>
-                    </div>
-                </div>
-                <div class="col-md-1">
-                    <div class=" mb-4 text-right">
-                        <h2 class="lead">
-                            <a href="{{ url_for('indicators_gui') }}">Indicators</a>
-                        </h2>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="row">
-                <div class="col-lg-4 mb-5 mt-5">
-                    <div class="col text-center " id=dynamic-content>
-                        <h3 class="display-4">
-                            <span id="lead-verb">Discover </span>
-                            <span id="lead-noun">content relationships</span> from across the infosphere
-                        </h3>
-                        <h2 class="lead mt-5"> The Information Laundromat is a lead generation tool used to determine if
-                            and how websites share architecture and content. It provides two core functions: content
-                            similarity and domain forensics matching</h2>
-                    </div>
-                </div>
-                <div class="col-lg-8 mb-3">
-                    {% if error_message %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ error_message }}
-                      </div>
-                      {% endif %}
-                    <div class="card">
-                        <div class="card-header p-0 text-center">
-                            <ul class="nav nav-tabs" id="myTab" role="tablist">
-                                <li class="nav-item col-6 p-0">
-                                    <a class="nav-link active" data-toggle="tab" href="#contentTab">
-                                        <h3>Content Similarity</h3>
-                                    </a>
-                                </li>
-                                <li class="nav-item col-6 p-0">
-                                    <a class="nav-link" data-toggle="tab" href="#metadataTab">
-                                        <h3>Metadata Similarity</h3>
-                                    </a>
-                                </li>
-                            </ul>
+                            <h2 class="lead"> <img
+                                    src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/04/il_logo_nobg.png"
+                                    class="img-fluid" alt="logo" style="max-width: 50px;">The Information Laundromat</h2>
                         </div>
-                        <div class="card-body card-body-400">
-                            <div id="contentTab" class="container tab-pane fade active show">
-                                <form method="POST" action="/content-search" class="tabcontent">
-                                    <div class="row mt-1">
-                                        <div class="col-sm">
-                                            <p class="card-text">
-                                                <em>This tool compares headlines, content snippets, or URLs with search
-                                                    engines, databases, and plagiarism checkers to find similar texts.
-                                                </em>
-                                                Enter a URL, the title, or content of an article to search for instances
-                                                of reposted & similar content on search engines,
-                                                GDELT, and a plagiarism database. Searching by URL automatically parses
-                                                the title and content, but may fail.
-                                                Title and content can be specified using _title: and _content:
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="row mt-3 ">
-                                        <div class="col-sm input-group">
+                    </div>
 
-                                            <textarea type="text" rows=2 class="form-control" name="contentToSearch"
-                                                id="contentToSearch" aria-describedby="basic-addon2"
-                                                placeholder="Add article link, title or a text snippet"
-                                                required></textarea>
-                                            <div class="input-group-append">
-                                                <span class="input-group-text" id="basic-addon2">
-                                                    <i class="fas fa-info-circle" data-toggle="popover"
-                                                        data-content="Enter the full url, e.g. https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a title/content query if prompted"></i>
-                                            </div>
-                                        </div>
-                                    </div>
+                    <div class="col-md-1">
+                        <div class=" mb-4 text-right">
+                            <h2 class="lead">
+                                <a href="/"><strong>Search</strong></a>
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class=" mb-4 text-right">
+                            <h2 class="lead">
+                                <a href="{{ url_for('about') }}">About</a>
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <div class=" mb-4 text-right">
+                            <h2 class="lead">
+                                <a href="{{ url_for('indicators_gui') }}">Indicators</a>
+                            </h2>
+                        </div>
+                    </div>
 
-                                    <div class="row mt-3">
-                                        <div class="col-sm">
-                                            Country:
-                                            <i class="fas fa-info-circle" data-toggle="popover"
-                                                data-content="Match within a provided list of multiple URLS"></i>
-                                        </div>
-                                        <div class="col-sm">
-                                            Language:
-                                            <i class="fas fa-info-circle" data-toggle="popover"
-                                                data-content="Match within a provided list of multiple URLS"></i>
-                                        </div>
-                                        <div class="col-sm">
-                                            Engines:
-                                            <i class="fas fa-info-circle" data-toggle="popover"
-                                                data-content="Match within a provided list of multiple URLS"></i>
-                                        </div>
-                                        <div class="col-sm">
-                                        </div>
-                                    </div>
-                                    <div class="row mt-1">
-                                        <div class="col-sm input-group">
+                </div>
 
-                                            <select class="form-control" name="country" id="country"
-                                                aria-describedby="basic-addon3">
-                                                {% for code, name in countries.items() %}
-                                                <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{
-                                                    name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-
-                                        </div>
-
-                                        <div class="col-sm input-group">
-
-                                            <select class="form-control" name="language" id="language"
-                                                aria-describedby="basic-addon4">
-                                                {% for code, name in languages.items() %}
-                                                <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{
-                                                    name }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-
-                                        </div>
-
-                                        <div class="col-sm input-group">
-                                            <select class="form-control" multiple="multiple" name="search_engines"
-                                                id="search_engines">
-                                                {% for code, name in engines.items() %}
-                                                <option value="{{ code }}" {% if code=='all' %}selected{% endif %}>
-                                                    {{
-                                                    name
-                                                    }}
-                                                </option>
-                                                {% endfor %}
-                                            </select>
-
-                                        </div>
-
-                                        <div class="col-sm">
-                                            <button class="btn btn-secondary btn-block"
-                                                id="contentSearchButton">Search</button>
-                                        </div>
-                                    </div>
-                                </form>
-                                <hr class="my-4">
-                                {% if current_user.is_authenticated %}
-                                <form method="POST" action="/batch-search-content" id="batch-search-content"
-                                    enctype="multipart/form-data">
-
-                                    <div class="row mt-3 ml-1">
-                                        <h5 class="card-title">Batch Content Search</h5>
-                                    </div>
-                                    <div class="row mt-3 ml-1">
-                                        The CSV for batch searches requires the following columns: combineOperator,
-                                        (either AND or OR) language, (2
-                                        letter code, e.g. en) country, (2 letter code, e.g. us), engines (comma
-                                        separated list of search engines, e.g. google,bing), and your choice of EITHER
-                                        url (full url, e.g. https://tech.cnn.com/article-title.html) OR titleQuery and
-                                        contentQuery (text snippets).&nbsp;<a
-                                            href="{{ url_for('download_content_csv_example') }}" download>Download the
-                                            template</a>.
-
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col-md-5 input-group">
-                                            <div class="form-check form-check-inline">
-                                                <input type="file" class="custom-file-input" id="file" name="file">
-                                                <label class="custom-file-label" for="file">Content CSV</label>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-4 input-group">
-                                            <input type="email" class="form-control" id="email" name="email"
-                                                aria-describedby="emailHelp" placeholder="Email, e.g name@example.com"
-                                                required>
-
-                                        </div>
-
-
-                                        <div class="col-md-3">
-                                            <button class="btn btn-secondary btn-block">Search</button>
-                                        </div>
-
-                                    </div>
-                                </form>
-                                {% else %}
-                                <div class=" ml-3">
-                                    <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
-                                </div>
-                                {% endif %}
+                <div class="row">
+                    <div class="col-lg-4 mb-5 mt-5">
+                        <div class="col text-center " id=dynamic-content>
+                            <h3 class="display-4">
+                                <span id="lead-verb">Discover </span>
+                                <span id="lead-noun">content relationships</span> from across the infosphere
+                            </h3>
+                            <h2 class="lead mt-5"> The Information Laundromat is a lead generation tool used to determine if
+                                and how websites share architecture and content. It provides two core functions: content
+                                similarity and domain forensics matching</h2>
+                        </div>
+                    </div>
+                    <div class="col-lg-8 mb-3">
+                        {% if error_message %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error_message }}
+                        </div>
+                        {% endif %}
+                        <div class="card">
+                            <div class="card-header p-0 text-center">
+                                <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                    <li class="nav-item col-6 p-0">
+                                        <a class="nav-link active" data-toggle="tab" href="#contentTab">
+                                            <h3>Content Similarity</h3>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item col-6 p-0">
+                                        <a class="nav-link" data-toggle="tab" href="#metadataTab">
+                                            <h3>Metadata Similarity</h3>
+                                        </a>
+                                    </li>
+                                </ul>
                             </div>
-                            <div id="metadataTab" class="container tab-pane fade d-none">
-                                <form method="POST" action="/url-search" class="tabcontent-fingerprint">
-                                    <div class="row mt-1">
-                                        <div class="col-sm">
-                                            <p class="card-text">
-                                                <em>This function gathers technical information about a given site which
-                                                    indicate what makes it unique, give insight into its
-                                                    architecture/design, or show how it is used/tracked.</em>
-                                                Enter one or more domains, separated by commas. Include https:// and a
-                                                subdomain, if desired. (e.g. https://tech.cnn.com).
-                                            </p>
+                            <div class="card-body card-body-400">
+                                <div id="contentTab" class="container tab-pane fade active show">
+                                    <form method="POST" action="/content-search" class="tabcontent">
+                                        <div class="row mt-1">
+                                            <div class="col-sm">
+                                                <p class="card-text">
+                                                    <em>This tool compares headlines, content snippets, or URLs with search
+                                                        engines, databases, and plagiarism checkers to find similar texts.
+                                                    </em>
+                                                    Enter a URL, the title, or content of an article to search for instances
+                                                    of reposted & similar content on search engines,
+                                                    GDELT, and a plagiarism database. Searching by URL automatically parses
+                                                    the title and content, but may fail.
+                                                    Title and content can be specified using _title: and _content:
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3 ">
+                                            <div class="col-sm input-group">
+
+                                                <textarea type="text" rows=2 class="form-control" name="contentToSearch"
+                                                    id="contentToSearch" aria-describedby="basic-addon2"
+                                                    placeholder="Add article link, title or a text snippet"
+                                                    required></textarea>
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text" id="basic-addon2">
+                                                        <i class="fas fa-info-circle" data-toggle="popover"
+                                                            data-content="Enter the full url, e.g. https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a title/content query if prompted"></i>
+                                                </div>
+                                            </div>
                                         </div>
 
+                                        <div class="row mt-3">
+                                            <div class="col-sm">
+                                                Country:
+                                                <i class="fas fa-info-circle" data-toggle="popover"
+                                                    data-content="Match within a provided list of multiple URLS"></i>
+                                            </div>
+                                            <div class="col-sm">
+                                                Language:
+                                                <i class="fas fa-info-circle" data-toggle="popover"
+                                                    data-content="Match within a provided list of multiple URLS"></i>
+                                            </div>
+                                            <div class="col-sm">
+                                                Engines:
+                                                <i class="fas fa-info-circle" data-toggle="popover"
+                                                    data-content="Match within a provided list of multiple URLS"></i>
+                                            </div>
+                                            <div class="col-sm">
+                                            </div>
+                                        </div>
+                                        <div class="row mt-1">
+                                            <div class="col-sm input-group">
+
+                                                <select class="form-control" name="country" id="country"
+                                                    aria-describedby="basic-addon3">
+                                                    {% for code, name in countries.items() %}
+                                                    <option value="{{ code }}" {% if code=='us' %}selected{% endif %}>{{
+                                                        name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+
+                                            </div>
+
+                                            <div class="col-sm input-group">
+
+                                                <select class="form-control" name="language" id="language"
+                                                    aria-describedby="basic-addon4">
+                                                    {% for code, name in languages.items() %}
+                                                    <option value="{{ code }}" {% if code=='en' %}selected{% endif %}>{{
+                                                        name }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+
+                                            </div>
+
+                                            <div class="col-sm input-group">
+                                                <select class="form-control" multiple="multiple" name="search_engines"
+                                                    id="search_engines">
+                                                    {% for code, name in engines.items() %}
+                                                    <option value="{{ code }}" {% if code=='all' %}selected{% endif %}>
+                                                        {{
+                                                        name
+                                                        }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+
+                                            </div>
+
+                                            <div class="col-sm">
+                                                <button class="btn btn-secondary btn-block"
+                                                    id="contentSearchButton">Search</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <hr class="my-4">
+                                    {% if current_user.is_authenticated %}
+                                    <form method="POST" action="/batch-search-content" id="batch-search-content"
+                                        enctype="multipart/form-data">
+
+                                        <div class="row mt-3 ml-1">
+                                            <h5 class="card-title">Batch Content Search</h5>
+                                        </div>
+                                        <div class="row mt-3 ml-1">
+                                            The CSV for batch searches requires the following columns: combineOperator,
+                                            (either AND or OR) language, (2
+                                            letter code, e.g. en) country, (2 letter code, e.g. us), engines (comma
+                                            separated list of search engines, e.g. google,bing), and your choice of EITHER
+                                            url (full url, e.g. https://tech.cnn.com/article-title.html) OR titleQuery and
+                                            contentQuery (text snippets).&nbsp;<a
+                                                href="{{ url_for('download_content_csv_example') }}" download>Download the
+                                                template</a>.
+
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-5 input-group">
+                                                <div class="form-check form-check-inline">
+                                                    <input type="file" class="custom-file-input" id="file" name="file">
+                                                    <label class="custom-file-label" for="file">Content CSV</label>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4 input-group">
+                                                <input type="email" class="form-control" id="email" name="email"
+                                                    aria-describedby="emailHelp" placeholder="Email, e.g name@example.com"
+                                                    required>
+
+                                            </div>
+
+
+                                            <div class="col-md-3">
+                                                <button class="btn btn-secondary btn-block">Search</button>
+                                            </div>
+
+                                        </div>
+                                    </form>
+                                    {% else %}
+                                    <div class=" ml-3">
+                                        <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
                                     </div>
-                                    <div class="row mt-3 ">
-                                        <div id="urlWarning" class="alert alert-warning" role="alert"
+                                    {% endif %}
+                                </div>
+                                <div id="metadataTab" class="container tab-pane fade d-none">
+                                    <form method="POST" action="/url-search" class="tabcontent-fingerprint">
+                                        <div class="row mt-1">
+                                            <div class="col-sm">
+                                                <p class="card-text">
+                                                    <em>This function gathers technical information about a given site which
+                                                        indicate what makes it unique, give insight into its
+                                                        architecture/design, or show how it is used/tracked.</em>
+                                                    Enter one or more domains, separated by commas. Include https:// and a
+                                                    subdomain, if desired. (e.g. https://tech.cnn.com).
+                                                </p>
+                                            </div>
+
+                                        </div>
+                                        <div class="row mt-3 ">
+                                            <div id="urlWarning" class="alert alert-warning" role="alert"
+                                                style="display: none;">
+                                                <!-- Warning message will be inserted here -->
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3 ">
+                                            <div class="col-sm input-group">
+                                                <input type="text" class="form-control" aria-describedby="basic-addon6"
+                                                    placeholder="Enter one or more domains/link" name="url" id="url"
+                                                    required>
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text" id="basic-addon6">
+                                                        <i class="fas fa-info-circle" data-toggle="popover"
+                                                            data-content="Enter the full url, e.g. https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a title/content query if prompted"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-sm input-group">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="run_urlscan"
+                                                        name="run_urlscan" value="no">
+                                                    <label class="form-check-label" for="run_urlscan">Run URLSCAN
+                                                    </label>
+                                                    <i class="fas fa-info-circle" data-toggle="popover"
+                                                        data-content="May take up to 2 minutes"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-sm input-group">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="internal_only"
+                                                        name="internal_only" value="option1">
+                                                    <label class="form-check-label" for="in-group">In-group matching
+                                                    </label>
+                                                    <i class="fas fa-info-circle" data-toggle="popover"
+                                                        data-content="Match within a provided list of multiple URLS"></i>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm">
+                                            </div>
+                                            <div class="col-sm">
+                                                <button class="btn btn-secondary btn-block"
+                                                    id="metadataSearchButton">Search</button>
+                                            </div>
+                                        </div>
+
+                                    </form>
+                                    <hr class="my-4">
+                                    {% if current_user.is_authenticated %}
+                                    <form method="POST" action="/batch-search-metadata" id="batch-search-metadata"
+                                        enctype="multipart/form-data">
+                                        <div class="row mt-3  ml-1">
+                                            <h5 class="card-title">Batch Metadata Search</h5>
+                                        </div>
+                                        <div class="row mt-3  ml-1">
+                                            Requires only one column: url. Must be a full url, e.g.
+                                            https://tech.cnn.com/.&nbsp;<a
+                                                href="{{ url_for('download_domain_metadata_example') }}" download> Download
+                                                the template</a>.
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6  input-group">
+                                                <div class="form-check form-check-inline">
+                                                    <input type="file" class="custom-file-input" id="fingerprint-file"
+                                                        name="fingerprint-file">
+                                                    <label class="custom-file-label" for="fingerprintCSV">Metadata
+                                                        CSV</label>
+
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 input-group">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="run_urlscan"
+                                                        name="run_urlscan" value="no">
+                                                    <label class="form-check-label" for="run_urlscan">Run URLSCAN
+                                                    </label>
+                                                    <i class="fas fa-info-circle" data-toggle="popover"
+                                                        data-content="May take up to 2 minutes"></i>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-3 input-group">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="internal_only"
+                                                        name="internal_only" value="option1">
+                                                    <label class="form-check-label" for="in-group">In-group matching
+                                                    </label>
+                                                    <i class="fas fa-info-circle" data-toggle="popover"
+                                                        data-content="Match within a provided list of multiple URLS"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6 input-group">
+                                                <input type="email" class="form-control" id="email" name="email"
+                                                    aria-describedby="emailHelp" placeholder="Email, e.g name@example.com"
+                                                    required>
+
+                                            </div>
+                                            <div class="col-md-3">
+
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <button class="btn btn-secondary btn-block">Search</button>
+                                            </div>
+
+                                        </div>
+                                        <div id="file-download-warning" class="alert alert-warning mt-3" role="alert"
                                             style="display: none;">
-                                            <!-- Warning message will be inserted here -->
+                                            <strong>Warning!</strong> Downloading the results of a batch search may take a
+                                            long
+                                            time and may not be successful for large datasets. The results will be emailed
+                                            to
+                                            the provided email address.
                                         </div>
+                                    </form>
+                                    {% else %}
+                                    <div>
+                                        <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
                                     </div>
-                                    <div class="row mt-3 ">
-                                        <div class="col-sm input-group">
-                                            <input type="text" class="form-control" aria-describedby="basic-addon6"
-                                                placeholder="Enter one or more domains/link" name="url" id="url"
-                                                required>
-                                            <div class="input-group-append">
-                                                <span class="input-group-text" id="basic-addon6">
-                                                    <i class="fas fa-info-circle" data-toggle="popover"
-                                                        data-content="Enter the full url, e.g. https://tech.cnn.com/article-title.html; this feature doesn't work on all sites, run a title/content query if prompted"></i>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col-sm input-group">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="run_urlscan"
-                                                    name="run_urlscan" value="no">
-                                                <label class="form-check-label" for="run_urlscan">Run URLSCAN
-                                                </label>
-                                                <i class="fas fa-info-circle" data-toggle="popover"
-                                                    data-content="May take up to 2 minutes"></i>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-sm input-group">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="internal_only"
-                                                    name="internal_only" value="option1">
-                                                <label class="form-check-label" for="in-group">In-group matching
-                                                </label>
-                                                <i class="fas fa-info-circle" data-toggle="popover"
-                                                    data-content="Match within a provided list of multiple URLS"></i>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm">
-                                        </div>
-                                        <div class="col-sm">
-                                            <button class="btn btn-secondary btn-block"
-                                                id="metadataSearchButton">Search</button>
-                                        </div>
-                                    </div>
-
-                                </form>
-                                <hr class="my-4">
-                                {% if current_user.is_authenticated %}
-                                <form method="POST" action="/batch-search-metadata" id="batch-search-metadata"
-                                    enctype="multipart/form-data">
-                                    <div class="row mt-3  ml-1">
-                                        <h5 class="card-title">Batch Metadata Search</h5>
-                                    </div>
-                                    <div class="row mt-3  ml-1">
-                                        Requires only one column: url. Must be a full url, e.g.
-                                        https://tech.cnn.com/.&nbsp;<a
-                                            href="{{ url_for('download_domain_metadata_example') }}" download> Download
-                                            the template</a>.
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col-md-6  input-group">
-                                            <div class="form-check form-check-inline">
-                                                <input type="file" class="custom-file-input" id="fingerprint-file"
-                                                    name="fingerprint-file">
-                                                <label class="custom-file-label" for="fingerprintCSV">Metadata
-                                                    CSV</label>
-
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-3 input-group">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="run_urlscan"
-                                                    name="run_urlscan" value="no">
-                                                <label class="form-check-label" for="run_urlscan">Run URLSCAN
-                                                </label>
-                                                <i class="fas fa-info-circle" data-toggle="popover"
-                                                    data-content="May take up to 2 minutes"></i>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-3 input-group">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="internal_only"
-                                                    name="internal_only" value="option1">
-                                                <label class="form-check-label" for="in-group">In-group matching
-                                                </label>
-                                                <i class="fas fa-info-circle" data-toggle="popover"
-                                                    data-content="Match within a provided list of multiple URLS"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col-md-6 input-group">
-                                            <input type="email" class="form-control" id="email" name="email"
-                                                aria-describedby="emailHelp" placeholder="Email, e.g name@example.com"
-                                                required>
-
-                                        </div>
-                                        <div class="col-md-3">
-
-                                        </div>
-
-                                        <div class="col-md-3">
-                                            <button class="btn btn-secondary btn-block">Search</button>
-                                        </div>
-
-                                    </div>
-                                    <div id="file-download-warning" class="alert alert-warning mt-3" role="alert"
-                                        style="display: none;">
-                                        <strong>Warning!</strong> Downloading the results of a batch search may take a
-                                        long
-                                        time and may not be successful for large datasets. The results will be emailed
-                                        to
-                                        the provided email address.
-                                    </div>
-                                </form>
-                                {% else %}
-                                <div>
-                                    <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="row">
+                    <!-- 3 evenly spaced cards with usage scenarios written in them -->
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Investigate Content Laundering
+                                </h5>
+                                <p class="card-text">
+                                    Use the Laundromat to uncover websites republishing content from Russian state media.
+                                    This function highlights articles that closely resemble the original sources,
+                                    enabling analysis of content laundering at a large scale.
+                                    A detailed report of the network involved is available below.
+
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <a href="https://securingdemocracy.gmfus.org/from-russia-with-spin-how-content-from-russian-state-media-is-laundered-by-polish-blogs/"
+                                    target="_blank" class="btn btn-secondary">Read the Report</a>
+                                <button type="button" id="autoFillRTLaunderingButton"
+                                    class="btn btn-primary float-right">Try the Search</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Uncover RT's Mirror Networks
+                                </h5>
+                                <p class="card-text">
+                                    The Institute for Strategic Dialogue has identified domains that are mirror images of RT
+                                    websites, down to branding and code.
+                                    Utilize the Laundromat's Metadata Similarity tool to detect common features across these
+                                    mirrors.</p>
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <a href="https://www.isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/"
+                                    target="_blank" class="btn btn-secondary">Read the Report</a>
+                                <button type="button" id="autoFillMirrorButton" class="btn btn-primary float-right">Try the
+                                    Search</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Generate Open Source Intelligence Leads
+                                </h5>
+                                <p class="card-text">
+                                    The Laundromat is also instrumental in producing OSINT leads regarding
+                                    the construction, sponsorship, and social media linkages of websites, regardless of
+                                    their content's provenance.
+                                </p>
+                            </div>
+                            <div class="card-footer">
+                                <button type="button" id="autoFillIntelButton" class="btn btn-primary float-right">Try the
+                                    Search</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <div class="row">
-                <!-- 3 evenly spaced cards with usage scenarios written in them -->
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Investigate Content Laundering
-                            </h5>
-                            <p class="card-text">
-                                Use the Laundromat to uncover websites republishing content from Russian state media.
-                                This function highlights articles that closely resemble the original sources,
-                                enabling analysis of content laundering at a large scale.
-                                A detailed report of the network involved is available below.
 
-                            </p>
-                        </div>
-                        <div class="card-footer">
-                            <a href="https://securingdemocracy.gmfus.org/from-russia-with-spin-how-content-from-russian-state-media-is-laundered-by-polish-blogs/"
-                                target="_blank" class="btn btn-secondary">Read the Report</a>
-                            <button type="button" id="autoFillRTLaunderingButton"
-                                class="btn btn-primary float-right">Try the Search</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Uncover RT's Mirror Networks
-                            </h5>
-                            <p class="card-text">
-                                The Institute for Strategic Dialogue has identified domains that are mirror images of RT
-                                websites, down to branding and code.
-                                Utilize the Laundromat's Metadata Similarity tool to detect common features across these
-                                mirrors.</p>
-                            </p>
-                        </div>
-                        <div class="card-footer">
-                            <a href="https://www.isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/"
-                                target="_blank" class="btn btn-secondary">Read the Report</a>
-                            <button type="button" id="autoFillMirrorButton" class="btn btn-primary float-right">Try the
-                                Search</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Generate Open Source Intelligence Leads
-                            </h5>
-                            <p class="card-text">
-                                The Laundromat is also instrumental in producing OSINT leads regarding
-                                the construction, sponsorship, and social media linkages of websites, regardless of
-                                their content's provenance.
-                            </p>
-                        </div>
-                        <div class="card-footer">
-                            <button type="button" id="autoFillIntelButton" class="btn btn-primary float-right">Try the
-                                Search</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="mt-4 ml-5 mr-5">
+                <h2>Interpreting the Laundromat Results <a href="{{ url_for('indicators_gui') }}"
+                        class="btn btn-secondary float-right">View
+                        All Indicators + Descriptions</a></h2>
+
+                <p>Results from the Laundromat are generated by comparing the content and metadata of websites to identify
+                    similarities.
+                    For detailed help interpreting the results, please see the <a
+                        href="{{ url_for('indicators_gui') }}">About page.
+                    </a></p>
+                <p>
+                    <strong>Content Similarity - </strong>This tool compares headlines, content snippets,
+                    or URLs with search engines, databases, and plagiarism checkers to find similar texts.
+                    It filters out unrelated content and assigns a match score to gauge similarity.
+                    Scores of 50% or more typically mean a closer match, minimizing false positives.
+                    Accuracy varies with text length and uniqueness; common phrases like "Donald Trump" yield less precise
+                    results.
+                </p>
+                <p>
+                    <strong>Metadata Similarity - </strong>This function gathers technical information about a given site
+                    which indicate what makes it unique, give insight into its architecture/design, or show how it is
+                    used/tracked. These indicators are compared with other sites to find similar items.
+                    It uses a three-tier system to categorize the indicators based on their strength and reliability. Some
+                    indicators can also serve as OSINT leads for further investigation.
+                <p>
+                    For the metadata section, ChatGPT or other LLMs can be used to help interpret the results. We suggest
+                    typing this prompt and copying the indicators table below using the 'Copy' button. Prompt: "Assist me in
+                    interpreting these results from an OSINT tool that uses domain forensics 'indicators' to identify
+                    potential aspects of the site that are unique or could assist in further OSINT investigations. Note good
+                    inestigatory leads, social media, useful Ids, and indicators of how the website was made, as well as if
+                    an indicator could be misleading. Results:"
+                </p>
+                <!-- 
+                <ul class="list-group">
+                    <li class="list-group-item">
+                        <strong class="alert-success">Tier 1: Conclusive Indicators</strong>
+                        <p>Tier 1 offers high-confidence evidence of a link between websites. Key indicators
+                            include shared domain names, identical IDs for web services, multi-domain certificates, and
+                            matching WHOIS information (when visible). However, misleading tier 1 indicators may occur
+                            when sites are using shared hosting or DDOS protection services.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <strong class="alert-warning">Tier 2: Associative Indicators</strong>
+                        <p>Tier 2 indicators suggest a a possibility of a shared link between sites, but they are
+                            less definitive than Tier 1. They include the use of the same Content Delivery Network
+                            (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in
+                            standard and custom response headers. These elements indicate the possibility of association
+                            but require further corroboration.</p>
+                    </li>
+                    <li class="list-group-item">
+                        <strong class="alert-dark">Tier 3: Tertiary Indicators</strong>
+                        <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation.
+                            They encompass shared architectural aspects like operating systems, Content Management
+                            Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services,
+                            shared unique identifiers, highly similar images, extensive overlap in CSS classes, HTML ID
+                            tags and iFrame ID tags. These indicators alone are not conclusive but can support stronger
+                            evidence from Tier 1 and Tier 2.</p>
+                    </li> 
+                </ul>-->
             </div>
-
-        </div>
-
-
-        <div class="mt-4 ml-5 mr-5">
-            <h2>Interpreting the Laundromat Results <a href="{{ url_for('indicators_gui') }}"
-                    class="btn btn-secondary float-right">View
-                    All Indicators + Descriptions</a></h2>
-
-            <p>Results from the Laundromat are generated by comparing the content and metadata of websites to identify
-                similarities.
-                For detailed help interpreting the results, please see the <a
-                    href="{{ url_for('indicators_gui') }}">About page.
-                </a></p>
-            <p>
-                <strong>Content Similarity - </strong>This tool compares headlines, content snippets,
-                or URLs with search engines, databases, and plagiarism checkers to find similar texts.
-                It filters out unrelated content and assigns a match score to gauge similarity.
-                Scores of 50% or more typically mean a closer match, minimizing false positives.
-                Accuracy varies with text length and uniqueness; common phrases like "Donald Trump" yield less precise
-                results.
-            </p>
-            <p>
-                <strong>Metadata Similarity - </strong>This function gathers technical information about a given site
-                which indicate what makes it unique, give insight into its architecture/design, or show how it is
-                used/tracked. These indicators are compared with other sites to find similar items.
-                It uses a three-tier system to categorize the indicators based on their strength and reliability. Some
-                indicators can also serve as OSINT leads for further investigation.
-            <p>
-                For the metadata section, ChatGPT or other LLMs can be used to help interpret the results. We suggest
-                typing this prompt and copying the indicators table below using the 'Copy' button. Prompt: "Assist me in
-                interpreting these results from an OSINT tool that uses domain forensics 'indicators' to identify
-                potential aspects of the site that are unique or could assist in further OSINT investigations. Note good
-                inestigatory leads, social media, useful Ids, and indicators of how the website was made, as well as if
-                an indicator could be misleading. Results:"
-            </p>
-            <!-- 
-            <ul class="list-group">
-                <li class="list-group-item">
-                    <strong class="alert-success">Tier 1: Conclusive Indicators</strong>
-                    <p>Tier 1 offers high-confidence evidence of a link between websites. Key indicators
-                        include shared domain names, identical IDs for web services, multi-domain certificates, and
-                        matching WHOIS information (when visible). However, misleading tier 1 indicators may occur
-                        when sites are using shared hosting or DDOS protection services.</p>
-                </li>
-                <li class="list-group-item">
-                    <strong class="alert-warning">Tier 2: Associative Indicators</strong>
-                    <p>Tier 2 indicators suggest a a possibility of a shared link between sites, but they are
-                        less definitive than Tier 1. They include the use of the same Content Delivery Network
-                        (CDN), similar IP addresses within the same subnet, matching meta tags, and commonalities in
-                        standard and custom response headers. These elements indicate the possibility of association
-                        but require further corroboration.</p>
-                </li>
-                <li class="list-group-item">
-                    <strong class="alert-dark">Tier 3: Tertiary Indicators</strong>
-                    <p>Tier 3 includes weaker, more circumstantial indicators that require additional validation.
-                        They encompass shared architectural aspects like operating systems, Content Management
-                        Systems (CMS), platforms, plugins, and libraries. Also included are common hosting services,
-                        shared unique identifiers, highly similar images, extensive overlap in CSS classes, HTML ID
-                        tags and iFrame ID tags. These indicators alone are not conclusive but can support stronger
-                        evidence from Tier 1 and Tier 2.</p>
-                </li> 
-            </ul>-->
-        </div>
-        <div id="scroll-to-results"></div>
-        <div class="row ml-5 mr-5">
-            {% if request is defined %}
-            <div class="alert alert-warning" role="alert">
-                You searched for:
-                {% if request.form['url'] is defined %}
-                <strong>{{ request.form['url'] }}</strong>
+            <div id="scroll-to-results"></div>
+            <div class="row ml-5 mr-5">
+                {% if request is defined %}
+                <div class="alert alert-warning" role="alert">
+                    You searched for:
+                    {% if request.form['url'] is defined %}
+                    <strong>{{ request.form['url'] }}</strong>
+                    {% endif %}
+                    {% if request.form['contentToSearch'] is defined %}
+                    <strong>{{ request.form['contentToSearch'] }}</strong>
+                    {% endif %}
+                </div>
                 {% endif %}
-                {% if request.form['contentToSearch'] is defined %}
-                <strong>{{ request.form['contentToSearch'] }}</strong>
-                {% endif %}
             </div>
-            {% endif %}
-        </div>
-        <div class="mt-4 ml-5 mr-5">
-            {% if results %}
-            <div class="row mb-3">
-                <div class="col-md-8">
-                    <h2>Results with similar titles or content</h2>
+            <div class="mt-4 ml-5 mr-5">
+                {% if results %}
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h2>Results with similar titles or content</h2>
+                    </div>
+
+
+                    <div class="col-md-4 ">
+                        <form method="post" action="/download_csv" class="float-right">
+                            <button class="btn btn-primary mr-3" type="button" data-toggle="collapse"
+                                data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
+                                Show/Hide Table
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="row ml-3 mb-3">
+                    <p>While the results show near text matches from across the web, this does necessarily not indicate
+                        a
+                        relationship or deliberate plagiarism between entities, as content may be licensed or quoted</p>
                 </div>
 
+                <div class="collapse show" id="collapsibleTable">
 
-                <div class="col-md-4 ">
-                    <form method="post" action="/download_csv" class="float-right">
-                        <button class="btn btn-primary mr-3" type="button" data-toggle="collapse"
-                            data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
+                    <table id="content_table" class="table table-hover table-striped" style="width: 100%;">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Domain</th>
+                                <th>Title</th>
+                                <th>Snippet</th>
+                                <th>Engines</th>
+                                <th>Match Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for link_data in results %}
+                            <tr class="table-light">
+                                <td>{{ link_data['domain'] }} <!-- Display source with icon based on conditions -->
+                                    {% if "EuVsDisinfo" in link_data['source'] %}
+                                    <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                                    {% elif "statemedia" in link_data['source'] %}
+                                    <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                                    {% elif "Pink Slime" in link_data['source'] %}
+                                    <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                                    {% elif "Newsguard AI" in link_data['source'] %}
+                                    <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
+                                    {% elif link_data['source'] %}
+                                    <i class="fas fa-bell" title="{{ link_data['source'] }}"></i>
+                                    {% endif %}
+                                </td>
+
+                                <td><a href="{{ link_data['url'] }}" target="_blank">{{ link_data['title'] }}</a>
+                                </td>
+                                <td>{{ link_data['snippet'] }}</td>
+                                <!-- <td>{{ link_data['link_count'] }}</td>-->
+                                <td>{{ link_data['engines']|join(', ') }}</td>
+                                <!--<td>{{ link_data['domain_count'] }}</td>-->
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar"
+                                            style="width: {{ link_data['score'] }}%;"
+                                            aria-valuenow="{{ link_data['score'] }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ link_data['score'] }}%</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                <!-- Section for Indicators and Matches Tables -->
+                {% if indicators_df %}
+                <div class=" row mt-5">
+                    <div class="col-md-8 ">
+                        <h2>What makes these site(s) unique? (Indicators)</h2>
+                    </div>
+                    <div class="col-md-4 ">
+                        <button class="btn btn-primary float-right" type="button" data-toggle="collapse"
+                            data-target="#collapsibleIndicatorTable" aria-expanded="false"
+                            aria-controls="collapsibleIndicatorTable">
                             Show/Hide Table
                         </button>
-                    </form>
-                </div>
-            </div>
-            <div class="row ml-3 mb-3">
-                <p>While the results show near text matches from across the web, this does necessarily not indicate
-                    a
-                    relationship or deliberate plagiarism between entities, as content may be licensed or quoted</p>
-            </div>
-
-            <div class="collapse show" id="collapsibleTable">
-
-                <table id="content_table" class="table table-hover table-striped" style="width: 100%;">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Domain</th>
-                            <th>Title</th>
-                            <th>Snippet</th>
-                            <th>Engines</th>
-                            <th>Match Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for link_data in results %}
-                        <tr class="table-light">
-                            <td>{{ link_data['domain'] }} <!-- Display source with icon based on conditions -->
-                                {% if "EuVsDisinfo" in link_data['source'] %}
-                                <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
-                                {% elif "statemedia" in link_data['source'] %}
-                                <i class="fas fa-globe text-primary" title="State Media Domain"></i>
-                                {% elif "Pink Slime" in link_data['source'] %}
-                                <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
-                                {% elif "Newsguard AI" in link_data['source'] %}
-                                <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
-                                {% elif link_data['source'] %}
-                                <i class="fas fa-bell" title="{{ link_data['source'] }}"></i>
-                                {% endif %}
-                            </td>
-
-                            <td><a href="{{ link_data['url'] }}" target="_blank">{{ link_data['title'] }}</a>
-                            </td>
-                            <td>{{ link_data['snippet'] }}</td>
-                            <!-- <td>{{ link_data['link_count'] }}</td>-->
-                            <td>{{ link_data['engines']|join(', ') }}</td>
-                            <!--<td>{{ link_data['domain_count'] }}</td>-->
-                            <td>
-                                <div class="progress">
-                                    <div class="progress-bar" role="progressbar"
-                                        style="width: {{ link_data['score'] }}%;"
-                                        aria-valuenow="{{ link_data['score'] }}" aria-valuemin="0" aria-valuemax="100">
-                                        {{ link_data['score'] }}%</div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-            <!-- Section for Indicators and Matches Tables -->
-            {% if indicators_df %}
-            <div class=" row mt-5">
-                <div class="col-md-8 ">
-                    <h2>What makes these site(s) unique? (Indicators)</h2>
-                </div>
-                <div class="col-md-4 ">
-                    <button class="btn btn-primary float-right" type="button" data-toggle="collapse"
-                        data-target="#collapsibleIndicatorTable" aria-expanded="false"
-                        aria-controls="collapsibleIndicatorTable">
-                        Show/Hide Table
-                    </button>
-                </div>
-            </div>
-
-            <p>Indicators are technical elements that can be used to identify relationships between websites. The
-                table
-                below shows all indicators for the specified domain(s). </p>
-
-            <div class="progress" style="height: 25px;">
-                {% for tier, count in indicator_summary.items() %}
-
-                {% if tier == '1' %}
-                <div class="progress-bar bg-success" role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% elif tier == '2' %}
-                <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% elif tier == '3' %}
-                <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% else %}
-                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-
-                {% endif %}
-                {% endfor %}
-
-            </div>
-            <div class="mt-3 collapse show" id="collapsibleIndicatorTable">
-                <table id="indicators_table" class="table table-hover table-striped " style="width:100%">
-                    <thead class="thead-light">
-                        <tr>
-                            <th></th>
-                            <th>Domain Name</th>
-                            <th>Indicator Type</th>
-                            <th>Indicator Content</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-
-                        {% for row in indicators_df %}
-                        {% if row['indicator_type'][0] == '1' %}
-                        <tr class="table-success">
-                            {% elif row['indicator_type'][0] == '2' %}
-                        <tr class="table-warning">
-                            {% elif row['indicator_type'][0] == '3' %}
-                        <tr class="table-info">
-                            {% else %}
-                        <tr class="table-light">
-                            {% endif %}
-                            <td>
-                                {% if row['indicator_annotation'] == 'financial' %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    data-content="This indicator is related to financial transactions or services."
-                                    tabindex="0" role="button">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                </div>
-                                {% elif row['indicator_annotation'] == 'embedded' %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    data-content="This indicator is extracted from an item embedded in the website's code."
-                                    tabindex="0" role="button">
-                                    <i class="fas fa-code"></i>
-                                </div>
-                                {% elif row['indicator_annotation'] == 'social_media' %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    data-content="This indicator is related to social media or social media services."
-                                    tabindex="0" role="button">
-                                    <i class="fas fa-user-friends"></i>
-                                </div>
-                                {% elif row['indicator_annotation'] == 'tracking' %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    data-content="This indicator is related to tracking or analytics services."
-                                    tabindex="0" role="button">
-                                    <i class="fas fa-paw"></i>
-                                </div>
-                                {% elif row['indicator_annotation'] == 'lead_gen' %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    data-content="This indicator can be used for lead generation" tabindex="0"
-                                    role="button">
-                                    <i class="fas fa-search-location"></i>
-                                </div>
-                                {% else %}
-                                {% endif %}
-                            </td>
-
-                            <td>{{ row['domain_name'] }}</td>
-                            <td>
-                                {% if row['indicator_type'] in indicator_metadata %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    title="{{ indicator_metadata[row['indicator_type']].name }}"
-                                    data-content="{{ indicator_metadata[row['indicator_type']].description }} {{ indicator_metadata[row['indicator_type']].interpretation }}"
-                                    tabindex="0" role="button">
-                                    <strong>{{ row['indicator_type'] }} ({{
-                                        indicator_metadata[row['indicator_type']].name }})
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
-                                            <path
-                                                d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
-                                            <path
-                                                d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
-                                        </svg>
-                                    </strong>
-                                </div>
-                                {% else %}
-                                {{ row['indicator_type'] }}
-                                {% endif %}
-                            </td>
-                            <td>{{ row['indicator_content'] }}</td>
-
-                        </tr>
-                        {% endfor %}
-
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-            {% if matches_df %}
-            <div class=" row mt-5">
-                <div class="col-md-8 ">
-                    <h2>How are these site(s) similar to others? (Matches)</h2>
-                </div>
-                <div class="col-md-4 ">
-                    <button class="btn btn-primary float-right" type="button" data-toggle="collapse"
-                        data-target="#collapsibleMatchesTable" aria-expanded="false"
-                        aria-controls="collapsibleMatchesTable">
-                        Show/Hide Table
-                    </button>
-                </div>
-            </div>
-
-            <p>Matches are pairs of domain names that have been identified as having identical or > 90% matches
-                where an
-                indicator is a list. The table below shows all matches for the specified domain(s).</p>
-            <div class="progress" style="height: 25px;">
-                {% for tier, count in matches_summary.items() %}
-
-                {% if tier == '1' %}
-                <div class="progress-bar bg-success" role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% elif tier == '2' %}
-                <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% elif tier == '3' %}
-                <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% else %}
-                <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%"
-                    aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
-                    }}%</div>
-                {% endif %}
-                {% endfor %}
-            </div>
-
-            <div class="mt-3 collapse show" id="collapsibleMatchesTable">
-                <table id="matches_table" class="table table-hover table-striped" style="width:100%">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Primary Domain Name</th>
-                            <th>Matching Domain Name</th>
-                            <th>Match Type</th>
-                            <th>Match Value</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-
-                        {% for row in matches_df %}
-                        {% if row['match_type'][0] == '1' %}
-                        <tr class="table-success">
-                            {% elif row['match_type'][0] == '2' %}
-                        <tr class="table-warning">
-                            {% else %}
-                        <tr class="table-info">
-                            {% endif %}
-                            <td>{{ row['domain_name_x'] }}</td>
-                            <td>{{ row['domain_name_y'] }}</td>
-                            <td>
-                                {% if row['match_type'] in indicator_metadata %}
-                                <div data-toggle="popover" data-trigger="focus"
-                                    title="{{ indicator_metadata[row['match_type']].name }}"
-                                    data-content="{{ indicator_metadata[row['match_type']].description }} {{ indicator_metadata[row['match_type']].interpretation }}"
-                                    tabindex="0" role="button">
-                                    <strong>{{ row['match_type'] }} ({{ indicator_metadata[row['match_type']].name
-                                        }})
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                            fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
-                                            <path
-                                                d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
-                                            <path
-                                                d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
-                                        </svg>
-                                    </strong>
-                                </div>
-                                {% else %}
-                                {{ row['match_type'] }}
-                                {% endif %}
-                            </td>
-                            <td>{{ row['match_value'] }}
-                                {% if row['matched_on'] and row['matched_on'] is not none %} | {{ row['matched_on']
-                                }}{%
-                                endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    <div class="card mr-5 ml-5 mt-5">
-        <div class="card-body">
-            <div class="row">
-
-                <div class="col-md-3">
-                    <h5 class="card-title">Sponsoring Organizations</h5>
-                </div>
-                <div class="col-md-9">
-                    <h5 class="card-title">Implementing Organizations</h5>
-                </div>
-
-            </div>
-            <div class="row">
-                <div class="col-md-3">
-
-                    <div class="row">
-                        <a href="https://gulbenkian.pt/emifund/" rel="nofollow">
-                            <img src="https://camo.githubusercontent.com/4644af047750ba3f45a2f3efcf9f746857215547882628e6e2a34ca806cc72ac/68747470733a2f2f7365637572696e6764656d6f63726163792e676d6675732e6f72672f77702d636f6e74656e742f75706c6f6164732f323032342f30322f454d49465f486f72697a6f6e74616c5f6c6f676f5f426c61636b2e706e67"
-                                alt="MJRC Logo" height="256"
-                                data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/02/EMIF_Horizontal_logo_Black.png"
-                                style="width: 100%;height:auto">
-                        </a>
                     </div>
                 </div>
-                <div class="col-md-9">
-                    <div class="row">
-                        <div class="col-md-4 mt-5">
-                            <a href="https://securingdemocracy.gmfus.org/" rel="nofollow">
-                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2023/05/ASD-Logo.png"
-                                    alt="ASD Logo"
-                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ASD_Logo_Black.png"
+
+                <p>Indicators are technical elements that can be used to identify relationships between websites. The
+                    table
+                    below shows all indicators for the specified domain(s). </p>
+
+                <div class="progress" style="height: 25px;">
+                    {% for tier, count in indicator_summary.items() %}
+
+                    {% if tier == '1' %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% elif tier == '2' %}
+                    <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% elif tier == '3' %}
+                    <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% else %}
+                    <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+
+                    {% endif %}
+                    {% endfor %}
+
+                </div>
+                <div class="mt-3 collapse show" id="collapsibleIndicatorTable">
+                    <table id="indicators_table" class="table table-hover table-striped " style="width:100%">
+                        <thead class="thead-light">
+                            <tr>
+                                <th></th>
+                                <th>Domain Name</th>
+                                <th>Indicator Type</th>
+                                <th>Indicator Content</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+
+                            {% for row in indicators_df %}
+                            {% if row['indicator_type'][0] == '1' %}
+                            <tr class="table-success">
+                                {% elif row['indicator_type'][0] == '2' %}
+                            <tr class="table-warning">
+                                {% elif row['indicator_type'][0] == '3' %}
+                            <tr class="table-info">
+                                {% else %}
+                            <tr class="table-light">
+                                {% endif %}
+                                <td>
+                                    {% if row['indicator_annotation'] == 'financial' %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        data-content="This indicator is related to financial transactions or services."
+                                        tabindex="0" role="button">
+                                        <i class="fas fa-money-bill-wave"></i>
+                                    </div>
+                                    {% elif row['indicator_annotation'] == 'embedded' %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        data-content="This indicator is extracted from an item embedded in the website's code."
+                                        tabindex="0" role="button">
+                                        <i class="fas fa-code"></i>
+                                    </div>
+                                    {% elif row['indicator_annotation'] == 'social_media' %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        data-content="This indicator is related to social media or social media services."
+                                        tabindex="0" role="button">
+                                        <i class="fas fa-user-friends"></i>
+                                    </div>
+                                    {% elif row['indicator_annotation'] == 'tracking' %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        data-content="This indicator is related to tracking or analytics services."
+                                        tabindex="0" role="button">
+                                        <i class="fas fa-paw"></i>
+                                    </div>
+                                    {% elif row['indicator_annotation'] == 'lead_gen' %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        data-content="This indicator can be used for lead generation" tabindex="0"
+                                        role="button">
+                                        <i class="fas fa-search-location"></i>
+                                    </div>
+                                    {% else %}
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ row['domain_name'] }}</td>
+                                <td>
+                                    {% if row['indicator_type'] in indicator_metadata %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        title="{{ indicator_metadata[row['indicator_type']].name }}"
+                                        data-content="{{ indicator_metadata[row['indicator_type']].description }} {{ indicator_metadata[row['indicator_type']].interpretation }}"
+                                        tabindex="0" role="button">
+                                        <strong>{{ row['indicator_type'] }} ({{
+                                            indicator_metadata[row['indicator_type']].name }})
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                                                <path
+                                                    d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
+                                            </svg>
+                                        </strong>
+                                    </div>
+                                    {% else %}
+                                    {{ row['indicator_type'] }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ row['indicator_content'] }}</td>
+
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                {% if matches_df %}
+                <div class=" row mt-5">
+                    <div class="col-md-8 ">
+                        <h2>How are these site(s) similar to others? (Matches)</h2>
+                    </div>
+                    <div class="col-md-4 ">
+                        <button class="btn btn-primary float-right" type="button" data-toggle="collapse"
+                            data-target="#collapsibleMatchesTable" aria-expanded="false"
+                            aria-controls="collapsibleMatchesTable">
+                            Show/Hide Table
+                        </button>
+                    </div>
+                </div>
+
+                <p>Matches are pairs of domain names that have been identified as having identical or > 90% matches
+                    where an
+                    indicator is a list. The table below shows all matches for the specified domain(s).</p>
+                <div class="progress" style="height: 25px;">
+                    {% for tier, count in matches_summary.items() %}
+
+                    {% if tier == '1' %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% elif tier == '2' %}
+                    <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% elif tier == '3' %}
+                    <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% else %}
+                    <div class="progress-bar bg-light text-dark" role="progressbar" style="width: {{count}}%"
+                        aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
+                        }}%</div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="mt-3 collapse show" id="collapsibleMatchesTable">
+                    <table id="matches_table" class="table table-hover table-striped" style="width:100%">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Primary Domain Name</th>
+                                <th>Matching Domain Name</th>
+                                <th>Match Type</th>
+                                <th>Match Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            {% for row in matches_df %}
+                            {% if row['match_type'][0] == '1' %}
+                            <tr class="table-success">
+                                {% elif row['match_type'][0] == '2' %}
+                            <tr class="table-warning">
+                                {% else %}
+                            <tr class="table-info">
+                                {% endif %}
+                                <td>{{ row['domain_name_x'] }}</td>
+                                <td>{{ row['domain_name_y'] }}</td>
+                                <td>
+                                    {% if row['match_type'] in indicator_metadata %}
+                                    <div data-toggle="popover" data-trigger="focus"
+                                        title="{{ indicator_metadata[row['match_type']].name }}"
+                                        data-content="{{ indicator_metadata[row['match_type']].description }} {{ indicator_metadata[row['match_type']].interpretation }}"
+                                        tabindex="0" role="button">
+                                        <strong>{{ row['match_type'] }} ({{ indicator_metadata[row['match_type']].name
+                                            }})
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                                                <path
+                                                    d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
+                                            </svg>
+                                        </strong>
+                                    </div>
+                                    {% else %}
+                                    {{ row['match_type'] }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ row['match_value'] }}
+                                    {% if row['matched_on'] and row['matched_on'] is not none %} | {{ row['matched_on']
+                                    }}{%
+                                    endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card mr-5 ml-5 mt-5">
+            <div class="card-body">
+                <div class="row">
+
+                    <div class="col-md-3">
+                        <h5 class="card-title">Sponsoring Organizations</h5>
+                    </div>
+                    <div class="col-md-9">
+                        <h5 class="card-title">Implementing Organizations</h5>
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+
+                        <div class="row">
+                            <a href="https://gulbenkian.pt/emifund/" rel="nofollow">
+                                <img src="https://camo.githubusercontent.com/4644af047750ba3f45a2f3efcf9f746857215547882628e6e2a34ca806cc72ac/68747470733a2f2f7365637572696e6764656d6f63726163792e676d6675732e6f72672f77702d636f6e74656e742f75706c6f6164732f323032342f30322f454d49465f486f72697a6f6e74616c5f6c6f676f5f426c61636b2e706e67"
+                                    alt="MJRC Logo" height="256"
+                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/02/EMIF_Horizontal_logo_Black.png"
                                     style="width: 100%;height:auto">
                             </a>
                         </div>
-                        <div class="col-md-4">
-                            <a href="https://www.isdglobal.org/" rel="nofollow">
-                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/ISD-logo-ISD-Red.png"
-                                    alt="ISD Logo"
-                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ISD_Logo_Black.png"
-                                    style="width: 100%;height:auto"></a>
-                        </div>
-                        <div class="col-md-4">
-                            <a href="https://www.uva.nl/en" rel="nofollow">
-                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/uva-logo-uvamerken_eng-1406x236-300dpi.png"
-                                    alt="UvA Logo"
-                                    data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/UvA_Logo_Black.png"
-                                    style="width: 100%;height:auto"></a>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-md-4 mt-5">
+                                <a href="https://securingdemocracy.gmfus.org/" rel="nofollow">
+                                    <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2023/05/ASD-Logo.png"
+                                        alt="ASD Logo"
+                                        data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ASD_Logo_Black.png"
+                                        style="width: 100%;height:auto">
+                                </a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="https://www.isdglobal.org/" rel="nofollow">
+                                    <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/ISD-logo-ISD-Red.png"
+                                        alt="ISD Logo"
+                                        data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/ISD_Logo_Black.png"
+                                        style="width: 100%;height:auto"></a>
+                            </div>
+                            <div class="col-md-4">
+                                <a href="https://www.uva.nl/en" rel="nofollow">
+                                    <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/03/uva-logo-uvamerken_eng-1406x236-300dpi.png"
+                                        alt="UvA Logo"
+                                        data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2020/02/UvA_Logo_Black.png"
+                                        style="width: 100%;height:auto"></a>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row ml-3 mr-3">
-                The sole responsibility for any content supported by the European Media and Information Fund lies with
-                the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund Partners, the
-                Calouste Gulbenkian Foundation and the European University Institute.
+                <div class="row ml-3 mr-3">
+                    The sole responsibility for any content supported by the European Media and Information Fund lies with
+                    the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund Partners, the
+                    Calouste Gulbenkian Foundation and the European University Institute.
+                </div>
             </div>
         </div>
-    </div>
-    <div id="gdprConsentModal" class="text-light-gray" style="display:none; position: fixed; z-index: 1000; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.9);  border-top: 1px solid #ccc;">
-        <div style="padding: 20px; max-width: 1440px; margin: 0 auto; ">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h5 style="margin: 0;">GDPR Compliance Notice</h5>
-                <button type="button" id="closeGdprModal" style="border: none; background: none; font-size: 20px;">&times;</button>
-            </div>
-            <div style="margin-top: 10px;">
-                <p>The Information Laundromat is committed to protecting and respecting your privacy in compliance with the General Data Protection Regulation (GDPR). This disclaimer outlines the nature of the data processing activities conducted by our tool. Selecting 'Accept' consents to the data collection</p>
-                <h4 id="data-collection-and-use">Data Collection and Use</h4>
-                <p>The Information Laundromat tool collects data through two forms, as part of its functions: Content Similarity Search and Domain Forensics Matching.
-                <strong>Content Similarity Search</strong>: This function processes URLs and text snippets provided by the user to detect occurrences of the given text across various websites.
-                    <strong>Domain Forensics Matching</strong>: This function processes a domain URL and analyzes aspects of website architecture, design, and usage to identify unique indicators.
-                Additional data—IPs, pages visited, and time of visit—are collected automatically as part of website analytics and logging. Logs are deleted after 30 days and analytics are anonymized.</p>
-                <h4 id="purpose-of-processing">Purpose of Processing</h4>
-                <p>The form data and results are collected and are solely used for the purpose of usage analytics and potential corpus expansion. </p>
-            </div>
-            <div style="display: flex; justify-content: end; gap: 10px; margin-top: 10px;">
-                <button type="button" class="btn btn-secondary" id="gdprReject">Reject</button>
-                <button type="button" class="btn btn-primary" id="gdprAccept">Accept</button>
+        <div id="gdprConsentModal" class="text-light-gray" style="display:none; position: fixed; z-index: 1000; left: 0; bottom: 0; width: 100%; background-color: rgba(0,0,0,0.9);  border-top: 1px solid #ccc;">
+            <div style="padding: 20px; max-width: 1440px; margin: 0 auto; ">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h5 style="margin: 0;">GDPR Compliance Notice</h5>
+                    <button type="button" id="closeGdprModal" style="border: none; background: none; font-size: 20px;">&times;</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <p>The Information Laundromat is committed to protecting and respecting your privacy in compliance with the General Data Protection Regulation (GDPR). This disclaimer outlines the nature of the data processing activities conducted by our tool. Selecting 'Accept' consents to the data collection</p>
+                    <h4 id="data-collection-and-use">Data Collection and Use</h4>
+                    <p>The Information Laundromat tool collects data through two forms, as part of its functions: Content Similarity Search and Domain Forensics Matching.
+                    <strong>Content Similarity Search</strong>: This function processes URLs and text snippets provided by the user to detect occurrences of the given text across various websites.
+                        <strong>Domain Forensics Matching</strong>: This function processes a domain URL and analyzes aspects of website architecture, design, and usage to identify unique indicators.
+                    Additional data—IPs, pages visited, and time of visit—are collected automatically as part of website analytics and logging. Logs are deleted after 30 days and analytics are anonymized.</p>
+                    <h4 id="purpose-of-processing">Purpose of Processing</h4>
+                    <p>The form data and results are collected and are solely used for the purpose of usage analytics and potential corpus expansion. </p>
+                </div>
+                <div style="display: flex; justify-content: end; gap: 10px; margin-top: 10px;">
+                    <button type="button" class="btn btn-secondary" id="gdprReject">Reject</button>
+                    <button type="button" class="btn btn-primary" id="gdprAccept">Accept</button>
+                </div>
             </div>
         </div>
     </div>

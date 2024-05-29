@@ -63,7 +63,7 @@
     </script>
 </head>
 
-<body class="bg-dark-gray ">
+<body class="bg-dark-gray main-page">
     <div class="ml-5 mr-5 text-light-gray ">
         <div class="py-5">
             <div class="row top-nav">
@@ -99,10 +99,24 @@
     </div>
     <div class="container mt-4 indicator-page">
         <h2>Website Indicators</h2>
-
+        <p>Each indicator is associated with an evidentiary tier and is subject to interpretation. </p>
+    <ul>
+        <li> Tier 1 indicators are
+        typically unique or highly indicative of the provenance of a website. This includes unique IDs for
+        verification purposes and web services like Google, Yandex, etc as well as site metadata like WHOIS
+        information and certification, when valid, as DDOS protection services like Cloudflare and shared hosting services
+        like Bluehost can provide spurious matches. </li>
+    <li>Tier 2 indicators offer a moderate level of certainty regarding the provenance of a
+        website. These are not as unique as Tier 1 indicators but provide valuable context. This tier
+        includes IPs within the same subnet, matching meta tags, and commonalities in standard and custom
+        response headers.</li>
+    <li>Tier 3 indicators are
+        the least specific but can still support broader analyses when combined with higher-tier indicators.
+        These include shared CSS classes, UUIDs, and Content Management Systems. </li>
+    </ul>
         <!-- Dropdown for selecting indicator type -->
         <form method="get" action="{{ url_for('indicators_gui') }}">
-            <label for="indicatorTypeSelect" class="form-label">Select an indicator type:</label>
+            <label for="indicatorTypeSelect" class="form-label">Select an indicator type to view all:</label>
             <select id="indicatorTypeSelect" name="type" onchange="this.form.submit(); updateExplainer();">
                 <option value="">All Types</option>
                 {% for code, details in indicator_metadata.items() %}
@@ -145,6 +159,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        <h2>About and Interpreting Indicators</h2>
         <!-- Section to display all explanations -->
         <div id="allExplanations" class="mt-5"></div>
     </div>
@@ -366,7 +381,10 @@
     .indicator-page a:hover {
         color: lightgray;
     }
-    
+    .main-page {
+        max-width: 1800px;
+        margin: 0 auto;
+    }
     
 </style>
 </html> 

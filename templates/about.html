@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 
-<body class="bg-dark-gray ">
+<body class="bg-dark-gray main-page">
     <div class="ml-5 mr-5 text-light-gray ">
         <div class="py-5">
             <div class="row top-nav">
@@ -47,31 +47,31 @@
         <div class="row about-page">
             <div class="col">
                 <h1 id="about">About</h1>
-                <p>The purpose of the laundromat, how to use it effectively, and how to interpret the results
+                <p>The purpose of the Laundromat, how to use it effectively, and how to interpret the results
                 </p>
 
                 <h2 id="the-laundromat">The Laundromat</h2>
-                <p>The laundromat tool provides two functions: Content Similarity Search and Domain Forensics Matching:
+                <p>The Laundromat tool provides two functions: Content Similarity Search and Domain Forensics Matching:
                 </p>
                 <ul>
                     <li>Content Similarity Search attempts to detect URLs where a given text snippet occurs. It does not
                         provide evidence of where that text originated or any relationship between two entities posting
                         two similar texts. Detemination of a given text&#39;s provenance is outside the scope of this
                         tool.</li>
-                    <li>Domain Forensics Matching attempts to find aspects of a website which indicate what makes it
+                    <li>Metadata Similarity Search attempts to find aspects of a website which indicate what makes it
                         unique, give insight into its architecture/design, or show how its used/tracked. These
                         indicators are compared for items with high degrees of similarity and matches are provided to
-                        the user</li>
+                        the user.</li>
                 </ul>
 
                 <h3 id="the-domain-forensics-comparison-corpus">The Domain Forensics Comparison Corpus</h3>
-                <p>Any URLs entered into the Domain Forensics Matching tool are compared against against a list of
+                <p>Any URLs entered into the Metadata Similarity Search tool are compared against a list of
                     domains already processed by the tool. This corpus is sourced from a number of sources, including:
                 </p>
                 <ul>
                     <li><a href="https://euvsdisinfo.eu/disinformation-cases/">EU vs Disinfo&#39;s Database</a></li>
-                    <li>Research from partner and related organizations, such as <a
-                            href="https://isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/">ISD&#39;s
+                    <li>Research from partner and related organizations, such as the <a
+                            href="https://isdglobal.org/digital_dispatches/rt-articles-are-finding-their-way-to-european-audiences-but-how/">Institute for Strategic Dialogue’s (ISD)
                             report on RT Mirror Sites</a></li>
                     <li>Known <a href="https://github.com/ASD-at-GMF/state-media-profiles">state media sites</a></li>
                     <li>Lists of <a href="https://iffy.news/index/Unreliable Sources">unreliable sources</a>, <a href="https://iffy.news/pink-slime-fake-local-news/">pink slime sites,</a> and <a
@@ -80,36 +80,35 @@
                             news websites</a> and Wikidata&#39;s <a
                             href="https://www.wikidata.org/w/index.php?title=Special:WhatLinksHere/Q17232649&amp;limit=50&amp;dir=next&amp;offset=0%7C3014523">list
                             of news websites</a></li>
-                    <li>At our own discretion, user-input sites. (As of March 2024, no user input sites are included)
+                    <li>At our own discretion, user-input sites. (As of May 2024, no user input sites are included.)
                     </li>
                 </ul>
 
                 <p>Inclusion in the corpus of comparison sites is neither an endorsement nor a criticism of a given
                     website&#39;s point of view or their relationship to any other member of the corpus. It solely
                     reflects what websites are of interest to OSINT researchers. If you&#39;d like a website removed
-                    from the list or have a potential list of new items to include, email pbenzoni (at) gmfus.org</p>
+                    from the list or have a potential list of new items to include, email info (at) securingdemocracy.org.</p>
 
 
                 <h3 id="about-the-indicator-tier-system-and-interpreting-results">About the Indicator Tier
                     System and Interpreting Results</h3>
 
-                <p>Each indicator is associated with evidentiary tier and are subject to <a
+                <p>Each indicator is associated with an evidentiary tier and is subject to <a
                         href="#Interpreting Indicator Validity">interpretation</a>. </p>
-                <p>Tier 1 indicators: <a href="#Interpreting Indicator Validity"><strong>WHEN VALID</strong></a> are
+                <p>Tier 1 Indicators: <a href="#Interpreting Indicator Validity"><strong>WHEN VALID</strong></a> are
                     typically unique or highly indicative of the provenance of a website. This includes unique IDs for
                     verification purposes and web services like Google, Yandex, etc as well as site metadata like WHOIS
                     information and certification, <a href="#Interpreting Indicator Validity"><strong>WHEN
                             VALID</strong></a>, as DDOS protection services like Cloudflare and shared hosting services
                     like Bluehost can provide spurious matches. </p>
-                <p>Tier 2 indicators: Tier 2 indicators, <a href="#Interpreting Indicator Validity"><strong>WHEN
-                            VALID</strong></a>, offer a moderate level of certainty regarding the provenance of a
+                <p>Tier 2 Indicators: <a href="#Interpreting Indicator Validity"><strong>WHEN
+                            VALID</strong></a>, these offer a moderate level of certainty regarding the provenance of a
                     website. These are not as unique as Tier 1 indicators but provide valuable context. This tier
                     includes IPs within the same subnet, matching meta tags, and commonalities in standard and custom
-                    response headers</p>
-                <p>Tier 3: Tertiary Indicators
-                    Tier 3 indicators, <a href="#Interpreting Indicator Validity"><strong>WHEN VALID</strong></a>, are
+                    response headers.</p>
+                <p>Tier 3 Indicators: <a href="#Interpreting Indicator Validity"><strong>WHEN VALID</strong></a>, these are
                     the least specific but can still support broader analyses when combined with higher-tier indicators.
-                    These include shared CSS classes, UUIDs, and Content Management Systems </p>
+                    These include shared CSS classes, UUIDs, and Content Management Systems. </p>
                 <h4 id="interpreting-indicator-validity">Interpreting Indicator Validity</h4>
                 <p>Understanding the validity of indicators is crucial in the analysis of websites&#39; provenance and
                     connections. Indicators can range from high-confidence markers of direct relationships to spurious
@@ -138,12 +137,12 @@
                 </ul>
                 <p>Identifying that multiple websites are behind Cloudflare does not inherently indicate a connection
                     beyond choosing a common, popular service for performance and security enhancements. All tier 1 and
-                    2 indicators should be scrutinized carefully to determine if a match is valid or spurious</p>
+                    2 indicators should be scrutinized carefully to determine if a match is valid or spurious.</p>
                 <h5 id="example-investigation-">Example Investigation:</h5>
                 <p>An analyst investigating a network of disinformation websites notices that several sites share a
                     specific Facebook Pixel ID, indicating a potential link in their online marketing strategies. This
                     Tier 1 indicator suggests a high-confidence connection. However, upon further investigation,
-                    it&#39;s revealed that these sites also use Cloudflare for DDOS protection, sharing SSL certificates
+                    it's revealed that these sites also use Cloudflare for DDOS protection, sharing SSL certificates
                     and IP addresses with numerous unrelated sites. While the shared Facebook Pixel ID remains a strong
                     indicator of connection, the shared certificates and IP addresses through Cloudflare are deemed
                     spurious matches and the additional sites are discarded from the network. The analyst corroborates
@@ -162,7 +161,7 @@
                 <p>Enter the full URL of an article or webpage (e.g. <a
                         href="https://tech.cnn.com/article-title.html">https://tech.cnn.com/article-title.html</a> or <a
                         href="https://www.rt.com/russia/588284-darkening-prospects-ukraine-postwar/">https://www.rt.com/russia/588284-darkening-prospects-ukraine-postwar/</a>)
-                    to automatically attempt to extract title and content </p>
+                    to automatically attempt to extract title and content. </p>
                 <h4 id="advanced-title-content-search">Advanced (Title/Content) Search</h4>
                 <p>This search allows users to specify the title and content (and apply boolean ANDs/ORs to the title
                     and content). It also requires specifying a country and language to search in. As not all languages
@@ -173,15 +172,15 @@
                     title or snippet which matches the provided inputs as determined by the <a
                         href="https://en.wikipedia.org/wiki/Gestalt_pattern_matching">Ratcliff/Obershelp algorithm.</a>.
                 </p>
-                <h3 id="domain-forensics-matching">Domain Forensics Matching</h3>
+                <h3 id="domain-forensics-matching">Metadata Similarity Search</h3>
                 <p>This search, which will accept a list of one or more <a
                         href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name">fully qualified domain
                         names.</a> (including a prepended https:// on each domain name). This will produce a list of
-                    indicators and a list of sites which match (or are extremely similart to) those indicators.
+                    indicators and a list of sites which match (or are extremely similar to) those indicators.
                     Indicators, and thus matches, are broken into the three tiers described above. </p>
                 <h2 id="partners-sponsors-disclaimers">Partners, Sponsors, Disclaimers</h2>
-                <p>The Laundromat Tool is made possible with the support of European Media and Information Fund (EMIF).
-                    The Information Laundromat Tool is built a partnership of the Alliance for Securing Democracy (ASD),
+                <p>The Laundromat Tool is made possible with the support of the European Media and Information Fund (EMIF).
+                    The Information Laundromat Tool is built by a partnership of the Alliance for Securing Democracy (ASD),
                     the Institute for Strategic Dialogue (ISD), and the University of Amsterdam (UvA) through the
                     Digital Methods Institute.
                 </p>
@@ -623,7 +622,7 @@
                 <h2 id="disclaimers">Disclaimers</h2>
                 <h3 id="opinions-disclaimer">Opinions Disclaimer</h3>
                 <p>The sole responsibility for any content supported by the European Media and Information Fund lies
-                    with the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund
+                    with the author(s) and it may not necessarily reflect the positions of the EMIF and the Fund's
                     Partners, the Calouste Gulbenkian Foundation and the European University Institute.</p>
                 <h3 id="gdpr-disclaimer">GDPR Disclaimer</h3>
                 <p>The Information Laundromat tool is committed to protecting and respecting your privacy in compliance
@@ -903,7 +902,10 @@
     .about-page a:hover {
         color: lightgray;
     }
-    
+    .main-page {
+        max-width: 1800px;
+        margin: 0 auto;
+    }
     
 </style>
 </html> 

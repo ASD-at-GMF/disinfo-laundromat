@@ -491,7 +491,7 @@
                                                         engines, databases, and plagiarism checkers to find similar texts.
                                                     </em>
                                                     Enter a URL, the title, or content of an article to search for instances
-                                                    of reposted & similar content on search engines,
+                                                    of reposted and similar content on search engines,
                                                     GDELT, and a plagiarism database. Searching by URL automatically parses
                                                     the title and content, but may fail.
                                                     Title and content can be specified using _title: and _content:
@@ -595,7 +595,7 @@
                                             url (full url, e.g. https://tech.cnn.com/article-title.html) OR titleQuery and
                                             contentQuery (text snippets).&nbsp;<a
                                                 href="{{ url_for('download_content_csv_example') }}" download>Download the
-                                                template</a>.
+                                                template here</a>.
 
                                         </div>
                                         <div class="row mt-3">
@@ -622,7 +622,7 @@
                                     </form>
                                     {% else %}
                                     <div class=" ml-3">
-                                        <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
+                                        <p>Please <a href="{{ url_for('login_gui') }}">log in or register</a> to run batch searches. Contact us at info [at] securingdemocracy.org to obtain a registration code.</p>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -763,7 +763,7 @@
                                     </form>
                                     {% else %}
                                     <div>
-                                        <p>Please <a href="{{ url_for('login_gui') }}">log in</a> to run batch searches.</p>
+                                        <p>Please <a href="{{ url_for('login_gui') }}">log in or register</a> to run batch searches. Contact us at info [at] securingdemocracy.org to obtain a registration code.</p>
                                     </div>
                                     {% endif %}
                                 </div>
@@ -848,7 +848,7 @@
                         href="{{ url_for('indicators_gui') }}">About page.
                     </a></p>
                 <p>
-                    <strong>Content Similarity - </strong>This tool compares headlines, content snippets,
+                    <strong>Content Similarity: </strong>This tool compares headlines, content snippets,
                     or URLs with search engines, databases, and plagiarism checkers to find similar texts.
                     It filters out unrelated content and assigns a match score to gauge similarity.
                     Scores of 50% or more typically mean a closer match, minimizing false positives.
@@ -856,17 +856,17 @@
                     results.
                 </p>
                 <p>
-                    <strong>Metadata Similarity - </strong>This function gathers technical information about a given site
+                    <strong>Metadata Similarity: </strong>This function gathers technical information about a given site
                     which indicate what makes it unique, give insight into its architecture/design, or show how it is
                     used/tracked. These indicators are compared with other sites to find similar items.
                     It uses a three-tier system to categorize the indicators based on their strength and reliability. Some
                     indicators can also serve as OSINT leads for further investigation.
                 <p>
-                    For the metadata section, ChatGPT or other LLMs can be used to help interpret the results. We suggest
+                    For the metadata section, ChatGPT or other large language models (LLMs) can be used to help interpret the results. We suggest
                     typing this prompt and copying the indicators table below using the 'Copy' button. Prompt: "Assist me in
                     interpreting these results from an OSINT tool that uses domain forensics 'indicators' to identify
                     potential aspects of the site that are unique or could assist in further OSINT investigations. Note good
-                    inestigatory leads, social media, useful Ids, and indicators of how the website was made, as well as if
+                    investigatory leads, social media, useful IDs, and indicators of how the website was made, as well as if
                     an indicator could be misleading. Results:"
                 </p>
                 <!-- 

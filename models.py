@@ -56,8 +56,8 @@ class SiteIndicator(db.Model):
     indicator_content     = db.Column(db.String(100), nullable=False, unique=False)
     domain        = db.Column(db.String(100), nullable=False, unique=False)
 
-class SiteBase(db.Model):
-    __tablename__ = 'sites_base'
+class Site(db.Model):
+    __tablename__ = 'sites'
 
     # Auto Generated Fields:
     id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -67,18 +67,7 @@ class SiteBase(db.Model):
     # Input by Query Fields:
     domain       = db.Column(db.String(100), nullable=False, unique=False)
     source       = db.Column(db.String(100), nullable=False, unique=False)
-
-class SiteUser(db.Model):
-    __tablename__ = 'sites_user'
-
-    # Auto Generated Fields:
-    id           = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created      = db.Column(db.DateTime(timezone=True), default=datetime.now)
-    updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
-
-    # Input by Query Fields:
-    domain       = db.Column(db.String(100), nullable=False, unique=False)
-    source       = db.Column(db.String(100), nullable=False, unique=False)
+    is_base      = db.Column(db.Boolean, nullable=True, unique=False, default=False)
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'

@@ -44,7 +44,7 @@ CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
 
 from init_app import db, init_app
-from models import RegistrationKey, SiteBase, SiteIndicator, User
+from models import RegistrationKey, Site, SiteIndicator, User
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
@@ -82,10 +82,10 @@ def insert_sites_of_concern(local_domains):
     # Check if the table is empty.
     engine = db.session.get_bind()
     with engine.connect() as conn:
-        if SiteBase.query.first() is None:
+        if Site.query.first() is None:
             conn.execute(
-                insert(SiteBase),
-                [{"domain": domain, "source": source} for domain, source in local_domains]
+                insert(Site),
+                [{"domain": domain, "source": source, "is_base": True} for domain, source in local_domains]
             )
             conn.commit()
 
@@ -230,17 +230,31 @@ def register(request):
     plain_text_password = request.form['password']
     hashed_password = bcrypt.generate_password_hash(plain_text_password).decode('utf-8')
     # Save the username and hashed_password to the database
+    user = User(username=username, password=hashed_password)
+    db.session.add(user)
     return jsonify({'message': 'Registered successfully'})
 
 @app.route('/url-search', methods=['GET','POST'])
 @clean_inputs
 def url_search():
     try:
-        indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
+        indicators_df, matches_df, indicator_summary, matches_summary, domain_sources = fingerprint(request)
         return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
     except Exception as e:
         return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
-
+    
+#deprecated
+@app.route('/fingerprint', methods=['GET', 'POST'])
+#@login_required
+@clean_inputs
+def fingerprint_gui():
+    if request.method == 'POST':
+        try:
+            indicators_df, matches_df, indicator_summary, matches_summary, domain_sources = fingerprint(request)
+            return render_template('index.html',  countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
+        except Exception as e:
+            return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
+    return render_template('index.html', request=request, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint', methods=['POST'])
 #@login_required
@@ -248,7 +262,7 @@ def url_search():
 def fingerprint_api():
     if request.method == 'POST':
         try:
-            indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
+            indicators_df, matches_df, indicator_summary, matches_summary, domain_sources = fingerprint(request)
             return jsonify({'countries': COUNTRIES, 'languages': LANGUAGES, 'indicator_metadata': INDICATOR_METADATA, 'indicators': indicators_df.to_dict('records'), 'matches': matches_df.to_dict('records'), 'indicator_summary': indicator_summary, 'matches_summary': matches_summary})
         except Exception as e:
             return jsonify({'error': e, 'trace': traceback.format_exc()})
@@ -303,7 +317,8 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
 
     # Create a dictionary to store each group as a DataFrame
     grouped_indicators_dfs = {group: data for group, data in grouped_indicators}
-    
+    unique_domains = list(grouped_indicators_dfs.keys())
+
     matches_df = pd.DataFrame()
     for group, grouped_indicators_df in grouped_indicators_dfs.items():
         grouped_matches_df = find_matches(grouped_indicators_df, comparison=comparison_indicators)
@@ -313,7 +328,13 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     matches_df = matches_df.applymap(convert_sets_to_lists)
     matches_summary = summarize_indicators(matches_df.to_dict('records'), column='match_type')
 
-    return indicators_df, matches_df, indicator_summary, matches_summary
+    domain_sources = get_domain_sources(domains=unique_domains)
+
+    return indicators_df, matches_df, indicator_summary, matches_summary, domain_sources
+
+def get_domain_sources(domains: list):
+    query = db.session.query(Site.domain, Site.source).filter(Site.domain.in_(domains)).distinct()
+    return query.all()
 
 def convert_sets_to_lists(item):
     if isinstance(item, set):
@@ -616,7 +637,7 @@ def fingerprint_file(request):
         urls = df_urls['url'].tolist()  # Assuming 'Urls' is the column name
 
         # The find_indicators_and_matches function should be defined elsewhere
-        indicators_df, matches_df, indicator_summary, matches_summary = find_indicators_and_matches(urls, internal_only = internal_only, run_urlscan = run_urlscan)
+        indicators_df, matches_df, indicator_summary, matches_summary, domain_sources = find_indicators_and_matches(urls, internal_only = internal_only, run_urlscan = run_urlscan)
 
         # Save dataframes as csv in memory
         indicators_csv = StringIO()

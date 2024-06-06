@@ -374,9 +374,6 @@ def parse_content_search():
     else:
         return render_template('index.html', request=request, results=results, csv_data=csv_data, engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
-
-
-
 def content(request, title_query=None, content_query=None):
     if request.method == 'POST':
         title_query = title_query if title_query is not None else  request.form.get('titleQuery')
@@ -428,14 +425,14 @@ def parse_url(request, urlToParse=None):
     if request.method == 'POST':
         url = urlToParse if urlToParse is not None else request.form.get('url', '')
         url = format_url(url)
-        engines = request.form.getlist('search_engines', [])
+        engines = request.form.getlist('search_engines')
         combineOperator = request.form.get('combineOperator', 'OR')
         language = request.form.get('language', 'en')
         country = request.form.get('country', 'us')
     elif request.method == 'GET':
         url = urlToParse if urlToParse is not None else request.args.get('url', '')
         url = format_url(url)
-        engines = request.args.getlist('search_engines', [])
+        engines = request.args.getlist('search_engines')
         combineOperator = request.args.get('combineOperator', 'OR')
         language = request.args.get('language', 'en')
         country = request.args.get('country', 'us')
@@ -778,7 +775,7 @@ def indicators(request):
             if len(selected_type) > 0 and row['indicator_type'] == selected_type:
                 truncated_row = {key: value[:100] for key, value in row.items()}
                 data.append(truncated_row)
-        unique_types = sorted(set(unique_types_list))
+        unique_types = sorted(set(unique_types_list)) 
     return data, unique_types, selected_type
 
 
@@ -907,40 +904,22 @@ def fetch_content_results(title_query, content_query, combineOperator, language,
     return results, csv_data
 
 def format_copyscape_output(data):
-    output = {}
+    output = []
     for article in data:
-        parsed_url = urlparse(article["url"])
-        domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        if domain not in output:
-            output[domain] = {"count": 0, "links": [],
-                              "concern": False, "source": []}
-        output[domain]["count"] += 1
-        output[domain]["links"].append({
-            "link": article["url"],
+        output.append({
+            "url": article["url"],
             "title": article["title"],
             "snippet": article["textsnippet"],
-            "count": 1,  # Assuming each link is unique and counts as 1
-            # Placeholder, as the engine is not specified in the data
-            "engines": ["Plagiarism Checker"]
         })
     return output
 
 def format_gdelt_output(data):
-    output = {}
+    output = []
     for article in data.get("articles", []):
-        parsed_url = urlparse(article["url"])
-        domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        if domain not in output:
-            output[domain] = {"count": 0, "links": [],
-                              "concern": False, "source": []}
-        output[domain]["count"] += 1
-        output[domain]["links"].append({
-            "link": article["url"],
+        output.append({
+            "url": article["url"],
             "title": article["title"],
             "snippet": "",
-            "count": 1,  # Assuming each link is unique and counts as 1
-            # Placeholder, as the engine is not specified in the data
-            "engines": ["GDELT"]
         })
     return output
 
@@ -974,19 +953,14 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
             if results is None:
                 return []
         for result in results:
-            if engine == 'copyscape':
+            if engine == 'copyscape' or engine == 'gdelt':
                 parsed_url = urlparse(result['url'])
                 domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-                normalized_data.append({'domain':domain, 'url': result['url'], 'title': result['title'], 'snippet': result['textsnippet'],  'engine': engine})
-            elif engine == 'gdelt':
-                parsed_url = urlparse(result['url'])
-                domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-                normalized_data.append({'domain':domain, 'url': result['url'], 'title': result['title'], 'snippet': '',  'engine': engine})
+                normalized_data.append({'domain':domain, 'url': result['url'], 'title': result['title'], 'snippet': result['snippet'],  'engine': [engine]})
             else:
                 parsed_url = urlparse(result['link'])
                 domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
-                normalized_data.append({'domain':domain,'url': result.get('link'), 'title': result.get(
-                'title'), 'snippet': result.get('snippet') , 'engine': [engine]})
+                normalized_data.append({'domain':domain,'url': result.get('link'), 'title': result.get('title'), 'snippet': result.get('snippet') , 'engine': [engine]})
         return normalized_data
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -1010,40 +984,58 @@ def fetch_serp_results(title_query, content_query, combineOperator, language, co
     # Temporary dictionary to hold the first occurrence index of each URL
 
     url_indexes = {}
-    for idx in range(len(all_results) - 1, -1, -1):
-        result = all_results[idx]
-        url = result['url']
-        if url in url_indexes:
-        # This URL has been seen before; merge information and delete this occurrence
-            first_occurrence_idx = url_indexes[url]
-            all_results[first_occurrence_idx]['engines'].extend(result['engine'])
-            all_results[first_occurrence_idx]['link_count'] += 1
-            all_results[first_occurrence_idx]['score'] = max(
-                sequence_match_score(all_results[first_occurrence_idx]['title'], result['title']),
-                sequence_match_score(all_results[first_occurrence_idx]['snippet'], result['snippet'])
-            )
-            all_results.pop(idx)
-        else:
-            url_indexes[url] = idx
-            local_source = local_domains_dict.get(result['domain']) or local_domains_dict.get(result['domain'].split('.')[1])  # Check for FQDN and no subdomain
-            github_source = "statemedia" if urlparse(result['domain']).netloc.strip() in github_domains else None
-            all_results[idx]['source'] = []
-            if local_source is not None:
-                #aggregated_results["source"].append(local_source)
-                all_results[idx]['source'] = [local_source]
-            if github_source is not None:
-                #aggregated_results["source"].append(github_source)
-                all_results[idx]['source'] = [github_source]
-            all_results[idx]['link_count'] = 1
-            all_results[idx]['domain_count'] = 1
-            all_results[idx]['engines'] = result['engine'] 
-            all_results[idx]['score'] = max(sequence_match_score(title_query, all_results[idx]['title']), sequence_match_score(content_query, all_results[idx]['snippet']))
+    aggregated_results = []
+    try:
+        for idx in range(len(all_results) - 1):
             
-            
-    # Assuming flattened_data is your list of dictionaries
-    all_results = sorted(all_results, key=lambda x: x['score'], reverse=True)
+            result = all_results[idx]
+            url = result['url']
+            if url in url_indexes:
+            # This URL has been seen before; merge information and delete this occurrence
+                try:
+                    first_occurrence_idx = url_indexes[url]
+                    aggregated_results[first_occurrence_idx]['engines'].extend(result['engine'])
+                    aggregated_results[first_occurrence_idx]['link_count'] += 1
+                    aggregated_results[first_occurrence_idx]['score'] = max(
+                        aggregated_results[first_occurrence_idx]['score'],
+                        max(
+                            sequence_match_score(title_query, result['title']),
+                            sequence_match_score(content_query, result['snippet']) if result['snippet'] != ''  else 0
+                        )
+                    )
+                    if sequence_match_score(result['title'], title_query) > sequence_match_score(aggregated_results[first_occurrence_idx]['title'], title_query):
+                        aggregated_results[first_occurrence_idx]['title'] = result['title']
+                    if sequence_match_score(result['snippet'], content_query) > sequence_match_score(aggregated_results[first_occurrence_idx]['snippet'], content_query):
+                        aggregated_results[first_occurrence_idx]['snippet'] = result['snippet']
+                except Exception as e:
+                    print(f"Error merging results: {e}")
+                    continue
+            else:
+                aggregated_results.append(all_results[idx])
+                agg_idx = len(aggregated_results) - 1
+                url_indexes[url] = agg_idx
+                local_source = local_domains_dict.get(urlparse(result['domain']).netloc.strip()) or local_domains_dict.get(urlparse(result['domain']).netloc.strip().split('.')[1])  # Check for FQDN and no subdomain
+                github_source = "statemedia" if urlparse(result['domain']).netloc.strip() in github_domains else None
+                aggregated_results[agg_idx]['source'] = []
+                if local_source is not None:
+                    aggregated_results[agg_idx]['source'] = local_source
+                if github_source is not None:
+                    aggregated_results[agg_idx]['source'] = github_source
+                aggregated_results[agg_idx]['link_count'] = 1
+                aggregated_results[agg_idx]['domain_count'] = 1
+                aggregated_results[agg_idx]['engines'] = result['engine'] 
+                aggregated_results[agg_idx]['score'] = max(sequence_match_score(title_query, result['title']), sequence_match_score(content_query, result['snippet']) if result['snippet'] != ''  else 0)
+    except Exception as e:
+        print(f"Error aggregating results: {e}")
+        app.logger.error(f"Error aggregating results: {e}")            
+    # convet list of engines to set to delete duplicates
+    for result in aggregated_results:
+        result['engines'] = list(set(result['engines']))
 
-    return all_results
+    # Assuming flattened_data is your list of dictionaries
+    aggregated_results = sorted(aggregated_results, key=lambda x: x['score'], reverse=True)
+
+    return aggregated_results
 
 
 def customize_params_by_platform(title_query, content_query, combineOperator, language, country):

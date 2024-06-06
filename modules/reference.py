@@ -1118,7 +1118,33 @@ INDICATOR_METADATA = {
     "name": "Facebook Link",
     "description": "A link to a Facebook page or post found on a webpage.",
     "interpretation": "Links to Facebook pages or posts can indicate social media engagement or content sharing strategies. Shared Facebook links might suggest common social media strategies or affiliations. However, links to popular social media platforms are widely used and may not be uniquely significant."
+    },
+    '3-youtube': {  
+    "name": "YouTube Link",
+    "description": "A link to a YouTube channel or video found on a webpage.",
+    "interpretation": "Links to YouTube channels or videos can indicate content sharing or promotional strategies. Shared YouTube links might suggest common content sources or affiliations. However, links to popular video platforms are widely used and may not be uniquely significant."
+    },
+    '3-telegram': {
+    "name": "Telegram Link",
+    "description": "A link to a Telegram channel or post found on a webpage.",
+    "interpretation": "Links to Telegram channels or posts can indicate content sharing or promotional strategies. Shared Telegram links might suggest common content sources or affiliations. However, links to popular messaging platforms are widely used and may not be uniquely significant."
+    },
+    '3-outbound-domain': {
+    "name": "Outbound Domain",
+    "description": "A domain to which a website links or redirects its users.",
+    "interpretation": "Shared outbound domains can indicate common affiliations or content sources. However, links to popular websites or services can appear across a wide range of unrelated sites, limiting the significance of this data for direct connections."
+    },
+    '3-patreon': {
+    "name": "Patreon Link",
+    "description": "A link to a Patreon page or post found on a webpage.",
+    "interpretation": "Links to Patreon pages or posts can indicate content sharing or promotional strategies. Shared Patreon links might suggest common content sources or affiliations. However, links to crowdfunding platforms are widely used and may not be uniquely significant."
+    },
+    '3-gab' : {
+    "name": "Gab Link",
+    "description": "A link to a Gab profile or post found on a webpage.",
+    "interpretation": "Links to Gab profiles or posts can indicate social media engagement or content sharing strategies. Shared Gab links might suggest common social media strategies or affiliations. However, links to alternative social media platforms are widely used and may not be uniquely significant."
     }
+
 
 }
 

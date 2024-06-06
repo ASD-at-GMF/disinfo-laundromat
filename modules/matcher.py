@@ -13,7 +13,7 @@ import pandas as pd
 from pandas.api.types import is_list_like
 
 from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
-                                TRACKING_IDS)
+                                TRACKING_IDS, CRYPTO_IDS)
 
 ## Preprocessing
 
@@ -300,15 +300,16 @@ FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataF
 "2-urlscanhrefs" : iou_match,
 "2-techstack" : iou_match,
 "3-footer-text": direct_match,
-"4-outbound-domain": iou_match,
+"3-outbound-domain": iou_match,
 "2-ads_txt": iou_match
-
 }
 
 FEATURE_MATCHING.update({financial_id: direct_match for financial_id in FINANCIAL_IDS})
 FEATURE_MATCHING.update({embedded_id: direct_match for embedded_id in EMBEDDED_IDS})
 FEATURE_MATCHING.update({social_id: direct_match for social_id in SOCIAL_MEDIA_IDS})
 FEATURE_MATCHING.update({tracking_id: direct_match for tracking_id in TRACKING_IDS})
+FEATURE_MATCHING.update({crypto_id: direct_match for crypto_id in CRYPTO_IDS})
+
 
 WHOIS_FEATURES = [
     "whois-registrar",

@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
+from rapidfuzz import fuzz
 from pandas.api.types import is_list_like
 
 from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
@@ -27,7 +28,7 @@ MATCH_VALUE = "match_value"
 def basic_preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df = df[[DOMAIN, INDICATOR]]
     df = df[~df[INDICATOR].isna() & ~df[INDICATOR].isnull()]
-    return df
+    return df.drop_duplicates()
 
 def column_contains_list_string(column: pd.Series) -> bool:
     # Note: this works off the assumption that all values will have the same type
@@ -126,9 +127,31 @@ def direct_match(
 
 def partial_text_match(
         feature_df: pd.DataFrame,
-        comparison_df: pd.DataFrame
-) -> pd.DataFrame:
-    raise NotImplementedError
+        comparison_df: pd.DataFrame,
+        threshold: float = 0.9,
+    ) -> pd.DataFrame:
+    feature_df = feature_df[~feature_df.indicator_content.isna()]
+    feature_df = feature_df.drop_duplicates(['domain_name', 'indicator_content'])
+    comparison_df = comparison_df[~comparison_df.indicator_content.isna()]
+    comparison_df = comparison_df.drop_duplicates(['domain_name', 'indicator_content'])
+
+    match_data = [
+        {
+            "domain_name_x": f_row.domain_name,
+            "domain_name_y": c_row.domain_name,
+            MATCH_VALUE: fuzz.ratio(f_row.indicator_content, c_row.indicator_content) / 100.0
+        }
+        for f_row in feature_df.itertuples()
+        for c_row in comparison_df.itertuples()
+        if f_row.domain_name != c_row.domain_name
+    ]
+
+    # Create DataFrame from string matched data
+    result = pd.DataFrame(match_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
+    if not result.empty:
+        result = result[result[MATCH_VALUE] >= threshold]
+
+    return result
 
 def iou_match(
     feature_df: pd.DataFrame,
@@ -290,7 +313,7 @@ FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]
 "2-urlscan_urlssonpage" : iou_match,
 "2-urlscanhrefs" : iou_match,
 "2-techstack" : iou_match,
-"3-footer-text": direct_match,
+"3-footer-text": partial_text_match,
 "4-outbound-domain": iou_match,
 "2-ads_txt": iou_match
 }

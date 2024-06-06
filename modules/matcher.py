@@ -6,7 +6,7 @@ import traceback
 from functools import partial
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Callable
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -24,10 +24,9 @@ MATCH_TYPE = "match_type"
 MATCH_VALUE = "match_value"
 
 
-def basic_preprocess(df: pd.DataFrame, feature: str) -> pd.DataFrame:
-    df = df[[DOMAIN, feature]]
-    df = df[~df[feature].isna() & ~df[feature].isnull()]
-
+def basic_preprocess(df: pd.DataFrame) -> pd.DataFrame:
+    df = df[[DOMAIN, INDICATOR]]
+    df = df[~df[INDICATOR].isna() & ~df[INDICATOR].isnull()]
     return df
 
 def column_contains_list_string(column: pd.Series) -> bool:
@@ -115,26 +114,24 @@ def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:
 
 def direct_match(
     feature_df: pd.DataFrame,
-    feature: str,
-    comparison_df: pd.DataFrame,
-    indicator=INDICATOR,
+    comparison_df: pd.DataFrame
 ) -> pd.DataFrame:
-    # filter out invalid data
-    feature_df = basic_preprocess(feature_df, indicator)
-    comparison_df = basic_preprocess(comparison_df, indicator)
-    test_matches = pd.merge(feature_df, comparison_df, how="inner", on=indicator)
+    test_matches = pd.merge(feature_df, comparison_df, how="inner", on=INDICATOR)
     # deduplicating
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
-    # note this throws a false positive SettingWithCopyWarning; the behavior is OK
-    matches[MATCH_TYPE] = feature
-    matches = matches.rename(columns={indicator: MATCH_VALUE})
+    matches = matches.rename(columns={INDICATOR: MATCH_VALUE})
     return matches.reset_index(drop=True)
 
 # TODO: Add a partial string match function
 
+def partial_text_match(
+        feature_df: pd.DataFrame,
+        comparison_df: pd.DataFrame
+) -> pd.DataFrame:
+    raise NotImplementedError
+
 def iou_match(
     feature_df: pd.DataFrame,
-    feature: str,
     comparison_df: pd.DataFrame,
     threshold: float = 0.9,
 ) -> pd.DataFrame:
@@ -161,17 +158,15 @@ def iou_match(
     ]
 
     # Create DataFrame from IOU data
-    result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_TYPE, MATCH_VALUE])
+    result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
     if not result.empty:
-        result[MATCH_TYPE] = feature
         result = result[result[MATCH_VALUE] >= threshold]
 
     return result
 
 def any_in_list_match(
         feature_df: pd.DataFrame,
-        comparison_df: pd.DataFrame,
-        feature: str,
+        comparison_df: pd.DataFrame
 ):
     feature_sets = group_indicators(feature_df).to_dict()
     comparison_sets = group_indicators(comparison_df).to_dict()
@@ -179,7 +174,6 @@ def any_in_list_match(
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
-            MATCH_TYPE: feature,
             "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
@@ -187,7 +181,7 @@ def any_in_list_match(
         for c_domain in comparison_sets
         if f_domain < c_domain # deduplicate
     ]
-    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_TYPE, MATCH_VALUE])
+    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
     if not matches_df.empty:
         matches_df = matches_df[matches_df["matched_on"].map(lambda d: len(d)) > 0]
         matches_df[MATCH_VALUE] = True
@@ -207,10 +201,9 @@ def parse_whois_matches(
         whois_feature_comparison_df = feature_df_preprocess(whois_comparison_df, sub_feature)
         matches = direct_match(
             whois_feature_df,
-            feature=sub_feature,
-            comparison_df=whois_feature_comparison_df,
-            indicator=sub_feature,
+            comparison_df=whois_feature_comparison_df
         )
+        matches[MATCH_TYPE] = sub_feature
         feature_matches.append(matches)
     whois_matches = pd.concat(feature_matches)
     return whois_matches
@@ -233,9 +226,7 @@ def parse_certificate_matches(
         )
         matches = direct_match(
             cert_feature_df,
-            feature=sub_feature,
-            comparison_df=cert_feature_comparison_df,
-            indicator=sub_feature,
+            comparison_df=cert_feature_comparison_df
         )
         feature_matches.append(matches)
     cert_matches = pd.concat(feature_matches)
@@ -243,7 +234,7 @@ def parse_certificate_matches(
 
 
 ## Main program
-FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataFrame]] = {
+FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]] = {
 "1-cert-domain" : direct_match,
 "1-crypto-wallet" : direct_match,
 "1-domain" : direct_match,
@@ -302,7 +293,6 @@ FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataF
 "3-footer-text": direct_match,
 "4-outbound-domain": iou_match,
 "2-ads_txt": iou_match
-
 }
 
 FEATURE_MATCHING.update({financial_id: direct_match for financial_id in FINANCIAL_IDS})
@@ -323,6 +313,22 @@ URLSCAN_CERT_FEATURES = ["certificate-subjectName"]
 
 DICT_FEATURES = {"whois": WHOIS_FEATURES, "certificate": URLSCAN_CERT_FEATURES}
 
+def find_matches_on_feature(data, comparison, feature):
+        match_func = FEATURE_MATCHING[feature]
+        try:
+            logging.info(f"Matching {feature} with method: {match_func.__name__}")
+        except AttributeError as e:
+            logging.info(f"Matching {feature} with method: {match_func.func.__name__}, {match_func.keywords}, {e}")
+        # filter to relevant rows
+        feature_df = data[data[INDICATOR_TYPE] == feature]
+        comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
+        # preprocess
+        feature_df = basic_preprocess(feature_df)
+        comparison_df = basic_preprocess(comparison_df)
+        # match
+        feature_matches = match_func(feature_df, comparison_df)
+        feature_matches[MATCH_TYPE] = feature
+        return feature_matches
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     matches_per_feature = []
@@ -332,22 +338,8 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
         comparison = data
 
     for feature in unique_features:
-        match_func = FEATURE_MATCHING.get(feature, None)
-        if not match_func:
-            logging.error(f"MISSING FEATURE MATCHING METHOD FOR: {feature}")
-            continue
         try:
-            logging.info(f"Matching {feature} with method: {match_func.__name__}")
-        except AttributeError as e:
-            logging.info(f"Matching {feature} with method: {match_func.func.__name__}, {match_func.keywords}, {e}")
-        feature_df = data[data[INDICATOR_TYPE] == feature]
-        comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
-        try:
-            feature_matches = match_func(
-                feature_df=feature_df,  # type: ignore
-                feature=feature,
-                comparison_df=comparison_df
-            )
+            feature_matches = find_matches_on_feature(data, comparison, feature)
             matches_per_feature.append(feature_matches)
             if result_dir:
                 feature_matches.to_csv(
@@ -366,17 +358,13 @@ def define_output_filename(file1, file2 = None):
     return f"{Path(file1).stem}_results.csv"
         
 
-def main(input_file, compare_file, result_dir, output_file, comparison_type):
-    if result_dir:
-        logging.info(f"we'll save intermediary results to the directory {result_dir}")
-        Path(result_dir).mkdir(exist_ok=True)
-
+def main(input_file, compare_file, output_file, comparison_type):
     data1 = pd.read_csv(input_file)
     if comparison_type == "compare" and compare_file:
         data2 = pd.read_csv(compare_file)
-        matches: pd.DataFrame = find_matches(data1, data2, result_dir=result_dir)
+        matches: pd.DataFrame = find_matches(data1, data2)
     else:
-        matches = find_matches(data1, result_dir=result_dir)
+        matches = find_matches(data1)
     logging.info(f"Matches found: {matches.shape[0]}")
     logging.info(
         f"Summary of matches:\n{matches.groupby('match_type')['match_value'].count()}"
@@ -393,14 +381,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-f", "--input-file", type=str, help="file of indicators to match",
         default="./indicators_output.csv"
-    )
-    parser.add_argument(
-        "-r",
-        "--result-dir",
-        type=str,
-        help="directory to save intermediary match results",
-        required=False,
-        default="./tmp/"
     )
     parser.add_argument(
         "-o",

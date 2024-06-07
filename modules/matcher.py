@@ -123,23 +123,22 @@ def direct_match(
     matches = matches.rename(columns={INDICATOR: MATCH_VALUE})
     return matches.reset_index(drop=True)
 
-# TODO: Add a partial string match function
-
 def partial_text_match(
         feature_df: pd.DataFrame,
         comparison_df: pd.DataFrame,
         threshold: float = 0.9,
     ) -> pd.DataFrame:
-    feature_df = feature_df[~feature_df.indicator_content.isna()]
-    feature_df = feature_df.drop_duplicates(['domain_name', 'indicator_content'])
-    comparison_df = comparison_df[~comparison_df.indicator_content.isna()]
-    comparison_df = comparison_df.drop_duplicates(['domain_name', 'indicator_content'])
+
+
+    def matching_function(x, y):
+        match_value = fuzz.ratio(x, y) / 100.0
+        return match_value >= threshold
 
     match_data = [
         {
             "domain_name_x": f_row.domain_name,
             "domain_name_y": c_row.domain_name,
-            MATCH_VALUE: fuzz.ratio(f_row.indicator_content, c_row.indicator_content) / 100.0
+            MATCH_VALUE: matching_function(f_row.indicator_content, c_row.indicator_content)
         }
         for f_row in feature_df.itertuples()
         for c_row in comparison_df.itertuples()
@@ -149,7 +148,7 @@ def partial_text_match(
     # Create DataFrame from string matched data
     result = pd.DataFrame(match_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
     if not result.empty:
-        result = result[result[MATCH_VALUE] >= threshold]
+        result = result[result[MATCH_VALUE]]
 
     return result
 
@@ -162,6 +161,10 @@ def iou_match(
     def iou(set1, set2):
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
+    def matching_function(x, y):
+        match_value = round(iou(x, y), 3)
+        return match_value >= threshold
+
     # Convert data to sets
     feature_sets = group_indicators(feature_df).to_dict()
     comparison_sets = group_indicators(comparison_df).to_dict()
@@ -171,7 +174,7 @@ def iou_match(
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
-            MATCH_VALUE: round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
+            MATCH_VALUE: matching_function(feature_sets[f_domain], comparison_sets[c_domain]), # round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
             "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
 
         }
@@ -183,7 +186,7 @@ def iou_match(
     # Create DataFrame from IOU data
     result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
     if not result.empty:
-        result = result[result[MATCH_VALUE] >= threshold]
+        result = result[result[MATCH_VALUE]]
 
     return result
 
@@ -191,13 +194,18 @@ def any_in_list_match(
         feature_df: pd.DataFrame,
         comparison_df: pd.DataFrame
 ):
+
+    def matching_function(x, y):
+        return len(x.intersection(y)) > 0
+
     feature_sets = group_indicators(feature_df).to_dict()
     comparison_sets = group_indicators(comparison_df).to_dict()
     matches = [
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
-            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
+            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain]),
+            "match_value": matching_function(feature_sets[f_domain], comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
@@ -206,8 +214,7 @@ def any_in_list_match(
     ]
     matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
     if not matches_df.empty:
-        matches_df = matches_df[matches_df["matched_on"].map(lambda d: len(d)) > 0]
-        matches_df[MATCH_VALUE] = True
+        matches_df = matches_df[matches_df[MATCH_VALUE]]
     return matches_df.reset_index(drop=True)
 
 def parse_whois_matches(
@@ -337,7 +344,10 @@ URLSCAN_CERT_FEATURES = ["certificate-subjectName"]
 DICT_FEATURES = {"whois": WHOIS_FEATURES, "certificate": URLSCAN_CERT_FEATURES}
 
 def find_matches_on_feature(data, comparison, feature):
-        match_func = FEATURE_MATCHING[feature]
+        try:
+            match_func = FEATURE_MATCHING[feature]
+        except KeyError:
+            raise KeyError(f"No matching function defined for {feature}")
         try:
             logging.info(f"Matching {feature} with method: {match_func.__name__}")
         except AttributeError as e:
@@ -369,7 +379,7 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
                     f"{result_dir}/{feature}_matches.csv", index=False
                 )
         except Exception as e:
-            logging.error(f"Error ({e}) matching feature {feature}: {traceback.print_stack()}")
+            logging.error(f"Error matching feature {feature}", exc_info=e)
             continue
     all_matches = pd.concat(matches_per_feature)
     return all_matches

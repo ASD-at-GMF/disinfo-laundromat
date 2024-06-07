@@ -111,17 +111,17 @@ def test__direct_match(feature_df, compare_df, expected_results):
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
-                        "match_value": 0.2,
+                        "match_value": False,
                     },
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "c",
-                        "match_value": 0.0,
+                        "match_value": False,
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": 0.5,
+                        "match_value": True,
                     },
                 ]
             ),
@@ -134,17 +134,17 @@ def test__direct_match(feature_df, compare_df, expected_results):
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
-                        "match_value": 0.2,
+                        "match_value": False,
                     },
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "c",
-                        "match_value": 0.0,
+                        "match_value": False,
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": 0.5,
+                        "match_value": True,
                     },
                 ]
             ),
@@ -157,17 +157,17 @@ def test__direct_match(feature_df, compare_df, expected_results):
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
-                        "match_value": 0.25,
+                        "match_value": False,
                     },
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "c",
-                        "match_value": 0.0,
+                        "match_value": False,
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": 0.667,
+                        "match_value": True,
                     },
                 ]
             ),
@@ -183,7 +183,7 @@ def test__direct_match(feature_df, compare_df, expected_results):
 )
 def test__iou_match(feature_df, compare_df, expected_results):
     results = iou_match(
-        feature_df=feature_df, comparison_df=compare_df, threshold=0
+        feature_df=feature_df, comparison_df=compare_df, threshold=0.5
     )
     results = results.drop("matched_on", axis=1)  # can't compare equality of sets
     pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)

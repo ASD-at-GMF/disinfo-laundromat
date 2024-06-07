@@ -2,7 +2,6 @@ import argparse
 import ast
 import json
 import logging
-import traceback
 from functools import partial
 from itertools import chain
 from pathlib import Path
@@ -45,13 +44,14 @@ def column_contains_set_string(column: pd.Series) -> bool:
 
 def group_indicators(df: pd.DataFrame) -> pd.Series:
     if is_list_like(df[INDICATOR].iloc[0]):
-        return df.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+        result = df.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
     elif column_contains_list_string(df[INDICATOR]) or column_contains_set_string(df[INDICATOR]):
         df_copy = df.copy() # avoid side effects with ast.literal
         df_copy[INDICATOR] = df_copy[INDICATOR].map(ast.literal_eval)
-        return df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+        result = df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
     else:
-        return df.groupby(DOMAIN)[INDICATOR].apply(set)
+        result = df.groupby(DOMAIN)[INDICATOR].apply(set)
+    return result[result.str.len() > 0]
 
 
 
@@ -129,27 +129,23 @@ def partial_text_match(
         threshold: float = 0.9,
     ) -> pd.DataFrame:
 
-
-    def matching_function(x, y):
-        match_value = fuzz.ratio(x, y) / 100.0
-        return match_value >= threshold
+    def match_value(x, y):
+        return fuzz.ratio(x, y) / 100.0
 
     match_data = [
         {
             "domain_name_x": f_row.domain_name,
             "domain_name_y": c_row.domain_name,
-            MATCH_VALUE: matching_function(f_row.indicator_content, c_row.indicator_content)
+            MATCH_VALUE: match_value(f_row.indicator_content, c_row.indicator_content)
         }
         for f_row in feature_df.itertuples()
         for c_row in comparison_df.itertuples()
-        if f_row.domain_name != c_row.domain_name
+        if ((f_row.domain_name != c_row.domain_name)
+            and (match_value(f_row.indicator_content, c_row.indicator_content) > threshold)
+        )
     ]
-
     # Create DataFrame from string matched data
-    result = pd.DataFrame(match_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
-    if not result.empty:
-        result = result[result[MATCH_VALUE]]
-
+    result = pd.DataFrame(match_data, columns=["domain_name_x", "domain_name_y", MATCH_VALUE])
     return result
 
 def iou_match(
@@ -161,42 +157,39 @@ def iou_match(
     def iou(set1, set2):
         return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
 
-    def matching_function(x, y):
-        match_value = round(iou(x, y), 3)
-        return match_value >= threshold
+    def match_value(x, y):
+        return round(iou(x, y), 3)
 
     # Convert data to sets
     feature_sets = group_indicators(feature_df).to_dict()
     comparison_sets = group_indicators(comparison_df).to_dict()
-
     # Generate IOU data
     iou_data = [
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
-            MATCH_VALUE: matching_function(feature_sets[f_domain], comparison_sets[c_domain]), # round(iou(feature_sets[f_domain], comparison_sets[c_domain]), 3),
-            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain])
+            MATCH_VALUE: match_value(feature_sets[f_domain], comparison_sets[c_domain]),
 
         }
         for f_domain in feature_sets
         for c_domain in comparison_sets
-        if f_domain < c_domain # deduplicate
+        if ((f_domain != c_domain) and
+            (match_value(feature_sets[f_domain], comparison_sets[c_domain]) > threshold)
+        )
     ]
 
     # Create DataFrame from IOU data
-    result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
-    if not result.empty:
-        result = result[result[MATCH_VALUE]]
-
+    result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", MATCH_VALUE])
     return result
+
 
 def any_in_list_match(
         feature_df: pd.DataFrame,
         comparison_df: pd.DataFrame
 ):
 
-    def matching_function(x, y):
-        return len(x.intersection(y)) > 0
+    def match_value(x, y):
+        return len(x.intersection(y))
 
     feature_sets = group_indicators(feature_df).to_dict()
     comparison_sets = group_indicators(comparison_df).to_dict()
@@ -204,18 +197,17 @@ def any_in_list_match(
         {
             "domain_name_x": f_domain,
             "domain_name_y": c_domain,
-            "matched_on": feature_sets[f_domain].intersection(comparison_sets[c_domain]),
-            "match_value": matching_function(feature_sets[f_domain], comparison_sets[c_domain])
+            MATCH_VALUE: match_value(feature_sets[f_domain], comparison_sets[c_domain])
 
         }
         for f_domain in feature_sets
         for c_domain in comparison_sets
-        if f_domain < c_domain # deduplicate
+        if ((f_domain != c_domain) and
+            (match_value(feature_sets[f_domain], comparison_sets[c_domain]) > 0)
+        )
     ]
-    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", "matched_on", MATCH_VALUE])
-    if not matches_df.empty:
-        matches_df = matches_df[matches_df[MATCH_VALUE]]
-    return matches_df.reset_index(drop=True)
+    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", MATCH_VALUE])
+    return matches_df
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,

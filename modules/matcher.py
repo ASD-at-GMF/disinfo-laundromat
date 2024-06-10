@@ -12,8 +12,12 @@ import pandas as pd
 from rapidfuzz import fuzz
 from pandas.api.types import is_list_like
 
-from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS,
-                                TRACKING_IDS)
+from modules.indicators import (
+    EMBEDDED_IDS,
+    FINANCIAL_IDS,
+    SOCIAL_MEDIA_IDS,
+    TRACKING_IDS,
+)
 
 ## Preprocessing
 
@@ -29,6 +33,7 @@ def basic_preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df = df[~df[INDICATOR].isna() & ~df[INDICATOR].isnull()]
     return df.drop_duplicates()
 
+
 def column_contains_list_string(column: pd.Series) -> bool:
     # Note: this works off the assumption that all values will have the same type
     try:
@@ -36,23 +41,30 @@ def column_contains_list_string(column: pd.Series) -> bool:
     except AttributeError:
         return False
 
+
 def column_contains_set_string(column: pd.Series) -> bool:
     try:
         return column.iloc[0].startswith("{")
     except AttributeError:
         return False
 
+
 def group_indicators(df: pd.DataFrame) -> pd.Series:
     if is_list_like(df[INDICATOR].iloc[0]):
-        result = df.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
-    elif column_contains_list_string(df[INDICATOR]) or column_contains_set_string(df[INDICATOR]):
-        df_copy = df.copy() # avoid side effects with ast.literal
+        result = df.groupby(DOMAIN)[INDICATOR].agg(
+            lambda x: set(chain.from_iterable(x))
+        )
+    elif column_contains_list_string(df[INDICATOR]) or column_contains_set_string(
+        df[INDICATOR]
+    ):
+        df_copy = df.copy()  # avoid side effects with ast.literal
         df_copy[INDICATOR] = df_copy[INDICATOR].map(ast.literal_eval)
-        result = df_copy.groupby(DOMAIN)[INDICATOR].agg(lambda x: set(chain.from_iterable(x)))
+        result = df_copy.groupby(DOMAIN)[INDICATOR].agg(
+            lambda x: set(chain.from_iterable(x))
+        )
     else:
         result = df.groupby(DOMAIN)[INDICATOR].apply(set)
     return result[result.str.len() > 0]
-
 
 
 # whois data
@@ -113,101 +125,97 @@ def cert_preprocess(df: pd.DataFrame, cert_feature: str) -> pd.DataFrame:
 ## Matching
 
 
-def direct_match(
-    feature_df: pd.DataFrame,
-    comparison_df: pd.DataFrame
-) -> pd.DataFrame:
+def direct_match(feature_df: pd.DataFrame, comparison_df: pd.DataFrame) -> pd.DataFrame:
     test_matches = pd.merge(feature_df, comparison_df, how="inner", on=INDICATOR)
     # deduplicating
     matches = test_matches[test_matches.domain_name_x < test_matches.domain_name_y]
     matches = matches.rename(columns={INDICATOR: MATCH_VALUE})
     return matches.reset_index(drop=True)
 
-def partial_text_match(
-        feature_df: pd.DataFrame,
-        comparison_df: pd.DataFrame,
-        threshold: float = 0.9,
-    ) -> pd.DataFrame:
-
-    def match_value(x, y):
-        return fuzz.ratio(x, y) / 100.0
-
+def pairwise_matching(
+        feature_df,
+        comparison_df, 
+        match_function,
+        threshold
+):    
     match_data = [
         {
-            "domain_name_x": f_row.domain_name,
-            "domain_name_y": c_row.domain_name,
-            MATCH_VALUE: match_value(f_row.indicator_content, c_row.indicator_content)
+            "domain_name_x": f_domain,
+            "domain_name_y": c_domain,
+            MATCH_VALUE: match_value
         }
-        for f_row in feature_df.itertuples()
-        for c_row in comparison_df.itertuples()
-        if ((f_row.domain_name != c_row.domain_name)
-            and (match_value(f_row.indicator_content, c_row.indicator_content) > threshold)
+        for f_domain, f_content in feature_df.items()
+        for c_domain, c_content in comparison_df.items()
+        if (
+            (f_domain != c_domain)
+            and (
+                (match_value := match_function(f_content, c_content))
+                > threshold
+            )
         )
     ]
     # Create DataFrame from string matched data
-    result = pd.DataFrame(match_data, columns=["domain_name_x", "domain_name_y", MATCH_VALUE])
+    result = pd.DataFrame(
+        match_data, columns=["domain_name_x", "domain_name_y", MATCH_VALUE]
+    )
     return result
+
+def partial_text_match(
+    feature_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
+    threshold: float = 0.9,
+) -> pd.DataFrame:
+    
+    def text_similarity_score(x, y):
+        return fuzz.ratio(x, y) / 100.0
+    
+    feature_series = feature_df.set_index(DOMAIN)[INDICATOR]
+    comparison_series = comparison_df.set_index(DOMAIN)[INDICATOR]
+
+    return pairwise_matching(
+        feature_series,
+        comparison_series,
+        text_similarity_score,
+        threshold
+    )
+
 
 def iou_match(
     feature_df: pd.DataFrame,
     comparison_df: pd.DataFrame,
     threshold: float = 0.9,
 ) -> pd.DataFrame:
+    
     # Define IOU function
     def iou(set1, set2):
-        return len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001)
+        return round(len(set1.intersection(set2)) / (len(set1.union(set2)) + 0.000001), 3)
 
-    def match_value(x, y):
-        return round(iou(x, y), 3)
+    feature_series = group_indicators(feature_df)
+    comparison_series = group_indicators(comparison_df)
 
-    # Convert data to sets
-    feature_sets = group_indicators(feature_df).to_dict()
-    comparison_sets = group_indicators(comparison_df).to_dict()
-    # Generate IOU data
-    iou_data = [
-        {
-            "domain_name_x": f_domain,
-            "domain_name_y": c_domain,
-            MATCH_VALUE: match_value(feature_sets[f_domain], comparison_sets[c_domain]),
-
-        }
-        for f_domain in feature_sets
-        for c_domain in comparison_sets
-        if ((f_domain != c_domain) and
-            (match_value(feature_sets[f_domain], comparison_sets[c_domain]) > threshold)
-        )
-    ]
-
-    # Create DataFrame from IOU data
-    result = pd.DataFrame(iou_data, columns=["domain_name_x", "domain_name_y", MATCH_VALUE])
-    return result
+    return pairwise_matching(
+        feature_series,
+        comparison_series,
+        iou,
+        threshold
+    )
 
 
-def any_in_list_match(
-        feature_df: pd.DataFrame,
-        comparison_df: pd.DataFrame
-):
+def any_in_list_match(feature_df: pd.DataFrame, comparison_df: pd.DataFrame):
 
-    def match_value(x, y):
+    def any_in_list(x, y):
         return len(x.intersection(y))
 
-    feature_sets = group_indicators(feature_df).to_dict()
-    comparison_sets = group_indicators(comparison_df).to_dict()
-    matches = [
-        {
-            "domain_name_x": f_domain,
-            "domain_name_y": c_domain,
-            MATCH_VALUE: match_value(feature_sets[f_domain], comparison_sets[c_domain])
+    feature_series = group_indicators(feature_df)
+    comparison_series = group_indicators(comparison_df)
 
-        }
-        for f_domain in feature_sets
-        for c_domain in comparison_sets
-        if ((f_domain != c_domain) and
-            (match_value(feature_sets[f_domain], comparison_sets[c_domain]) > 0)
-        )
-    ]
-    matches_df = pd.DataFrame(matches, columns=["domain_name_x", "domain_name_y", MATCH_VALUE])
-    return matches_df
+    return pairwise_matching(
+        feature_series,
+        comparison_series,
+        any_in_list,
+        threshold=0
+    )
+
 
 def parse_whois_matches(
     feature_df: pd.DataFrame,
@@ -257,64 +265,64 @@ def parse_certificate_matches(
 
 ## Main program
 FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]] = {
-"1-cert-domain" : direct_match,
-"1-crypto-wallet" : direct_match,
-"1-domain" : direct_match,
-"1-domain_suffix" : direct_match,
-"1-fb_pixel_id" : direct_match,
-"1-adobe_analytics_id" : direct_match,
-"3-sitemap_entries" : direct_match,
-"3-ipms_domain_iprangeowner_cidr" : direct_match,
-"3-ipms_domain_iprangeowner_ownerName" : direct_match,
-"3-ipms_domain_iprangeowner_address" : direct_match,
-"3-ipms_domain_nameserver" : iou_match,
-"3-ipms_domain_otheripused" : iou_match,
-"3-ipms_siteonthisip_now" : iou_match,
-"3-ipms_siteonthisip_before" : iou_match,
-"3-ipms_siteonthisip_broken" : iou_match,
-"3-ipms_useragents" : iou_match,
-"1-ip_shodan_hostnames" : direct_match,
-"3-ip_shodan_ports" : iou_match,
-"2-ip_shodan_vuln" : iou_match,
-"3-ip_shodan_cpe" : iou_match,
-"1-ga_id" : direct_match,
-"1-ga_tag_id" : direct_match,
-"1-ip" : direct_match,
-"1-verification_id" : direct_match,
-"1-yandex_tag_id" : direct_match,
-"2-subnet" : direct_match,
-"3-cdn-domain" : iou_match,
-"3-cms" : direct_match,
-"3-css_classes" : iou_match,
-"3-header-nonstd-value" : direct_match,
-"3-header-server" : direct_match,
-"3-id_tags" : iou_match,
-"3-iframe_id_tags" : iou_match,
-"3-link_href" : iou_match,
-"3-meta_generic" : iou_match,
-"3-meta_social" : direct_match,
-"3-script_src" : iou_match,
-"3-uuid" : direct_match,
-"3-whois_creation_date" : direct_match,
-"3-whois_server" : direct_match,
-"3-whois-registrar" : direct_match,
-"3-wp-blocks" : iou_match,
-"3-wp-categories" : iou_match,
-"3-wp-pages" : iou_match,
-"3-wp-posts" : iou_match,
-"3-wp-tags" : iou_match,
-"3-wp-users" : iou_match,
-"2-urlscan_globalvariable": iou_match,
-"2-urlscan_cookies": iou_match,
-"2-urlscan_consolemessages": iou_match,
-"2-urlscan_asn": direct_match,
-"2-urlscan_domainsonpage": iou_match,
-"2-urlscan_urlssonpage" : iou_match,
-"2-urlscanhrefs" : iou_match,
-"2-techstack" : iou_match,
-"3-footer-text": partial_text_match,
-"4-outbound-domain": iou_match,
-"2-ads_txt": iou_match
+    "1-cert-domain" : direct_match,
+    "1-crypto-wallet" : direct_match,
+    "1-domain" : direct_match,
+    "1-domain_suffix" : direct_match,
+    "1-fb_pixel_id" : direct_match,
+    "1-adobe_analytics_id" : direct_match,
+    "3-sitemap_entries" : direct_match,
+    "3-ipms_domain_iprangeowner_cidr" : direct_match,
+    "3-ipms_domain_iprangeowner_ownerName" : direct_match,
+    "3-ipms_domain_iprangeowner_address" : direct_match,
+    "3-ipms_domain_nameserver" : iou_match,
+    "3-ipms_domain_otheripused" : iou_match,
+    "3-ipms_siteonthisip_now" : iou_match,
+    "3-ipms_siteonthisip_before" : iou_match,
+    "3-ipms_siteonthisip_broken" : iou_match,
+    "3-ipms_useragents" : iou_match,
+    "1-ip_shodan_hostnames" : direct_match,
+    "3-ip_shodan_ports" : iou_match,
+    "2-ip_shodan_vuln" : iou_match,
+    "3-ip_shodan_cpe" : iou_match,
+    "1-ga_id" : direct_match,
+    "1-ga_tag_id" : direct_match,
+    "1-ip" : direct_match,
+    "1-verification_id" : direct_match,
+    "1-yandex_tag_id" : direct_match,
+    "2-subnet" : direct_match,
+    "3-cdn-domain" : iou_match,
+    "3-cms" : direct_match,
+    "3-css_classes" : iou_match,
+    "3-header-nonstd-value" : direct_match,
+    "3-header-server" : direct_match,
+    "3-id_tags" : iou_match,
+    "3-iframe_id_tags" : iou_match,
+    "3-link_href" : iou_match,
+    "3-meta_generic" : iou_match,
+    "3-meta_social" : direct_match,
+    "3-script_src" : iou_match,
+    "3-uuid" : direct_match,
+    "3-whois_creation_date" : direct_match,
+    "3-whois_server" : direct_match,
+    "3-whois-registrar" : direct_match,
+    "3-wp-blocks" : iou_match,
+    "3-wp-categories" : iou_match,
+    "3-wp-pages" : iou_match,
+    "3-wp-posts" : iou_match,
+    "3-wp-tags" : iou_match,
+    "3-wp-users" : iou_match,
+    "2-urlscan_globalvariable": iou_match,
+    "2-urlscan_cookies": iou_match,
+    "2-urlscan_consolemessages": iou_match,
+    "2-urlscan_asn": direct_match,
+    "2-urlscan_domainsonpage": iou_match,
+    "2-urlscan_urlssonpage" : iou_match,
+    "2-urlscanhrefs" : iou_match,
+    "2-techstack" : iou_match,
+    "3-footer-text": partial_text_match,
+    "4-outbound-domain": iou_match,
+    "2-ads_txt": iou_match,
 }
 
 FEATURE_MATCHING.update({financial_id: direct_match for financial_id in FINANCIAL_IDS})
@@ -335,25 +343,27 @@ URLSCAN_CERT_FEATURES = ["certificate-subjectName"]
 
 DICT_FEATURES = {"whois": WHOIS_FEATURES, "certificate": URLSCAN_CERT_FEATURES}
 
+
 def find_matches_on_feature(data, comparison, feature):
-        try:
-            match_func = FEATURE_MATCHING[feature]
-        except KeyError:
-            raise KeyError(f"No matching function defined for {feature}")
-        try:
-            logging.info(f"Matching {feature} with method: {match_func.__name__}")
-        except AttributeError as e:
+    try:
+        match_func = FEATURE_MATCHING[feature]
+    except KeyError:
+        raise KeyError(f"No matching function defined for {feature}")
+    try:
+        logging.info(f"Matching {feature} with method: {match_func.__name__}")
+    except AttributeError as e:
             logging.info(f"Matching {feature} with method: {match_func.func.__name__}, {match_func.keywords}, {e}")
         # filter to relevant rows
-        feature_df = data[data[INDICATOR_TYPE] == feature]
-        comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
-        # preprocess
-        feature_df = basic_preprocess(feature_df)
-        comparison_df = basic_preprocess(comparison_df)
-        # match
-        feature_matches = match_func(feature_df, comparison_df)
-        feature_matches[MATCH_TYPE] = feature
-        return feature_matches
+    feature_df = data[data[INDICATOR_TYPE] == feature]
+    comparison_df = comparison[comparison[INDICATOR_TYPE] == feature]
+    # preprocess
+    feature_df = basic_preprocess(feature_df)
+    comparison_df = basic_preprocess(comparison_df)
+    # match
+    feature_matches = match_func(feature_df, comparison_df)
+    feature_matches[MATCH_TYPE] = feature
+    return feature_matches
+
 
 def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     matches_per_feature = []
@@ -377,11 +387,11 @@ def find_matches(data, comparison=None, result_dir=None) -> pd.DataFrame:
     return all_matches
 
 
-def define_output_filename(file1, file2 = None):
+def define_output_filename(file1, file2=None):
     if file2:
         return f"{Path(file1).stem}_{Path(file2).stem}_results.csv"
     return f"{Path(file1).stem}_results.csv"
-        
+
 
 def main(input_file, compare_file, output_file, comparison_type):
     data1 = pd.read_csv(input_file)
@@ -422,22 +432,20 @@ if __name__ == "__main__":
         type=str,
         help="type of comparison to run, pairwise or one-to-one compare",
         required=False,
-        default="pairwise"
-    ) 
+        default="pairwise",
+    )
     parser.add_argument(
         "-cf",
         "--compare-file",
         type=str,
         help="file of indicators to compare against",
         required=False,
-        default="./comparison_indicators.csv"
+        default="./comparison_indicators.csv",
     )
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.StreamHandler()
-        ]
+        handlers=[logging.StreamHandler()],
     )
     args = parser.parse_args()
 

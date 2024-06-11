@@ -140,8 +140,8 @@ def pairwise_matching(
 ):    
     match_data = [
         {
-            "domain_name_x": f_domain,
-            "domain_name_y": c_domain,
+            "domain_name_x": min(f_domain, c_domain),
+            "domain_name_y": max(f_domain, c_domain),
             MATCH_VALUE: match_value
         }
         for f_domain, f_content in feature_df.items()
@@ -150,14 +150,14 @@ def pairwise_matching(
             (f_domain != c_domain)
             and (
                 (match_value := match_function(f_content, c_content))
-                > threshold
+                >= threshold
             )
         )
     ]
     # Create DataFrame from string matched data
     result = pd.DataFrame(
         match_data, columns=["domain_name_x", "domain_name_y", MATCH_VALUE]
-    )
+    ).drop_duplicates(["domain_name_x", "domain_name_y"])
     return result
 
 def partial_text_match(
@@ -213,7 +213,7 @@ def any_in_list_match(feature_df: pd.DataFrame, comparison_df: pd.DataFrame):
         feature_series,
         comparison_series,
         any_in_list,
-        threshold=0
+        threshold=1
     )
 
 

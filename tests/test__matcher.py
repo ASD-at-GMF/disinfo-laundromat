@@ -109,19 +109,9 @@ def test__direct_match(feature_df, compare_df, expected_results):
             pd.DataFrame(
                 [
                     {
-                        "domain_name_x": "a",
-                        "domain_name_y": "b",
-                        "match_value": False,
-                    },
-                    {
-                        "domain_name_x": "a",
-                        "domain_name_y": "c",
-                        "match_value": False,
-                    },
-                    {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": True,
+                        "match_value": 0.5,
                     },
                 ]
             ),
@@ -132,19 +122,9 @@ def test__direct_match(feature_df, compare_df, expected_results):
             pd.DataFrame(
                 [
                     {
-                        "domain_name_x": "a",
-                        "domain_name_y": "b",
-                        "match_value": False,
-                    },
-                    {
-                        "domain_name_x": "a",
-                        "domain_name_y": "c",
-                        "match_value": False,
-                    },
-                    {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": True,
+                        "match_value": 0.5,
                     },
                 ]
             ),
@@ -155,23 +135,13 @@ def test__direct_match(feature_df, compare_df, expected_results):
             pd.DataFrame(
                 [
                     {
-                        "domain_name_x": "a",
-                        "domain_name_y": "b",
-                        "match_value": False,
-                    },
-                    {
-                        "domain_name_x": "a",
-                        "domain_name_y": "c",
-                        "match_value": False,
-                    },
-                    {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": True,
+                        "match_value": 0.667,
                     },
                 ]
             ),
-        id="two set-like strings, same values"),
+        id="two set-like strings, different values"),
         pytest.param(
             feature_group_as_list_str_1(),
             feature_group_as_list_str_2(),
@@ -185,7 +155,6 @@ def test__iou_match(feature_df, compare_df, expected_results):
     results = iou_match(
         feature_df=feature_df, comparison_df=compare_df, threshold=0.5
     )
-    results = results.drop("matched_on", axis=1)  # can't compare equality of sets
     pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)
 
 
@@ -207,14 +176,12 @@ def test__parse_certificate_matches():
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
-                        "match_value": True,
-                        # "matched_on": {3},
+                        "match_value": 1,
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": True,
-                        # "matched_on" : {4, 5},
+                        "match_value": 2,
                     },
                 ]
             )
@@ -227,14 +194,12 @@ def test__parse_certificate_matches():
                     {
                         "domain_name_x": "a",
                         "domain_name_y": "b",
-                        "match_value": True,
-                        # "matched_on": {'bar'},
+                        "match_value": 1,
                     },
                     {
                         "domain_name_x": "b",
                         "domain_name_y": "c",
-                        "match_value": True,
-                        # "matched_on" : {'phrase', 'fake'},
+                        "match_value": 2,
                     },
                 ]
             )
@@ -251,8 +216,7 @@ def test__parse_certificate_matches():
 )
 def test__any_in_list_match(feature_df, compare_df, expected_results):
     results = any_in_list_match(feature_df, compare_df)
-    results = results.drop("matched_on", axis=1)
-    pd.testing.assert_frame_equal(results, expected_results, check_index_type=False)
+    pd.testing.assert_frame_equal(results.reset_index(drop=True), expected_results.reset_index(drop=True), check_index_type=False)
 
 
 def test__dict_direct_match():

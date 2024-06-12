@@ -261,7 +261,7 @@ def parse_certificate_matches(
 
 
 ## Main program
-FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, str, pd.DataFrame], pd.DataFrame]] = {
+FEATURE_MATCHING: dict[str, Callable[[pd.DataFrame, pd.DataFrame], pd.DataFrame]] = {
 "1-cert-domain" : direct_match,
 "1-crypto-wallet" : direct_match,
 "1-domain" : direct_match,

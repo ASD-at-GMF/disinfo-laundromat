@@ -31,7 +31,7 @@ from tldextract import tldextract
 from usp.tree import sitemap_tree_for_homepage
 
 from modules.indicator import Indicator
-from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS)
+from modules.indicators import (EMBEDDED_IDS, FINANCIAL_IDS, SOCIAL_MEDIA_IDS, TRACKING_IDS, CRYPTO_IDS)
 from modules.reference import LEAD_GEN_INDICATORS
 
 URLSCAN_API_KEY = os.getenv('URLSCAN_API_KEY', '')
@@ -180,7 +180,7 @@ def parse_sitemaps(url) -> list[Indicator]:
     tree = sitemap_tree_for_homepage(url)
     logging.info(tree)
     entries = set(page.url for page in tree.all_pages())
-    return [Indicator("4-sitemap_entries", entries)]
+    return [Indicator("3-sitemap_entries", entries)]
 
 @return_empty_if_fails
 def parse_dom_tree(soup) -> list[Indicator]:
@@ -222,7 +222,7 @@ def parse_meta_tags(soup) -> list[Indicator]:
         name = meta_tag.get("name")
         prop = meta_tag.get("property")
         content = meta_tag.get("content")
-        if name and "verif" in name.lower():
+        if name and ("verif" in name.lower() or "valid" in name.lower()):
             tag_indicators.append(Indicator("1-verification_id", name + "|" + content))
         elif name and name in ["twitter:site", "fb:pages"]:
             tag_indicators.append(Indicator("3-meta_social", name + "|" + content))
@@ -481,7 +481,7 @@ def get_ipms_ip_indicators(ipms_url) -> list[Indicator]:
 @return_empty_if_fails
 def parse_body(response) -> list[Indicator]:
     text = response.text
-    return find_uuids(text) + find_wallets(text)
+    return find_uuids(text)
 
 
 @return_empty_if_fails
@@ -563,10 +563,13 @@ def add_associated_domains_from_cert(url) -> list[Indicator]:
         return []
 
 @return_empty_if_fails
-def parse_id_patterns(response, id_patterns: dict[str,str]) -> list[Indicator]:
+def parse_id_patterns(response, soup, use_plaintext,  id_patterns: dict[str,str]) -> list[Indicator]:
     tag_indicators = []
     for id_type, pattern in id_patterns.items():
-        id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
+        if use_plaintext:
+            id_indicators = find_with_regex(regex=pattern, text=soup.get_text(separator=' ', strip=True), indicator_type=id_type)
+        else: 
+            id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
         tag_indicators.extend(id_indicators)
     return tag_indicators
 
@@ -744,14 +747,14 @@ def detect_and_parse_feed_content(url) -> list[Indicator]:
         feed = feedparser.parse(url)
         for entry in feed.entries:
             feed_indicators.append(
-                Indicator("4-content-title", entry.title)
+                Indicator("3-content-title", entry.title)
             )
             feed_indicators.append(Indicator("4-content-link", entry.link))
             feed_indicators.append(
-                Indicator("4-content-summary", entry.summary)
+                Indicator("3-content-summary", entry.summary)
             )
             feed_indicators.append(
-                Indicator("4-content-published", entry.published)
+                Indicator("3-content-published", entry.published)
             )
 
     return feed_indicators
@@ -777,7 +780,7 @@ def get_outbound_domains(url, soup) -> list[Indicator]:
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
                 outbound_domains.add(link_domain)
-    return [Indicator("4-outbound-domain", outbound_domains) ]
+    return [Indicator("3-outbound-domain", outbound_domains) ]
 
 # parses <domain>.ads.txt file for associated ad networks, exchanges, and other ad-related entities
 def parse_ads_txt(url, soup):
@@ -843,18 +846,20 @@ def crawl(url, run_urlscan=False) -> list[Indicator]:
     indicators.extend(parse_id_attributes(soup))
     indicators.extend(parse_link_tags(soup))
     indicators.extend(parse_footer(soup))
-    indicators.extend(parse_id_patterns(response=response, id_patterns=EMBEDDED_IDS))
-    indicators.extend(parse_id_patterns(response=response, id_patterns=FINANCIAL_IDS))
-    indicators.extend(parse_id_patterns(response=response, id_patterns=SOCIAL_MEDIA_IDS))
-    indicators.extend(parse_id_patterns(response=response, id_patterns=TRACKING_IDS))
+    indicators.extend(parse_id_patterns(response=response, soup=soup, use_plaintext=False, id_patterns=EMBEDDED_IDS))
+    indicators.extend(parse_id_patterns(response=response, soup=soup, use_plaintext=False, id_patterns=FINANCIAL_IDS))
+    indicators.extend(parse_id_patterns(response=response, soup=soup, use_plaintext=False, id_patterns=SOCIAL_MEDIA_IDS))
+    indicators.extend(parse_id_patterns(response=response, soup=soup, use_plaintext=False, id_patterns=TRACKING_IDS))
+    indicators.extend(parse_id_patterns(response=response, soup=soup, use_plaintext=True, id_patterns=CRYPTO_IDS))
+
     indicators.extend(add_cdn_domains(soup))
     indicators.extend(parse_domain_name(url))
     indicators.extend(parse_classes(soup))
-    indicators.extend(get_ipms_indicators(url))
+    #indicators.extend(get_ipms_indicators(url))
     indicators.extend(get_shodan_indicators(url))
     indicators.extend(add_associated_domains_from_cert(url))
     indicators.extend(get_outbound_domains(url, soup))
-    indicators.extend(parse_ads_txt(url, response))
+    #indicators.extend(parse_ads_txt(url, response))
     ## Uncomment the following if needed
     # indicators.extend(add_who_is(url))
     # indicators.extend(parse_images(url, soup, response))
@@ -933,7 +938,7 @@ def remove_json_like_strings(text):
 def annotate_indicators(indicators_df):
     # iterate across the indicators dataframe, if indicator_type is in the keys of FINANCIAL_IDS, add 'financial' to the indicator_annotation column
     for index, row in indicators_df.iterrows():
-        if row['indicator_type'] in FINANCIAL_IDS.keys():
+        if row['indicator_type'] in FINANCIAL_IDS.keys() or row['indicator_type'] in CRYPTO_IDS.keys():
             indicators_df.at[index, 'indicator_annotation'] = 'financial'
         elif row['indicator_type'] in EMBEDDED_IDS.keys():
             indicators_df.at[index, 'indicator_annotation'] = 'embedded'
@@ -999,7 +1004,7 @@ if __name__ == "__main__":
         type=str,
         help="file to save final list of match results",
         required=False,
-        default=os.path.join(".", "indicators_output_dmi.csv"),
+        default=os.path.join(".", "indicators_output.csv"),
     )
     logging.basicConfig(
         level=logging.INFO,
@@ -1017,6 +1022,7 @@ if __name__ == "__main__":
     domains = input_data[domain_col]
     for domain in domains:
         try:
+            print(f"Processing {domain}")
             domain_name = get_domain_name(domain)
             indicators = crawl(domain, run_urlscan=run_urlscan)
             write_domain_indicators(domain_name, indicators, output_file=output_file)

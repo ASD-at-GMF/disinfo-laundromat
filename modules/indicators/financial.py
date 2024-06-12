@@ -44,5 +44,23 @@ FINANCIAL_IDS = {
     "3-viglink": r"https?:\/\/outbound\.viglink\.com\/\?key=([a-zA-Z0-9]+)&u=",
     "3-skimlinks": r"https?:\/\/go\.skimresources\.com\/\?id=([0-9]+)&xs=1&url=",
     "3-targetaffiliate": r"https?:\/\/goto\.target\.com\/c\/[0-9]+\/[0-9]+\/[0-9]+\?a=([a-zA-Z0-9_]+)&sm=",
-    "3-walmartaffiliate": r"https?:\/\/linksynergy\.walmart\.com\/deeplink\?id=([a-zA-Z0-9]+)&murl="
+    "3-walmartaffiliate": r"https?:\/\/linksynergy\.walmart\.com\/deeplink\?id=([a-zA-Z0-9]+)&murl=",
+    # ads
+    "3-doubleclick_ads": r"https:\/\/googleads\.g\.doubleclick\.net\/pagead\/ads\?.*?client=(ca-pub-\d+)",
+    "3-google_ads": r"https:\/\/www\.google\..*?\/aclk\?.*?adurl=(https:\/\/.*?)&",
+    "3-facebook_ads": r"https:\/\/www\.facebook\.com\/.*?\/ads\/.*?\?id=(\d+)",
+    "3-amazon_advertising_ads": r"https:\/\/aax\.amazon-adsystem\.com\/.*?&adInstanceId=(\w+)",
+    "3-microsoft_advertising_ads": r"https:\/\/(.*?)\.r\.msn\.com\/.*?\?adid=(\d+)",
+    "3-google_adservices_ads": r"https:\/\/www\.google\.com\/adservices\/.*?pagead\/aclk\?.*?sa=L&ai=(.*?)&",
+    "3-appnexus_ads": r"https:\/\/ib\.adnxs\.com\/.*?\?id=(\d+)",
+    "3-criteo_ads": r"https:\/\/gum\.criteo\.com\/.*?&adid=(\w+)",
+    "3-taboola_ads": r"https:\/\/trc\.taboola\.com\/.*?libId=(\w+)",
+    "3-rubicon_ads": r"https:\/\/optimized-by\.rubiconproject\.com\/.*?&account_id=(\d+)",
+    "3-openx_ads": r"https:\/\/(.*?)\.servedbyopenx\.com\/.*?&auid=(\d+)",
+    "3-smart adserver_ads": r"https:\/\/(.*?)\.smartadserver\.com\/.*?&tagId=(\d+)",
+    "3-adform_ads": r"https:\/\/track\.adform\.net\/.*?&adid=(\d+)",
+    "3-smaato_ads": r"https:\/\/smaato\.com\/.*?&adSpaceId=(\d+)",
+    "3-linkedin ads_ads": r"https:\/\/www\.linkedin\.com\/ads\/.*?id=(\d+)"
+
+
 }

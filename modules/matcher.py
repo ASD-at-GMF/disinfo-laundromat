@@ -130,19 +130,19 @@ def direct_match(feature_df: pd.DataFrame, comparison_df: pd.DataFrame) -> pd.Da
     return matches.reset_index(drop=True)
 
 def match_with_threshold(
-        feature_df,
-        comparison_df, 
-        match_function,
-        threshold
+        feature_series: pd.Series,
+        comparison_series: pd.Series,
+        match_function: Callable[[Any, Any], Any],
+        threshold: int | float
 ):    
     match_data = [
         {
-            "domain_name_x": min(f_domain, c_domain),
-            "domain_name_y": max(f_domain, c_domain),
+            "domain_name_x": min(str(f_domain), str(c_domain)),
+            "domain_name_y": max(str(f_domain), str(c_domain)),
             MATCH_VALUE: match_value
         }
-        for f_domain, f_content in feature_df.items()
-        for c_domain, c_content in comparison_df.items()
+        for f_domain, f_content in feature_series.items()
+        for c_domain, c_content in comparison_series.items()
         if (
             (f_domain != c_domain)
             and (

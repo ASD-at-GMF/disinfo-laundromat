@@ -129,7 +129,7 @@ def direct_match(feature_df: pd.DataFrame, comparison_df: pd.DataFrame) -> pd.Da
     matches = matches.rename(columns={INDICATOR: MATCH_VALUE})
     return matches.reset_index(drop=True)
 
-def pairwise_matching(
+def match_with_threshold(
         feature_df,
         comparison_df, 
         match_function,
@@ -169,7 +169,7 @@ def partial_text_match(
     feature_series = feature_df.set_index(DOMAIN)[INDICATOR]
     comparison_series = comparison_df.set_index(DOMAIN)[INDICATOR]
 
-    return pairwise_matching(
+    return match_with_threshold(
         feature_series,
         comparison_series,
         text_similarity_score,
@@ -190,7 +190,7 @@ def iou_match(
     feature_series = group_indicators(feature_df)
     comparison_series = group_indicators(comparison_df)
 
-    return pairwise_matching(
+    return match_with_threshold(
         feature_series,
         comparison_series,
         iou,
@@ -206,7 +206,7 @@ def any_in_list_match(feature_df: pd.DataFrame, comparison_df: pd.DataFrame):
     feature_series = group_indicators(feature_df)
     comparison_series = group_indicators(comparison_df)
 
-    return pairwise_matching(
+    return match_with_threshold(
         feature_series,
         comparison_series,
         any_in_list,

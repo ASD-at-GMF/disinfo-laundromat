@@ -257,23 +257,16 @@ def fingerprint_api():
 def fingerprint(request):
     if request.method == 'POST':
         url = request.form['url']
-        run_urlscan =  'run_urlscan' in request.form
-        internal_only = 'internal_only' in request.form 
+        run_urlscan =  request.form['run_urlscan']  if 'run_urlscan' in request.form else False
+        internal_only =  request.form['run_urlscan']  if 'internal_only' in request.form else False 
     elif request.method == 'GET':
         url = request.args.get('url')
-        run_urlscan =  'run_urlscan' in request.args
-        internal_only = 'internal_only' in request.args
+        run_urlscan =  request.args['run_urlscan']  if 'run_urlscan' in request.args else False
+        internal_only =  request.args['run_urlscan']  if 'internal_only' in request.args else False 
     # Validation checks for internal_only and run_urlscan
-    if internal_only:
-        if request.form['internal_only'] == 'true' or request.form['internal_only'] == 'True' or request.form['internal_only'] == 'TRUE' or request.form['internal_only'] == '1':
-            internal_only = True
-        else:
-            internal_only = False
-    if run_urlscan:
-        if request.form['run_urlscan'] == 'true' or request.form['run_urlscan'] == 'True' or request.form['run_urlscan'] == 'TRUE' or request.form['run_urlscan'] == '1':
-            run_urlscan = True
-        else:
-            run_urlscan = False
+    internal_only = bool(internal_only)
+    run_urlscan = bool(run_urlscan)
+
 
     urls = url_string_to_valid_urls(url)
     return find_indicators_and_matches(urls, run_urlscan = run_urlscan, internal_only = internal_only)

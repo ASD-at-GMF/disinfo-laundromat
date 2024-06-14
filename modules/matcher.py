@@ -28,7 +28,8 @@ MATCH_VALUE = "match_value"
 def basic_preprocess(df: pd.DataFrame) -> pd.DataFrame:
     df = df[[DOMAIN, INDICATOR]]
     df = df[~df[INDICATOR].isna() & ~df[INDICATOR].isnull()]
-    return df.drop_duplicates()
+    df = df[~df.astype(str).duplicated()]
+    return df
 
 
 def column_contains_list_string(column: pd.Series) -> bool:
@@ -139,7 +140,7 @@ def match_with_threshold(
         {
             "domain_name_x": min(str(f_domain), str(c_domain)),
             "domain_name_y": max(str(f_domain), str(c_domain)),
-            MATCH_VALUE: match_value
+            MATCH_VALUE: str(match_value*100) + "% - " + str(f_content) 
         }
         for f_domain, f_content in feature_series.items()
         for c_domain, c_content in comparison_series.items()

@@ -5381,7 +5381,6 @@ Threat Actor,Domain,Name,Source
 ,https://bosase.com,,Wikipedia Fake News
 ,https://celebritiesdeaths.com,,Wikipedia Fake News
 ,https://CountyLocalNews.com,,Wikipedia Fake News
-,https://DailyHeadliner.com,,Wikipedia Fake News
 ,https://Famadillo.com,,Wikipedia Fake News
 ,https://FilthyLucre.com,,Wikipedia Fake News
 ,https://FoodingWorld.com,,Wikipedia Fake News
@@ -5396,18 +5395,15 @@ Threat Actor,Domain,Name,Source
 ,https://newsyoucantuse.com,,Wikipedia Fake News
 ,https://NoticiasDeEmprego.com.br,,Wikipedia Fake News
 ,https://NotRealNews.net,,Wikipedia Fake News
-,https://Roadan.com,,Wikipedia Fake News
 ,https://ScoopEarth.com,,Wikipedia Fake News
 ,https://setolu.com,,Wikipedia Fake News
 ,https://Time.news,,Wikipedia Fake News
 ,https://TnewsNetwork.com,,Wikipedia Fake News
 ,https://TopGolf.kr,,Wikipedia Fake News
 ,https://topnews67.com,,Wikipedia Fake News
-,https://TopStories.com.ng,,Wikipedia Fake News
 ,https://vatolu.com,,Wikipedia Fake News
 ,https://Walli.us,,Wikipedia Fake News
 ,https://WaveFunction.info,,Wikipedia Fake News
-,https://WhatsNew2Day.com,,Wikipedia Fake News
 ,https://World-Today-News.com,,Wikipedia Fake News
 ,https://AosFatos.com,,Wikipedia Fake News
 ,https://business2community.com,,Wikipedia Fake News
@@ -5555,7 +5551,6 @@ Threat Actor,Domain,Name,Source
 ,https://phys.org,,Wikidata All News
 ,https://mediapart.fr,,Wikidata All News
 ,https://theage.com.au,,Wikidata All News
-,https://lenta.ru,,Wikidata All News
 ,https://ruscourier.ru,,Wikidata All News
 ,https://aletihadae.com,,Wikidata All News
 ,https://udn.com,,Wikidata All News
@@ -5583,7 +5578,6 @@ Threat Actor,Domain,Name,Source
 ,https://feedreader.com,,Wikidata All News
 ,https://lenta.yandex.ru,,Wikidata All News
 ,https://ll.yandex.ru,,Wikidata All News
-,https://news.yandex.ru,,Wikidata All News
 ,https://breakingtweets.com,,Wikidata All News
 ,https://feedly.com,,Wikidata All News
 ,https://makagiga.sourceforge.io,,Wikidata All News
@@ -5620,7 +5614,6 @@ Threat Actor,Domain,Name,Source
 ,https://worldwideentertainmenttv.com,,Wikidata All News
 ,https://varesenews.it,,Wikidata All News
 ,https://andina.pe,,Wikidata All News
-,https://life.ru,,Wikidata All News
 ,https://playground.ru,,Wikidata All News
 ,https://republic.ru,,Wikidata All News
 ,https://dtf.ru,,Wikidata All News
@@ -5642,7 +5635,6 @@ Threat Actor,Domain,Name,Source
 ,https://rus.azattyk.org,,Wikidata All News
 ,https://bbc.com,,Wikidata All News
 ,https://russ.ru,,Wikidata All News
-,https://svpressa.ru,,Wikidata All News
 ,https://azatliq.org,,Wikidata All News
 ,https://oteatre.info,,Wikidata All News
 ,https://972mag.com,,Wikidata All News
@@ -5691,7 +5683,6 @@ Threat Actor,Domain,Name,Source
 ,https://kikar.co.il,,Wikidata All News
 ,https://matangitonga.to,,Wikidata All News
 ,https://kmdn.gov.tw,,Wikidata All News
-,https://korrespondent.net,,Wikidata All News
 ,https://ua.korrespondent.net,,Wikidata All News
 ,https://ar.timesofisrael.com,,Wikidata All News
 ,https://fa.timesofisrael.com,,Wikidata All News
@@ -5709,7 +5700,6 @@ Threat Actor,Domain,Name,Source
 ,https://epaper.jxnews.com.cn,,Wikidata All News
 ,https://bt.no,,Wikidata All News
 ,https://bergens-tidende.no,,Wikidata All News
-,https://ria.ru,,Wikidata All News
 ,https://cbsnews.com,,Wikidata All News
 ,https://delmagyar.hu,,Wikidata All News
 ,https://pravda.com.ua,,Wikidata All News
@@ -5778,7 +5768,6 @@ Threat Actor,Domain,Name,Source
 ,https://lto.de,,Wikidata All News
 ,https://stripes.com,,Wikidata All News
 ,https://mdnkids.com,,Wikidata All News
-,https://vz.ru,,Wikidata All News
 ,https://news.de,,Wikidata All News
 ,https://chaskor.ru,,Wikidata All News
 ,https://lwn.net,,Wikidata All News
@@ -5866,7 +5855,6 @@ Threat Actor,Domain,Name,Source
 ,https://yug.odessa.ua,,Wikidata All News
 ,https://cnn.com,,Wikidata All News
 ,https://edition.cnn.com,,Wikidata All News
-,https://sabq.org,,Wikidata All News
 ,https://hespress.com,,Wikidata All News
 ,https://asturies.com,,Wikidata All News
 ,https://bornholm.nu,,Wikidata All News
@@ -5940,7 +5928,6 @@ Threat Actor,Domain,Name,Source
 ,https://moviezine.se,,Wikidata All News
 ,https://dcnews.ro,,Wikidata All News
 ,https://ljnovice.com,,Wikidata All News
-,https://gordonua.com,,Wikidata All News
 ,https://itavisen.no,,Wikidata All News
 ,https://kureren.no,,Wikidata All News
 ,https://liberaleren.no,,Wikidata All News
@@ -5949,7 +5936,6 @@ Threat Actor,Domain,Name,Source
 ,https://vol.no,,Wikidata All News
 ,https://arstadposten.no,,Wikidata All News
 ,https://aasanetidende.no,,Wikidata All News
-,https://francais.rt.com,,Wikidata All News
 ,https://blesk.cz,,Wikidata All News
 ,https://riotpixels.com,,Wikidata All News
 ,https://maroelamedia.co.za,,Wikidata All News
@@ -5962,7 +5948,6 @@ Threat Actor,Domain,Name,Source
 ,https://economiadigital.es,,Wikidata All News
 ,https://itongadol.com.ar,,Wikidata All News
 ,https://tacno.net,,Wikidata All News
-,https://nv.ua,,Wikidata All News
 ,https://unn.com.ua,,Wikidata All News
 ,https://thenewdaily.com.au,,Wikidata All News
 ,https://laccent.cat,,Wikidata All News
@@ -6097,7 +6082,6 @@ Threat Actor,Domain,Name,Source
 ,https://panampost.com,,Wikidata All News
 ,https://rare.us,,Wikidata All News
 ,https://rewirenewsgroup.com,,Wikidata All News
-,https://russia-insider.com,,Wikidata All News
 ,https://euro.cz,,Wikidata All News
 ,https://huffingtonpost.it,,Wikidata All News
 ,https://vaticaninsider.lastampa.it,,Wikidata All News
@@ -6163,7 +6147,6 @@ Threat Actor,Domain,Name,Source
 ,https://ctrana.online,,Wikidata All News
 ,https://strana.news,,Wikidata All News
 ,https://strana.today,,Wikidata All News
-,https://ukraina.ru,,Wikidata All News
 ,https://khabarovsk.md,,Wikidata All News
 ,https://mdgazet.ru,,Wikidata All News
 ,https://habex.ru,,Wikidata All News
@@ -6233,7 +6216,6 @@ Threat Actor,Domain,Name,Source
 ,https://nofrag.com,,Wikidata All News
 ,https://oldmanmurray.com,,Wikidata All News
 ,https://operationrainfall.com,,Wikidata All News
-,https://dzen.ru,,Wikidata All News
 ,https://mediametrics.ru,,Wikidata All News
 ,https://seznamzpravy.cz,,Wikidata All News
 ,https://openlynews.com,,Wikidata All News
@@ -6252,24 +6234,18 @@ Threat Actor,Domain,Name,Source
 ,https://bliteoc.com,,Wikidata All News
 ,https://news.verbosec.com,,Wikidata All News
 ,https://news.yahoo.co.jp,,Wikidata All News
-,https://kherson-news.ru,,Wikidata All News
 ,https://marketbusinessnews.com,,Wikidata All News
 ,https://news.google.com,,Wikidata All News
 ,https://digg.com,,Wikidata All News
 ,https://sciencedaily.com,,Wikidata All News
 ,https://drudgereport.com,,Wikidata All News
-,https://wn.com,,Wikidata All News
 ,https://news.yahoo.com,,Wikidata All News
 ,https://techmeme.com,,Wikidata All News
-,https://wnd.com,,Wikidata All News
-,https://inosmi.ru,,Wikidata All News
 ,https://newsnow.co.uk,,Wikidata All News
 ,https://realclearpolitics.com,,Wikidata All News
 ,https://news.naver.com,,Wikidata All News
 ,https://nationalreport.net,,Wikidata All News
-,https://naturalnews.com,,Wikidata All News
 ,https://thegatewaypundit.com,,Wikidata All News
-,https://thepeoplesvoice.tv,,Wikidata All News
 ,https://anonews.co,,Wikidata All News
 ,https://panorama.pub,,Wikidata All News
 ,https://swprs.org,,Wikidata All News
@@ -6350,7 +6326,6 @@ Threat Actor,Domain,Name,Source
 ,https://order-order.com,,Wikidata All News
 ,https://lgbtqnation.com,,Wikidata All News
 ,https://montanafreepress.org,,Wikidata All News
-,https://opindia.com,,Wikidata All News
 ,https://yallpolitics.com,,Wikidata All News
 ,https://thenews.coop,,Wikidata All News
 ,https://haberler.com,,Wikidata All News
@@ -6630,7 +6605,6 @@ Threat Actor,Domain,Name,Source
 ,https://indrastra.com,,Wikidata All News
 ,https://catorze.cat,,Wikidata All News
 ,https://factuel.info,,Wikidata All News
-,https://web.archive.org,,Wikidata All News
 ,https://napolitoday.it,,Wikidata All News
 ,https://time.kz,,Wikidata All News
 ,https://irunfar.com,,Wikidata All News
@@ -6699,7 +6673,6 @@ Threat Actor,Domain,Name,Source
 ,https://beltandroad.news,,Wikidata All News
 ,https://diarioperfil.pe,,Wikidata All News
 ,https://neakriti.gr,,Wikidata All News
-,https://sevastopol.su,,Wikidata All News
 ,https://myaireurbaine.info,,Wikidata All News
 ,https://themarkup.org,,Wikidata All News
 ,https://ripplesnigeria.com,,Wikidata All News
@@ -6752,7 +6725,6 @@ Threat Actor,Domain,Name,Source
 ,https://thenationaldesk.com,,Wikidata All News
 ,https://thebody.com,,Wikidata All News
 ,https://diarioarmenia.org.ar,,Wikidata All News
-,https://tennesseestar.com,,Wikidata All News
 ,https://mundonegro.inf.br,,Wikidata All News
 ,https://awate.com,,Wikidata All News
 ,https://billmoyers.com,,Wikidata All News
@@ -6806,12 +6778,10 @@ Threat Actor,Domain,Name,Source
 ,https://ftm.nl,,Wikidata All News
 ,https://siberiantimes.com,,Wikidata All News
 ,https://teleshkronjapost.com,,Wikidata All News
-,https://usareally.com,,Wikidata All News
 ,https://my-formosa.com,,Wikidata All News
 ,https://codigocero.com,,Wikidata All News
 ,https://langrenn.com,,Wikidata All News
 ,https://jajusibo.com,,Wikidata All News
-,https://apostrophe.ua,,Wikidata All News
 ,https://polinews.co.kr,,Wikidata All News
 ,https://jagonews24.com,,Wikidata All News
 ,https://pontevedraviva.com,,Wikidata All News
@@ -7018,7 +6988,6 @@ Threat Actor,Domain,Name,Source
 ,https://seer.ufrgs.br,,Wikidata All News
 ,https://revistas.unisinos.br,,Wikidata All News
 ,https://rewizor.ru,,Wikidata All News
-,https://menafn.com,,Wikidata All News
 ,https://chouftv.ma,,Wikidata All News
 ,https://diarieducacio.cat,,Wikidata All News
 ,https://tjen-folket.no,,Wikidata All News
@@ -7116,7 +7085,6 @@ Threat Actor,Domain,Name,Source
 ,https://iowastartingline.com,,Wikidata All News
 ,https://coloradotimesrecorder.com,,Wikidata All News
 ,https://sp.m.jiji.com,,Wikidata All News
-,https://northcooknews.com,,Wikidata All News
 ,https://hellgatenyc.com,,Wikidata All News
 ,https://transadvocate.com,,Wikidata All News
 ,https://americanomedia.com,,Wikidata All News
@@ -7133,7 +7101,6 @@ Threat Actor,Domain,Name,Source
 ,https://themessenger.com,,Wikidata All News
 ,https://tv2000.co.il,,Wikidata All News
 ,https://irdiplomacy.ir,,Wikidata All News
-,https://reseauinternational.net,,Wikidata All News
 ,https://news.usni.org,,Wikidata All News
 ,https://napiujsag.hu,,Wikidata All News
 ,https://megapro.org.il,,Wikidata All News
@@ -7183,7 +7150,6 @@ Threat Actor,Domain,Name,Source
 ,https://the-village.ru,,Wikidata All News
 ,https://samoyiki.com,,Wikidata All News
 ,https://farrapo.com.br,,Wikidata All News
-,https://mosregtoday.ru,,Wikidata All News
 ,https://idexxcurrents.com,,Wikidata All News
 ,https://levenementprecis.com,,Wikidata All News
 ,https://fraternitebj.info,,Wikidata All News
@@ -7206,7 +7172,6 @@ Threat Actor,Domain,Name,Source
 ,https://tv2east.dk,,Wikidata All News
 ,https://hemali.no,,Wikidata All News
 ,https://srsly.ru,,Wikidata All News
-,https://news.ru,,Wikidata All News
 ,https://politik.watson.de,,Wikidata All News
 ,https://watson.de,,Wikidata All News
 ,https://manchestermill.co.uk,,Wikidata All News
@@ -7281,8 +7246,6 @@ Threat Actor,Domain,Name,Source
 ,https://sportsbusinessjournal.com,,Wikidata All News
 ,https://femmes-medecins.com,,Wikidata All News
 ,https://lamula.pe,,Wikidata All News
-,https://headtopics.com,,Wikidata All News
-,https://theworldnews.net,,Wikidata All News
 ,https://piqd.de,,Wikidata All News
 ,https://makronom.de,,Wikidata All News
 ,https://azmirror.com,,Wikidata All News
@@ -7329,7 +7292,6 @@ Threat Actor,Domain,Name,Source
 ,https://semafor.com,,Wikidata All News
 ,https://onlinekhabar.com,,Wikidata All News
 ,https://suspilne.media,,Wikidata All News
-,https://realnoevremya.ru,,Wikidata All News
 ,https://diariodotamega.es,,Wikidata All News
 ,https://sudaca.pe,,Wikidata All News
 ,https://sandtonpost.com,,Wikidata All News
@@ -7352,7 +7314,6 @@ Threat Actor,Domain,Name,Source
 ,https://dailynewsactivist.com,,Wikidata All News
 ,https://janwani.in,,Wikidata All News
 ,https://gasteizhoy.com,,Wikidata All News
-,https://novoeizdanie.com,,Wikidata All News
 ,https://der-bote.de,,Wikidata All News
 ,https://eldebate.com,,Wikidata All News
 ,https://batiactu.com,,Wikidata All News
@@ -7379,7 +7340,6 @@ Threat Actor,Domain,Name,Source
 ,https://tv2ostjylland.dk,,Wikidata All News
 ,https://piedepagina.mx,,Wikidata All News
 ,https://brasilnippou.com,,Wikidata All News
-,https://eadaily.com,,Wikidata All News
 ,https://neuralgamer.com,,Wikidata All News
 ,https://extrag.ie,,Wikidata All News
 ,https://livrenoir.fr,,Wikidata All News
@@ -7413,7 +7373,6 @@ Threat Actor,Domain,Name,Source
 ,https://bayclub.io,,Wikidata All News
 ,https://wakatsera.com,,Wikidata All News
 ,https://duic.nl,,Wikidata All News
-,https://t.me,,Wikidata All News
 ,https://eleditorplatense.com.ar,,Wikidata All News
 ,https://ilcontroverso.it,,Wikidata All News
 ,https://e-noticies.cat,,Wikidata All News
@@ -7476,7 +7435,6 @@ Threat Actor,Domain,Name,Source
 ,https://droid-life.com,,Wikidata All News
 ,https://tsri.ch,,Wikidata All News
 ,https://bzh.life,,Wikidata All News
-,https://jfranews.com.jo,,Wikidata All News
 ,https://carolinajournal.com,,Wikidata All News
 ,https://msnbc.com,,Wikidata All News
 ,https://today.com,,Wikidata All News
@@ -7608,7 +7566,6 @@ Threat Actor,Domain,Name,Source
 ,https://reliefweb.int,,Wikidata All News
 ,https://news.ntv.co.jp,,Wikidata All News
 ,https://fritanke.no,,Wikidata All News
-,https://NBCNews.com,,Wikidata All News
 ,https://avisen.dk,,Wikidata All News
 ,https://bold.dk,,Wikidata All News
 ,https://dagensmedicin.dk,,Wikidata All News
@@ -7746,3 +7703,338 @@ Threat Actor,Domain,Name,Source
 ,https://gameishard.gg,,Wikidata All News
 ,https://gamepressure.com,,Wikidata All News
 ,https://fr.ign.com,,Wikidata All News
+,https://bakhtarnews.af,,State Media
+,https://eslah.af/,,State Media
+,https://hewad.com/,,State Media
+,https://rta.af/,,State Media
+,https://eldjoumhouria.dz/,,State Media
+,https://exame.com/,,State Media
+,https://jornaldeangola.ao/ao/,,State Media
+,https://radiomais.ao/,,State Media
+,https://tvzimbo.ao/,,State Media
+,https://eldoce.tv/,,State Media
+,https://hhpress.am/,,State Media
+,https://br.az/,,State Media
+,https://socar.az/socar/en/home,,State Media
+,https://itv.az/,,State Media
+,https://spacetv.az/,,State Media
+,https://yeniazerbaycan.com/,,State Media
+,https://alfaradio.by/,,State Media
+,https://b-g.by/,,State Media
+,https://sb.by/ng/,,State Media
+,https://sb.by/respublika/,,State Media
+,https://lanation.bj/,,State Media
+,https://ahoraelpueblo.bo/,,State Media
+,https://redpatrianueva.bo/,,State Media
+,https://rpo.bo/,,State Media
+,https://aib.media/,,State Media
+,https://lerenouveau.digital/,,State Media
+,https://kampucheathmey.com/,,State Media
+,https://acap.cf/,,State Media
+,https://telecentrafricaine.cf/,,State Media
+,https://onama.td//,,State Media
+,https://uschinapress.com/,,State Media
+,https://cctv.com/,,State Media
+,https://ipanda.com/,,State Media
+,https://tibetcnr.com/,,State Media
+,https://uycnr.com/,,State Media
+,https://kazakcnr.com/,,State Media
+,https://krcnr.cn/,,State Media
+,https://cctvmall.com/,,State Media
+,https://12371.cn/,,State Media
+,https://docuchina.cn/,,State Media
+,https://cctv4g.com/,,State Media
+,https://cctvplus.com/,,State Media
+,https://chinadailyasia.com/,,State Media
+,https://china.com/,,State Media
+,"
+https://chinaqw.com/",,State Media
+,"
+https://jwview.com/",,State Media
+,"
+https://ecns.cn/",,State Media
+,"
+https://inewsweek.cn/",,State Media
+,"
+https://cnsphoto.com/",,State Media
+,https://cgtn.com/,,State Media
+,https://cnr.cn/,,State Media
+,https://cnrmz.cn/,,State Media
+,https://hellotw.com/,,State Media
+,https://ecns.cn/,,State Media
+,https://ce.cn/,,State Media
+,https://gmw.cn/,,State Media
+,https://gov.cn/,,State Media
+,https://xinhuatone.com/,,State Media
+,https://people.cn/,,State Media
+,https://chinabn.org/,,State Media
+,https://eastday.com/,,State Media
+,https://jfdaily.com/,,State Media
+,https://taihainet.com/,,State Media
+,https://news.cn/,,State Media
+,https://xinhuapub.com/,,State Media
+,https://xinhuanet.com/,,State Media
+,https://chinanews.com/,,State Media
+,https://xinhuanet.ltd/,,State Media
+,https://cankaoxiaoxi.com,,State Media
+,https://tvcongo.com/,,State Media
+,https://sinartdigital.com/,,State Media
+,https://ucrq.tv/,,State Media
+,https://plenglish.com/,,State Media
+,https://alqarn.dj/,,State Media
+,https://acp.cd/,,State Media
+,https://publicafm.ec/,,State Media
+,https://akhbarelyom.com/,,State Media
+,https://gomhuriaonline.com//,,State Media
+,https://noticiero.sv/,,State Media
+,https://dendenmedia.com/,,State Media
+,https://shabait.com/,,State Media
+,https://infomigrants.net/,,State Media
+,https://francetvinfo.fr/,,State Media
+,https://agpgabon.ga/,,State Media
+,https://congresonacional.hn/,,State Media
+,https://al-vefagh.net/,,State Media
+,https://irna.ir/,,State Media
+,https://inn.ir/,,State Media
+,https://ion.ir/,,State Media
+,https://jepress.ir/,,State Media
+,https://parstoday.ir,,State Media
+,https://presstv.ir/,,State Media
+,https://presstvdoc.com/,,State Media
+,https://presstv.com/,,State Media
+,https://vatanemrooz.ir/,,State Media
+,https://ina.iq/,,State Media
+,https://alsabaah.iq/,,State Media
+,https://imn.iq/,,State Media
+,https://almamlakatv.com/,,State Media
+,https://amenfm.jo/,,State Media
+,https://hala.jo/,,State Media
+,https://1tv.kz/,,State Media
+,https://kazakh-tv.kz/,,State Media
+,https://liter.kz/,,State Media
+,https://ntk.kz/,,State Media
+,https://qazradio.fm/kz/,,State Media
+,https://lerenovateur.la/,,State Media
+,https://elbcradio.com/,,State Media
+,https://liberianewsagency.com/,,State Media
+,https://ortm.mg/RNM/,,State Media
+,https://tvm.mr/fr/,,State Media
+,https://notimex.mx/es/,,State Media
+,https://montsame.mn/,,State Media
+,https://rtcg.me/,,State Media
+,https://almaghribialyaoum.com/,,State Media
+,https://assabah.ma/,,State Media
+,https://almaghribia.ma/,,State Media
+,https://mapnews.ma/fr/,,State Media
+,https://medi1.com/,,State Media
+,https://medi1tv.com/,,State Media
+,https://neweralive.na/,,State Media
+,https://risingnepaldaily.com/,,State Media
+,https://pacificmedianetwork.com/,,State Media
+,https://diariobarricada.com/,,State Media
+,https://tn8.tv/,,State Media
+,https://ortn.ne/voix-sahel/,,State Media
+,https://lesahel.org/,,State Media
+,https://ekitiradio.com/,,State Media
+,https://dbswarri.com/,,State Media
+,https://ogunradio.ng/,,State Media
+,https://kcnawatch.org/,,State Media
+,https://omandaily.om/,,State Media
+,https://omaninfo.om/,,State Media
+,https://seraj.tv/,,State Media
+,https://alhaya.ps,,State Media
+,https://pbc.ps/,,State Media
+,https://dzienniklodzki.pl/,,State Media
+,https://dziennikbaltycki.pl/,,State Media
+,https://dziennikpolski24.pl/,,State Media
+,https://gp24.pl/,,State Media
+,https://dziennikzachodni.pl/,,State Media
+,https://gloswielkopolski.pl/,,State Media
+,https://gazetakrakowska.pl/,,State Media
+,https://pomorska.pl/,,State Media
+,https://gazetawroclawska.pl/,,State Media
+,https://wspolczesna.pl/,,State Media
+,https://kurierlubelski.pl/,,State Media
+,https://poranny.pl/,,State Media
+,https://thefirstnews.com/,,State Media
+,https://aljazeera.com/,,State Media
+,https://aljazeera.net/,,State Media
+,https://ajplus.net/,,State Media
+,https://qatarradio.qa/,,State Media
+,https://41-tv.ru/,,State Media
+,https://radiorus.ru/,,State Media
+,https://russia.tv/,,State Media
+,https://smotrim.ru/,,State Media
+,https://vesti.ru/,,State Media
+,https://radiovesti.ru/,,State Media
+,https://cultradio.ru/,,State Media
+,https://radiomayak.ru/,,State Media
+,https://aif.ru/,,State Media
+,https://1tv.ru/,,State Media
+,https://diario-octubre.com/,,State Media
+,https://riafan.ru/,,State Media
+,https://avtoradio.ru/,,State Media
+,https://ntv.ru/,,State Media
+,https://rutube.ru/,,State Media
+,https://observateurcontinental.fr/,,State Media
+,https://kp.ru/,,State Media
+,https://life.ru/,,State Media
+,https://wearemaffick.com/,,State Media
+,https://mirtv.ru/,,State Media
+,https://mir24.tv/,,State Media
+,https://radiomir.fm/,,State Media
+,https://ctcmedia.ru/,,State Media
+,https://iz.ru/,,State Media
+,https://ren.tv/,,State Media
+,https://78.ru/,,State Media
+,https://sport-express.ru/,,State Media
+,https://more.tv/,,State Media
+,"
+https://rtde.world/",,State Media
+,"
+https://rtde.tech/",,State Media
+,"
+https://rtde.website/",,State Media
+,"
+https://esrt.press/",,State Media
+,"
+https://esrt.online/",,State Media
+,"
+https://actualidad-rt.com/",,State Media
+,"
+https://esrt.tech/",,State Media
+,"
+https://rt.com/",,State Media
+,"
+https://swentr.site/",,State Media
+,"
+https://1917live.red/",,State Media
+,"
+https://romanovs100.com/",,State Media
+,"
+https://pobeda.page/",,State Media
+,https://news.ru/,,State Media
+,https://politinform.su/,,State Media
+,https://politnavigator.net/,,State Media
+,https://pravda.ru/,,State Media
+,https://pravda-tv.ru/,,State Media
+,https://sputnik-abkhazia.info/,,State Media
+,https://sputnik-abkhazia.ru/,,State Media
+,https://sputnik.af/,,State Media
+,https://sputnikarabic.ae/,,State Media
+,https://armeniasputnik.am/,,State Media
+,https://sputnik.az/,,State Media
+,https://sputnik.by/,,State Media
+,https://sputniknews.cn/,,State Media
+,https://sputnik-georgia.ru/,,State Media
+,https://sputnik-georgia.com/,,State Media
+,https://sputniknews.in/,,State Media
+,https://sputniknews.com/,,State Media
+,https://sputnikglobe.com/,,State Media
+,https://sputniknews.jp/,,State Media
+,https://sputnik.kz/,,State Media
+,https://sputnik.kg/,,State Media
+,https://sputnik-ossetia.com/,,State Media
+,https://sputnik-ossetia.ru/,,State Media
+,https://sputniknews.ir/,,State Media
+,https://spnfa.ir/,,State Media
+,https://sputnikportal.rs/,,State Media
+,https://sputniknews.lat/,,State Media
+,https://sputnik.tj/,,State Media
+,"
+https://sputniknews.uz/",,State Media
+,https://sputniknews.vn/,,State Media
+,https://otr-online.ru,,State Media
+,https://gazeta.ru/,,State Media
+,https://RBC.ru/,,State Media
+,https://baltnews.com/,,State Media
+,https://ria.ru/,,State Media
+,https://ukraina.ru/,,State Media
+,https://vesti.news/,,State Media
+,https://rodina.news/,,State Media
+,https://rg.ru/,,State Media
+,https://rusvesna.su/,,State Media
+,https://svpressa.ru/,,State Media
+,https://strana.news/,,State Media
+,https://strana.today/,,State Media
+,https://strana.ua/,,State Media
+,https://tass.com/,,State Media
+,https://tass.ru/,,State Media
+,https://tassphoto.com/,,State Media
+,https://tsargrad.tv/,,State Media
+,https://tvzvezda.ru/,,State Media
+,https://alekhbariya.net,,State Media
+,https://saudiatv.sa/,,State Media
+,https://riyadiyatv.com/,,State Media
+,https://mediacorp.sg,,State Media
+,https://channelnewsasia.com/,,State Media
+,https://dalkajournal.so/,,State Media
+,https://slntv.tv/,,State Media
+,https://sabcnews.com/,,State Media
+,https://SouthSudanTV.net,,State Media
+,https://cartv.es/,,State Media
+,https://ortas.online/,,State Media
+,https://focustaiwan.tw/,,State Media
+,https://jumhuriyat.tj/,,State Media
+,https://togopresse.tg/,,State Media
+,https://essahafa.tn/,,State Media
+,https://dailysabah.com,,State Media
+,https://radyod.com/,,State Media
+,https://trtarabic.com/,,State Media
+,https://trtdeutsch.com/,,State Media
+,https://trtkurdi.com/,,State Media
+,https://trtrussian.com/,,State Media
+,https://trtworld.com/,,State Media
+,https://adradio.ae/,,State Media
+,https://adtv.ae/,,State Media
+,https://uatv.ua/,,State Media
+,https://bbc.com/,,State Media
+,https://currenttime.tv/,,State Media
+,https://golosameriki.com/,,State Media
+,https://svoboda.org/,,State Media
+,https://mediospublicos.uy/,,State Media
+,https://xs.uz/en,,State Media
+,https://vaticannews.va/,,State Media
+,https://pdvsa.com/,,State Media
+,https://misionverdad.com/,,State Media
+,https://telesurenglish.net/,,State Media
+,https://vnanet.vn/en/,,State Media
+,https://thethaovanhoa.vn/,,State Media
+,https://vovworld.vn/,,State Media
+,https://althawrah.ye/,,State Media
+,https://saba.ye/,,State Media
+,https://yementv.tv/,,State Media
+,https://latamnews.lat,,State Media
+,https://sputnikportal.rs,,State Media
+,https://sputniknews.africa,,State Media
+,https://sputniknews-uz.com,,State Media
+,https://sputniknews.uz,,State Media
+,https://spnfa.ir,,State Media
+,https://sputniknews.cn,,State Media
+,https://sputnik-abkhazia.info,,State Media
+,https://sputnik-tj.com,,State Media
+,https://sputnik.tj,,State Media
+,https://sputnik-ossetia.com,,State Media
+,https://sputnik.af,,State Media
+,https://sputniknews.vn,,State Media
+,https://sputniknews.jp,,State Media
+,https://sputniknews.in,,State Media
+,https://newsarmenia.ru,,State Media
+,https://newsgeorgia.ru,,State Media
+,https://newsarmenia.com,,State Media
+,https://aichiteai.com,,State Media
+,https://kevevn.vn,,State Media
+,https://newsmoldova.ru,,State Media
+,https://radiosputnik.am,,State Media
+,https://sputnikarmenia.ru,,State Media
+,https://sputniknews.mx,,State Media
+,https://russian7.ru,,State Media
+,https://cyrillitsa.ru,,State Media
+,https://rian.ru,,State Media
+,https://radiosputnik.ru,,State Media
+,https://rsport.ru,,State Media
+,https://sarabic.ae,,State Media
+,https://riarealty.ru,,State Media
+,https://sputnik.kg,,State Media
+,https://sputnik.kz,,State Media
+,https://sputniknews.kz,,State Media

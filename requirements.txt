@@ -24,4 +24,4 @@ psycopg2-binary==2.9.9
 Flask-SQLAlchemy==3.1.1
 flask_migrate==4.0.7
 rapidfuzz==3.8.1
-numpy=2.0.0
+numpy==2.0.0

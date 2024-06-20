@@ -1249,7 +1249,7 @@ def format_url(url):
     parsed_url = urlparse(url)
 
     # If the URL lacks a domain, return None.
-    if '.' not in url:
+    if '.' not in url or ' ' in url:
         return None
     # If the URL lacks both scheme and netloc, attempt to prepend "http://".
     elif parsed_url.scheme == "" and parsed_url.netloc == "":

@@ -909,13 +909,18 @@
             <div id="scroll-to-results"></div>
             <div class="row ml-1 mr-1 mt-3">
                 {% if request is defined %}
-                <div class="alert alert-warning" role="alert">
+                <div class="alert alert-warning w-100" role="alert">
                     You searched for:
                     {% if request.form['url'] is defined %}
                     <strong>{{ request.form['url'] }}</strong>
+                    <!-- share this search button --> 
+                    
+                    <a href="https://informationlaundromat.com/url-search?url={{ request.form['url'] }}" target="_blank" class="btn btn-secondary btn-sm float-right" > Share this search <i class="fas fa-share-alt"></i></a>
                     {% endif %}
                     {% if request.form['contentToSearch'] is defined %}
                     <strong>{{ request.form['contentToSearch'] }}</strong>
+                    <a href="https://informationlaundromat.com/content-search?contentToSearch={{request.form['contentToSearch']}}" target="_blank" class="btn btn-secondary btn-sm float-right"> Share this search <i class="fas fa-share-alt"></i></a>
+
                     {% endif %}
                 </div>
                 {% endif %}
@@ -929,12 +934,11 @@
 
 
                     <div class="col-md-4 ">
-                        <form method="post" action="/download_csv" class="float-right">
-                            <button class="btn btn-primary mr-3" type="button" data-toggle="collapse"
+                            <button class="btn btn-primary mr-3 float-right" type="button" data-toggle="collapse"
                                 data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
                                 Show/Hide Table
                             </button>
-                        </form>
+                        
                     </div>
                 </div>
                 <div class="row ml-3 mb-3">

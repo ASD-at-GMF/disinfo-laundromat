@@ -41,7 +41,7 @@ COPYSCAPE_USER = os.getenv('COPYSCAPE_USER', '')
 PATH_TO_OUTPUT_CSV = os.getenv('PATH_TO_OUTPUT_CSV', '')
 MATCH_VALUES_TO_IGNORE = os.getenv('MATCH_VALUES_TO_IGNORE', '')
 CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
-GCAPTCHA_SECRET = os.getenv('GCAPTCHA_SECRET', '')
+CAPTCHA_SECRET = os.getenv('CAPTCHA_SECRET', '')
 
 from init_app import db, init_app
 from models import RegistrationKey, SiteBase, SiteIndicator, User
@@ -716,25 +716,6 @@ def download_domain_metadata_example():
     filename = 'domain_metadata_example.csv'
     return send_from_directory(directory, filename, as_attachment=True)
     
-def verify_captcha(request):
-     # The response from reCAPTCHA
-    captcha_response = request.form['g-recaptcha-response']
-    
-    # Verify the captcha response
-    response = requests.post('https://www.google.com/recaptcha/api/siteverify', data={
-        'secret': GCAPTCHA_SECRET,
-        'response': captcha_response
-    })
-    
-    response_data = response.json()
-    
-    if response_data['success']:
-        # reCAPTCHA verified successfully
-        # Process the rest of your form here
-        return True
-    else:
-        # Failed verification
-        return False
 
 
 @app.route('/api/indicators')

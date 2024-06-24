@@ -25,6 +25,7 @@
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
 
+    <script src="https://www.google.com/recaptcha/api.js"></script>
 
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.bootstrap4.css" rel="stylesheet">
@@ -363,7 +364,12 @@
                 setTimeout(swapNoun, 3000);
             }, 6000);
             // == === == End Rotating Text Animation
-
+            function onContentSubmit(token) {
+                document.getElementById("content-search-form").submit();
+            }
+            function onMetadataSubmit(token) {
+                document.getElementById("metadata-search-form").submit();
+            }
         });
     </script>
 </head>
@@ -486,7 +492,7 @@
                             </div>
                             <div class="card-body card-body-400">
                                 <div id="contentTab" class="container tab-pane fade active show">
-                                    <form method="POST" action="/content-search" class="tabcontent">
+                                    <form method="POST" action="/content-search" class="tabcontent" id="content-search-form" >
                                         <div class="row mt-1">
                                             <div class="col-sm">
                                                 <p class="card-text">
@@ -614,7 +620,11 @@
 
 
                                             <div class="col-md-3">
-                                                <button class="btn btn-secondary btn-block">Search</button>
+                                                <button class="btn btn-secondary btn-block g-recaptcha" 
+                                                data-sitekey="6Lf_VQAqAAAAACCzvtZSC4g_7c-gsW3yuJVrkwZk" 
+                                                data-callback='onContentSubmit' 
+                                                data-action='submit' 
+                                                >Search</button>
                                             </div>
 
                                         </div>
@@ -628,7 +638,7 @@
                                     {% endif %}
                                 </div>
                                 <div id="metadataTab" class="container tab-pane fade d-none">
-                                    <form method="POST" action="/url-search" class="tabcontent-fingerprint">
+                                    <form method="POST" action="/url-search" id="metadata-search-form" class="tabcontent-fingerprint">
                                         <div class="row mt-1">
                                             <div class="col-sm">
                                                 <p class="card-text">
@@ -681,7 +691,10 @@
                                             <div class="col-sm">
                                             </div>
                                             <div class="col-sm">
-                                                <button class="btn btn-secondary btn-block"
+                                                <button class="btn btn-secondary btn-block g-recaptcha" 
+                                                data-sitekey="6Lf_VQAqAAAAACCzvtZSC4g_7c-gsW3yuJVrkwZk"       
+                                                data-callback='onMetadataSubmit' 
+                                                data-action='submit'                                         "
                                                     id="metadataSearchButton">Search</button>
                                             </div>
                                         </div>

@@ -25,7 +25,7 @@
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.13/css/bootstrap-multiselect.css">
 
-    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js?render=6LfmDgAqAAAAAJNH_BIJwpQqjUHhNFnk8grSKrNW"></script>
 
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/2.0.2/css/dataTables.bootstrap4.css" rel="stylesheet">
@@ -34,6 +34,18 @@
     <link href="https://use.fontawesome.com/releases/v5.0.1/css/all.css" rel="stylesheet">
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-YC7N6ZZD7P"></script>
+    <script>
+        grecaptcha.ready(function() {
+            grecaptcha.execute('6LfmDgAqAAAAAJNH_BIJwpQqjUHhNFnk8grSKrNW', {action: 'submit'}).then(function(token) {
+                // You can then use this token to verify the captcha response server-side
+                var recaptchaResponse1 = document.getElementById('recaptchaResponse1')
+                var recaptchaResponse2 = document.getElementById('recaptchaResponse2')
+
+                recaptchaResponse1.value = token;
+                recaptchaResponse2.value = token;
+            });
+        });
+      </script>
     <script>
 
         window.dataLayer = window.dataLayer || [];
@@ -493,6 +505,8 @@
                             <div class="card-body card-body-400">
                                 <div id="contentTab" class="container tab-pane fade active show">
                                     <form method="POST" action="/content-search" class="tabcontent" id="content-search-form" >
+                                        <input type="hidden" name="recaptcha_response" id="recaptchaResponse1">
+
                                         <div class="row mt-1">
                                             <div class="col-sm">
                                                 <p class="card-text">
@@ -637,6 +651,8 @@
                                 </div>
                                 <div id="metadataTab" class="container tab-pane fade d-none">
                                     <form method="POST" action="/url-search" id="metadata-search-form" class="tabcontent-fingerprint">
+                                        <input type="hidden" name="recaptcha_response" id="recaptchaResponse2">
+
                                         <div class="row mt-1">
                                             <div class="col-sm">
                                                 <p class="card-text">

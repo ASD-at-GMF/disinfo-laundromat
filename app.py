@@ -232,10 +232,31 @@ def register(request):
     # Save the username and hashed_password to the database
     return jsonify({'message': 'Registered successfully'})
 
+def verify_captcha(request):
+    # if recaptcha is in the form, verify it
+    if 'recaptcha_response' in request.form:
+        recaptcha_response = request.form['recaptcha_response']
+
+        params = {
+            'secret': CAPTCHA_SECRET,
+            'response': recaptcha_response
+        }
+        response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=params)
+        result = response.json()
+        if result['success'] and result['score'] >= 0.5:  # You can adjust the score threshold
+            return True
+        else:
+            return False
+    return True
+
 @app.route('/url-search', methods=['GET','POST'])
 @clean_inputs
 def url_search():
     try:
+        if request.method == 'POST':
+            #verify captcha
+            if not verify_captcha(request):
+                return render_template('index.html', error_message="Silent captcha verification failed. Try again or contact info [at] securingdemocracy.org. Please do not use automated tools to interact with this form.", engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
         indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
         return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
     except Exception as e:
@@ -347,6 +368,9 @@ def parse_content_search():
     if request.method == 'POST':
         contentToSearch = request.form.get('contentToSearch')
         isApi = request.form.get('isApi', 'false')
+        if not verify_captcha(request):
+            return render_template('index.html', error_message="Silent captcha verification failed. Try again or contact info [at] securingdemocracy.org. Please do not use automated tools to interact with this form.", engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+
     if request.method == 'GET':
         contentToSearch = request.args.get('contentToSearch')
         isApi = request.args.get('isApi', 'false')

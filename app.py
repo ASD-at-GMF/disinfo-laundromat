@@ -279,11 +279,11 @@ def fingerprint(request):
     if request.method == 'POST':
         url = request.form['url']
         run_urlscan =  request.form['run_urlscan']  if 'run_urlscan' in request.form else False
-        internal_only =  request.form['run_urlscan']  if 'internal_only' in request.form else False 
+        internal_only =  request.form['internal_only']  if 'internal_only' in request.form else False 
     elif request.method == 'GET':
         url = request.args.get('url')
         run_urlscan =  request.args['run_urlscan']  if 'run_urlscan' in request.args else False
-        internal_only =  request.args['run_urlscan']  if 'internal_only' in request.args else False 
+        internal_only =  request.args['internal_only']  if 'internal_only' in request.args else False 
     # Validation checks for internal_only and run_urlscan
     internal_only = bool(internal_only)
     run_urlscan = bool(run_urlscan)

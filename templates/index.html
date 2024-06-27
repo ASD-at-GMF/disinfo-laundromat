@@ -1048,15 +1048,15 @@
                 <div class="progress" style="height: 25px;">
                     {% for tier, count in indicator_summary.items() %}
 
-                    {% if tier == '1' %}
+                    {% if tier == 1 %}
                     <div class="progress-bar bg-success" role="progressbar" style="width: {{count}}%"
                         aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                         }}%</div>
-                    {% elif tier == '2' %}
+                    {% elif tier == 2 %}
                     <div class="progress-bar bg-warning text-dark" role="progressbar" style="width: {{count}}%"
                         aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                         }}%</div>
-                    {% elif tier == '3' %}
+                    {% elif tier == 3 %}
                     <div class="progress-bar bg-info " role="progressbar" style="width: {{count}}%"
                         aria-valuenow="{{count}}" aria-valuemin="0" aria-valuemax="100">Tier {{tier}}: {{count|round|int
                         }}%</div>
@@ -1083,11 +1083,11 @@
 
 
                             {% for row in indicators_df %}
-                            {% if row['indicator_type'][0] == '1' %}
+                            {% if row['indicator_tier'] == 1 %}
                             <tr class="table-success">
-                                {% elif row['indicator_type'][0] == '2' %}
+                                {% elif row['indicator_tier'] == 2 %}
                             <tr class="table-warning">
-                                {% elif row['indicator_type'][0] == '3' %}
+                                {% elif row['indicator_tier'] == 3 %}
                             <tr class="table-info">
                                 {% else %}
                             <tr class="table-light">

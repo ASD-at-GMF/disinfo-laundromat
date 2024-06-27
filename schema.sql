@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS site_fingerprint (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     domain TEXT,
     indicator TEXT,
+    indicator_tier INTEGER,
     indicator_value TEXT
 );
 

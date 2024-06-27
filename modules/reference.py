@@ -819,278 +819,333 @@ DOMAINS_GOOGLE = {'Andorra': 'google.ad',
 }
 
 INDICATOR_METADATA = {
-  "1-cert-domain": {
+  "cert-domain": {
     "name": "Domain Certificate",
+    "tier": 1,
     "description": "An SSL certificate is a digital certificate that authenticates a website's or multiple websites' identity and enables an encrypted connection.",
     "interpretation": "A shared certificate between two sites is strong evidence of a link between sites, as typically a certificate must be issued for all those sites at once by a single entity and cannot easily be spoofed. However, some web hosting and DDOS protection services bundle certificates for unrelated sites, so carefully research any matches."
   },
-  "1-crypto-wallet": {
+  "crypto-wallet": {
     "name": "Cryptocurrency Wallet",
+    "tier": 1,
     "description": "A digital wallet used to store, send, and receive cryptocurrencies like Bitcoin and Ethereum.",
     "interpretation": "The presence of a cryptocurrency wallet address can link a site or an individual to cryptocurrency transactions, potentially indicating financial sources or preferences. However, due to the pseudonymous nature of such wallets, additional information is required to definitively establish ownership or connections."
   },
-  "1-domain": {
+  "domain": {
     "name": "Domain Name",
+    "tier": 1,
     "description": "The unique name that identifies a website, which is registered in the Domain Name System (DNS).",
     "interpretation": "The domain name can provide insights into the nature or origin of a website. Commonalities in domain names may suggest shared affiliations or intents. However, the ease of registering domain names requires careful analysis to avoid false associations."
   },
-  "1-domain_suffix": {
+  "domain_suffix": {
     "name": "Domain Suffix",
+    "tier": 1,
     "description": "The last part of a domain name, typically representing a category or country code.",
     "interpretation": "A domain suffix can indicate the intended audience or origin of a website. Similar suffixes across different sites might suggest a geographical or organizational link. Yet, the global accessibility of most suffixes means this should not be a sole determinant of connection."
   },
-  "1-fb_pixel_id": {
+  "fb_pixel_id": {
     "name": "Facebook Pixel ID",
+    "tier": 1,
     "description": "A unique identifier for the Facebook Pixel, an analytics tool that allows website owners to measure the effectiveness of their advertising by understanding the actions people take on their website.",
     "interpretation": "Shared Facebook Pixel IDs across sites can indicate common ownership or a shared marketing strategy. However, third-party marketing agencies might use the same ID across different clients, potentially leading to mistaken connections."
   },
-  "1-adobe_analytics_id": {
+  "adobe_analytics_id": {
     "name": "Adobe Analytics ID",
+    "tier": 1,
     "description": "A unique identifier used by Adobe Analytics, a tool for analyzing visitor traffic on websites.",
     "interpretation": "Similar to other analytics tools, shared Adobe Analytics IDs can hint at common management or partnerships between websites. However, as with Facebook Pixel IDs, the use of analytics IDs by third-party services may introduce unrelated links."
   },
-  "3-sitemap_entries": {
+  "sitemap_entries": {
     "name": "Sitemap Entries",
+    "tier": 3,
     "description": "Entries in a website's sitemap, which is an XML file listing the URLs for a site along with additional metadata about each URL.",
     "interpretation": "Analysis of sitemap entries can reveal the structure and content priorities of a website. Commonalities in sitemap structures or content might suggest shared authorship or objectives. However, similarities could also result from common website templates or platforms."
   },
-  "3-ipms_domain_iprangeowner_cidr": {
+  "ipms_domain_iprangeowner_cidr": {
     "name": "IP Range Owner CIDR",
+    "tier": 3,
     "description": "The Classless Inter-Domain Routing (CIDR) notation indicating the range of IP addresses owned by an entity.",
     "interpretation": "CIDR data can help identify the network scope and location of a domain's hosting. Shared IP ranges might suggest hosting or service provider commonalities. However, large hosting providers may have numerous unrelated clients within the same range."
   },
-  "3-ipms_domain_iprangeowner_ownerName": {
+  "ipms_domain_iprangeowner_ownerName": {
     "name": "IP Range Owner Name",
+    "tier": 3,
     "description": "The name of the entity owning a range of IP addresses.",
     "interpretation": "This information can be used to identify the hosting provider or organization controlling a set of IP addresses. Shared ownership names might indicate a relationship between the entities using those IPs, though large organizations often host unrelated entities."
   },
-  "3-ipms_domain_iprangeowner_address": {
+  "ipms_domain_iprangeowner_address": {
     "name": "IP Range Owner Address",
+    "tier": 3,
     "description": "Physical address of the entity owning a range of IP addresses.",
     "interpretation": "Physical addresses can provide geographical and organizational context. Shared addresses across different IP ranges might suggest a close relationship or common management. However, the presence of data centers and shared office spaces can result in address overlaps for unrelated entities."
   },
-  "3-ipms_domain_nameserver": {
+  "ipms_domain_nameserver": {
     "name": "Domain Name Server",
+    "tier": 3,
     "description": "A server that translates domain names into IP addresses, facilitating the connection between a user's device and the website's server.",
     "interpretation": "Common nameservers among different domains might indicate shared hosting or management services. However, popular hosting providers serve a large number of clients, potentially leading to false associations."
   },
-  "3-ipms_domain_otheripused": {
+  "ipms_domain_otheripused": {
     "name": "Other IPs Used by Domain",
+    "tier": 3,
     "description": "A list of IP addresses that have been used by a domain, aside from its primary IP address.",
     "interpretation": "This data can reveal the network history and changes in hosting of a domain. Shared historical IPs might suggest past commonalities or transitions in hosting services. However, dynamic IP allocation by hosting services can result in unrelated sites temporarily sharing IPs."
   },
-  "3-ipms_siteonthisip_now": {
+  "ipms_siteonthisip_now": {
     "name": "Current Sites on This IP",
+    "tier": 3,
     "description": "Websites currently hosted on the same IP address.",
     "interpretation": "Websites sharing an IP address may have a relationship, such as being part of the same network or organization. However, shared hosting environments can lead to unrelated websites being hosted on the same IP."
   },
-  "3-ipms_siteonthisip_before": {
+  "ipms_siteonthisip_before": {
     "name": "Former Sites on This IP",
+    "tier": 3,
     "description": "Websites that were previously hosted on the same IP address but are no longer.",
     "interpretation": "Historical data on IP hosting can provide insights into the network associations and changes over time. Formerly shared IPs might indicate previous relationships or common hosting decisions. However, dynamic IP allocations can lead to brief and incidental overlaps."
   },
-  "3-ipms_siteonthisip_broken": {
+  "ipms_siteonthisip_broken": {
     "name": "Broken Sites on This IP",
+    "tier": 3,
     "description": "Websites hosted on the same IP address that are currently not functional or accessible.",
     "interpretation": "Identifying non-functional sites on a shared IP can indicate network health or hosting issues. Patterns in broken sites might suggest targeted disruptions or poor hosting services. However, temporary technical issues can also cause sites to be non-functional, unrelated to their network neighbors."
   },
-  "3-ipms_useragents": {
+  "ipms_useragents": {
     "name": "User Agents",
+    "tier": 3,
     "description": "Strings that web browsers and other client devices send to identify themselves to web servers, typically containing information about the device and browser.",
     "interpretation": "Analysis of user agents can reveal the types of devices and browsers most frequently accessing a site, potentially indicating the site's target audience or technological preferences. However, the widespread use of common browsers can limit the specificity of these insights."
   },
-  "1-ip_shodan_hostnames": {
+  "ip_shodan_hostnames": {
     "name": "Shodan Hostnames",
+    "tier": 1,
     "description": "Hostnames associated with an IP address as indexed by Shodan, a search engine for internet-connected devices.",
     "interpretation": "Shodan's data can reveal the various services and hostnames associated with an IP, potentially indicating its use and ownership. Shared hostnames across IPs might suggest network or organizational links. However, the dynamic nature of IP allocations can lead to transient or outdated hostname associations."
   },
-  "3-ip_shodan_ports": {
+  "ip_shodan_ports": {
     "name": "Shodan Ports",
+    "tier": 3,
     "description": "Open network ports on an IP address as detected by Shodan.",
     "interpretation": "Open ports can indicate the types of services an IP is offering, with certain ports associated with specific applications or protocols. Common ports across different IPs might suggest similar uses or configurations. However, standard port uses can be widespread and not necessarily indicative of direct relationships."
   },
-  "2-ip_shodan_vuln": {
+  "ip_shodan_vuln": {
     "name": "Shodan Vulnerabilities",
+    "tier": 2,
     "description": "Vulnerabilities identified on an IP address by Shodan, based on open ports and services.",
     "interpretation": "Identifying vulnerabilities can help assess the security posture of a network or device. Shared vulnerabilities might indicate common software or configuration weaknesses. However, widespread vulnerabilities in popular software can appear across unrelated networks."
   },
-  "3-ip_shodan_cpe": {
+  "ip_shodan_cpe": {
     "name": "Shodan CPE",
+    "tier": 3,
     "description": "Common Platform Enumeration (CPE) identifiers found by Shodan, indicating specific software or hardware on an IP.",
     "interpretation": "CPE identifiers can provide detailed insights into the technological stack of a network or device. Shared CPEs might suggest technological commonalities or shared suppliers. However, the ubiquity of certain technologies can lead to coincidental overlaps."
   },
-  "1-ga_id": {
+  "ga_id": {
     "name": "Google Analytics ID",
+    "tier": 1,
     "description": "A unique identifier associated with Google Analytics, used for tracking and analyzing website traffic.",
     "interpretation": "Like other analytics IDs, shared Google Analytics IDs across websites may indicate common ownership or marketing strategies. However, the use of third-party marketing agencies can result in the same ID being used across unrelated sites."
   },
-  "1-ga_tag_id": {
+  "ga_tag_id": {
     "name": "Google Analytics Tag ID",
+    "tier": 1,
     "description": "A unique tag identifier used in Google Analytics for tracking specific user interactions on a website.",
     "interpretation": "Similar to the general Google Analytics ID, shared tag IDs might suggest a connection between sites, especially in how they track user behavior. However, similar tracking strategies might also be independently adopted by unrelated sites."
   },
-  "1-ip": {
+  "ip": {
     "name": "IP Address",
+    "tier": 1,
     "description": "A unique numerical label assigned to each device connected to a computer network that uses the Internet Protocol for communication.",
     "interpretation": "An IP address can reveal the geographic location and network provider of a device or website. Shared IPs may indicate shared hosting or network resources. However, dynamic IP allocation and large hosting environments can lead to incidental sharing."
   },
-  "1-verification_id": {
+  "verification_id": {
     "name": "Verification ID",
+    "tier": 1,
     "description": "A unique identifier used for verifying ownership or authenticity of a website or online account.",
     "interpretation": "Verification IDs can establish the legitimacy of a site or account, potentially linking it to a specific owner or organization. However, verification processes vary, and IDs can be reassigned or spoofed, requiring careful verification."
   },
-  "1-yandex_tag_id": {
+  "yandex_tag_id": {
     "name": "Yandex Tag ID",
+    "tier": 1,
     "description": "A unique identifier used by Yandex Metrica, a tool for analyzing visitor traffic, similar to Google Analytics.",
     "interpretation": "Shared Yandex Tag IDs could suggest common ownership or similar web analytics strategies between sites. However, like other analytics tools, the involvement of third-party services can create misleading connections."
   },
-  "2-subnet": {
+  "subnet": {
     "name": "Subnet",
+    "tier": 2,
     "description": "A segment of a network's IP address range that can be designated to optimize performance and security.",
     "interpretation": "Subnet information can indicate how a network is structured and segmented for various purposes. Shared subnets between different entities might suggest a relationship or common network management. However, subnets are often allocated by ISPs or hosting providers to multiple clients."
   },
-  "3-cdn-domain": {
+  "cdn-domain": {
     "name": "CDN Domain",
+    "tier": 3,
     "description": "A domain used by a Content Delivery Network (CDN) to deliver content efficiently across the internet.",
     "interpretation": "Shared CDN domains can indicate that websites are utilizing the same CDN provider for content distribution, which might imply performance or operational preferences. However, popular CDNs are used by a wide range of websites, limiting the value of this data for establishing direct connections."
   },
-  "3-cms": {
+  "cms": {
     "name": "Content Management System",
+    "tier": 3,
     "description": "A software application or set of related programs used to create and manage digital content.",
     "interpretation": "Common CMS platforms among different websites might suggest similar operational needs or preferences. However, widely-used CMS platforms like WordPress are employed by a diverse array of sites, often without any direct relation."
   },
-  "3-css_classes": {
+  "css_classes": {
     "name": "CSS Classes",
+    "tier": 3,
     "description": "Classes defined in Cascading Style Sheets (CSS) to style and format the layout of web pages.",
     "interpretation": "Analysis of CSS classes can provide insights into the design and development approaches of a website. Shared classes might suggest common design templates or developers. However, common frameworks and libraries can lead to similar CSS classes across unrelated sites."
   },
-  "3-header-nonstd-value": {
+  "header-nonstd-value": {
     "name": "Non-Standard Header Value",
+    "tier": 3,
     "description": "Values in HTTP headers that do not conform to standard header formats, potentially indicating custom configurations or software.",
     "interpretation": "Non-standard header values can be unique identifiers of custom configurations or software used by a website. Shared non-standard values might indicate common development practices or software choices. However, the interpretation of these values requires technical expertise to avoid misattribution."
   },
-  "3-header-server": {
+  "header-server": {
     "name": "Server Header",
+    "tier": 3,
     "description": "The 'Server' HTTP header field that specifies information about the software used by the origin server.",
     "interpretation": "The server header can reveal the web server software and its configuration. Shared server headers might indicate similar technological choices or configurations. However, popular server software like Apache and Nginx is widely used, so this data alone is not sufficient to establish a connection."
   },
-  "3-id_tags": {
+  "id_tags": {
     "name": "ID Tags",
+    "tier": 3,
     "description": "Unique identifiers used in the HTML code of a website to distinguish specific elements.",
     "interpretation": "Similar ID tags across websites might suggest shared development practices or template usage. However, common ID tags can also be a result of widespread frameworks or libraries, and thus, might not be indicative of direct relationships."
     },
-    "3-iframe_id_tags": {
+    "iframe_id_tags": {
     "name": "Iframe ID Tags",
+    "tier": 3,
     "description": "Unique identifiers used for 'iframe' elements in HTML, allowing the embedding of an external webpage within a webpage.",
     "interpretation": "Shared Iframe ID tags could indicate similar website functionalities or content sharing strategies. However, common frameworks or website templates can lead to the usage of similar Iframe IDs across different websites, reducing the significance of this correlation."
     },
-    "3-link_href": {
+    "link_href": {
     "name": "Link Href Attributes",
+    "tier": 3,
     "description": "The 'href' attribute of a link in HTML, specifying the URL of the page the link goes to.",
     "interpretation": "Analysis of 'href' attributes can reveal the external connections or references a website makes. Shared 'href' attributes across different sites might suggest common affiliations or sources. However, links to popular or general websites might not be indicative of a direct relationship."
     },
-    "3-meta_generic": {
+    "meta_generic": {
     "name": "Generic Meta Tags",
+    "tier": 3,
     "description": "Meta tags in HTML that provide general information about a webpage, such as description, keywords, and author.",
     "interpretation": "Common meta tags can indicate similar content or objectives. However, generic or broadly used tags may appear in a wide range of websites, potentially leading to mistaken connections."
     },
-    "3-meta_social": {
+    "meta_social": {
     "name": "Social Media Meta Tags",
+    "tier": 3,
     "description": "Meta tags specifically designed for optimizing social media sharing, defining how content appears when shared on social platforms.",
     "interpretation": "Shared social media meta tags might suggest a coordinated approach to social media engagement or content strategy. However, the use of standard social media optimization practices can lead to similar tags across unrelated sites."
     },
-    "3-script_src": {
+    "script_src": {
     "name": "Script Source Attributes",
+    "tier": 3,
     "description": "The 'src' attribute of a script tag in HTML, indicating the source of a JavaScript file.",
     "interpretation": "Shared script sources can point to the use of common libraries or external scripts. However, the widespread use of popular JavaScript libraries and scripts might lead to coincidental similarities."
     },
-    "3-uuid": {
+    "uuid": {
     "name": "UUID",
+    "tier": 3,
     "description": "Universally Unique Identifier, a 128-bit number used to identify information in computer systems.",
     "interpretation": "UUIDs can be used to track and manage assets or components within a system. Shared UUIDs might indicate a connection between different systems or components. However, the nature of UUIDs as unique identifiers typically limits the occurrence of shared UUIDs across unrelated systems."
     },
-    "3-whois_creation_date": {
+    "whois_creation_date": {
     "name": "WHOIS Creation Date",
+    "tier": 3,
     "description": "The date a domain name was first registered, as recorded in the WHOIS database.",
     "interpretation": "Similar creation dates for domains might suggest a coordinated launch or common origin. However, coincidental registration dates are possible, especially during popular events or domain sales."
     },
-    "3-whois_server": {
+    "whois_server": {
     "name": "WHOIS Server",
+    "tier": 3,
     "description": "The server that provides the WHOIS information, containing details about domain name registrations.",
     "interpretation": "Use of the same WHOIS server for different domains could indicate a preference for certain domain registrars. However, popular registrars serve a large number of clients, so this alone isn't a strong indicator of a relationship."
     },
-    "3-whois-registrar": {
+    "whois-registrar": {
     "name": "WHOIS Registrar",
+    "tier": 3,
     "description": "The organization authorized to register and manage domain names for a particular top-level domain.",
     "interpretation": "Domains registered through the same registrar might have some administrative commonalities. However, given the market dominance of certain registrars, this is not a definitive sign of a direct connection between domain owners."
     },
-    "3-wp-blocks": {
+    "wp-blocks": {
     "name": "WordPress Blocks",
+    "tier": 3,
     "description": "Content blocks used in WordPress to build and design webpages.",
     "interpretation": "Shared WordPress blocks could indicate similar website designs or use of common templates. However, due to the popularity of WordPress and its wide range of available blocks, similarities might occur coincidentally."
     },
-    "3-wp-categories": {
+    "wp-categories": {
     "name": "WordPress Categories",
+    "tier": 3,
     "description": "Categorization system in WordPress used to group content into different sections.",
     "interpretation": "Similar categories in different WordPress sites might suggest related content or thematic similarities. However, common categories are widely used across various sites, potentially leading to non-significant matches."
     },
-    "3-wp-pages": {
+    "wp-pages": {
     "name": "WordPress Pages",
+    "tier": 3,
     "description": "Web pages created and managed within the WordPress platform.",
     "interpretation": "Analysis of WordPress pages can reveal the structure and content emphasis of a site. Shared page structures or content might suggest a common template or designer. However, the extensive use of WordPress templates can lead to similar page structures across unrelated sites."
     },
-    "3-wp-posts": {
+    "wp-posts": {
     "name": "WordPress Posts",
+    "tier": 3,
     "description": "Blog posts or articles published on a WordPress website.",
     "interpretation": "Shared themes or styles in WordPress posts might indicate similar content strategies or sources. However, the widespread use of WordPress for blogging and content creation means that thematic overlaps are common and not necessarily indicative of a connection."
     },
-    "3-wp-tags": {
+    "wp-tags": {
     "name": "WordPress Tags",
+    "tier": 3,
     "description": "Tagging system in WordPress used to describe specific details of posts, aiding in content organization and navigation.",
     "interpretation": "Common tags across WordPress sites might suggest related topics or a shared content approach. However, popular tags are frequently used across diverse websites, diminishing the potential for meaningful connections."
     },
-    "3-wp-users": {
+    "wp-users": {
     "name": "WordPress Users",
+    "tier": 3,
     "description": "Individual accounts within WordPress that have various roles and permissions for managing website content.",
     "interpretation": "Shared user accounts or roles across WordPress sites might imply common administration or authorship. However, generic user roles such as 'administrator' or 'editor' are common and not uniquely identifying."
     },
-    "2-urlscan_globalvariable": {
+    "urlscan_globalvariable": {
     "name": "URLScan Global Variable",
+    "tier": 2,
     "description": "Global JavaScript variables identified by URLScan, a tool for scanning and analyzing websites.",
     "interpretation": "Shared global variables might indicate the use of similar scripts or frameworks. However, common JavaScript practices and libraries can result in widespread use of the same global variables across different websites."
     },
-    "2-urlscan_cookies": {
+    "urlscan_cookies": {
     "name": "URLScan Cookies",
+    "tier": 2,
     "description": "Cookies identified by URLScan as being set by websites during a scan.",
     "interpretation": "Analysis of cookies can reveal tracking, personalization, or functional aspects of a website. Shared cookies across sites might suggest shared tracking or management tools. However, common third-party services, like analytics or advertising platforms, often set similar cookies across various websites."
     },
-    "2-urlscan_consolemessages": {
+    "urlscan_consolemessages": {
     "name": "URLScan Console Messages",
+    "tier": 2,
     "description": "Messages output to the browser console during a website scan by URLScan.",
     "interpretation": "Console messages can provide insights into the website's functionality or potential issues. Common messages across different scans might indicate similar development practices or shared issues. However, these messages can also be generated by common frameworks or browser extensions."
     },
-    "2-urlscan_asn": {
+    "urlscan_asn": {
     "name": "URLScan Autonomous System Number",
+    "tier": 2,
     "description": "The Autonomous System Number (ASN) identified by URLScan, representing the collection of IP networks and routers under the control of one entity.",
     "interpretation": "Shared ASNs can suggest that websites are part of the same network or hosted by the same provider. However, large hosting providers and ISPs control extensive ASNs that encompass a wide range of clients."
     },
-    "2-urlscan_domainsonpage": {
+    "urlscan_domainsonpage": {
     "name": "URLScan Domains on Page",
+    "tier": 2,
     "description": "A list of all domains found on a webpage during a URLScan.",
     "interpretation": "Domains listed on a page can reveal external links or embedded content. Shared domains across different webpages might suggest common affiliations or sources. However, widely used domains, such as social media or analytics platforms, are commonly found across numerous sites."
     },
-    "2-urlscan_urlssonpage": {
+    "urlscan_urlssonpage": {
     "name": "URLScan URLs on Page",
+    "tier": 2,
     "description": "All URLs found on a webpage during a URLScan.",
     "interpretation": "The presence of specific URLs can indicate the nature of the content or the external connections of a website. Shared URLs across different pages might suggest a relationship or common sources. However, links to popular websites or resources might not be uniquely significant."
     },
-    "2-urlscanhrefs": {
+    "urlscanhrefs": {
     "name": "URLScan Hrefs",
+    "tier": 2,
     "description": "Hypertext references (hrefs) identified on webpages during a URLScan.",
     "interpretation": "Href attributes can provide insights into the external links and relationships of a website. Common hrefs across different sites might suggest shared affiliations or content. However, links to widely used resources or platforms can appear across many sites, limiting the potential for direct connection inference."
     },
-    "2-techstack": {
+    "techstack": {
     "name": "Technology Stack",
+    "tier": 2,
     "description": "The set of technologies used to build and run a website or application, including frameworks, languages, and software.",
     "interpretation": "Similar technology stacks can suggest shared development practices or preferences. However, certain technology combinations are widely popular and may be used by a vast range of unrelated websites or applications."
     },
@@ -1210,8 +1265,8 @@ MATCH_VALUES_TO_IGNORE = [
 ]
 
 LEAD_GEN_INDICATORS = [
-    '2-ads_txt',
+    'ads_txt',
     '4-outbound-domain',
-    '3-cdn-domain',
-    '3-meta_generic'
+    'cdn-domain',
+    'meta_generic'
 ]

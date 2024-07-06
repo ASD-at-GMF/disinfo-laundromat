@@ -44,7 +44,7 @@ CURRENT_ENVIRONMENT = os.getenv('CURRENT_ENVIRONMENT', 'production')
 CAPTCHA_SECRET = os.getenv('CAPTCHA_SECRET', '')
 
 from init_app import db, init_app
-from models import RegistrationKey, SiteBase, SiteIndicator, User
+from models import RegistrationKey, SiteBase, SiteIndicator, User, Query, Result
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
@@ -91,17 +91,18 @@ def insert_sites_of_concern(local_domains):
 
 
 def insert_indicators(indicators):
-    app.logger.info("Inserting indicators: %s", indicators)
-    engine = db.session.get_bind()
-    with engine.connect() as conn:
-        conn.execute(
-            insert(SiteIndicator),
-            [{"domain": indicator['domain_name'],
-            "indicator_type": indicator['indicator_type'],
-            "indicator_content": str(indicator['indicator_content'])}
-            for indicator in indicators]
-        )
-        conn.commit()
+    #app.logger.info("Inserting indicators: %s", indicators)
+    try:
+        db_indicators = []
+        for indicator in indicators:
+            db_indicators.append(SiteIndicator(indicator_type=indicator['indicator_type'], indicator_content=str(indicator['indicator_content']), domain=indicator['domain_name'], indicator_annotation=indicator['indicator_annotation']))
+        db.session.bulk_save_objects(db_indicators)
+        db.session.commit()
+    except Exception as e:
+        app.logger.error("Error inserting indicators: %s", e)
+        db.session.rollback()
+
+    return None
 
 # TODO move to a utils or decorators file
 def clean_inputs(view_func):
@@ -173,11 +174,12 @@ def login(request):
 
 
     if reg_key is not None and user is None:
-        reg_key_db = db.session.get(RegistrationKey, reg_key)
-        if reg_key_db is not None:
+        reg_key_db = db.session.get_one(RegistrationKey, reg_key)
+        if reg_key_db.registration_keys is not None:
             hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
             user = User(username=username, password=hashed_password)
             db.session.add(user)
+            db.session.commit()
             login_user(user)
             is_logged_in = True
         
@@ -214,6 +216,7 @@ def register_gui():
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         user = User(username=username, password=hashed_password)
         db.session.add(user)
+        db.session.commit()
         login_user(user)
         is_logged_in = True
     else:
@@ -243,7 +246,7 @@ def verify_captcha(request):
         }
         response = requests.post('https://www.google.com/recaptcha/api/siteverify', data=params)
         result = response.json()
-        if result['success'] and result['score'] >= 0.5:  # You can adjust the score threshold
+        if result['success'] and result['score'] >= 0.3:  # You can adjust the score threshold
             return True
         else:
             return False
@@ -300,6 +303,9 @@ def find_indicators_and_matches(urls, run_urlscan = False, internal_only = False
     filter_mask = ~indicators_df['indicator_content'].isin(MATCH_VALUES_TO_IGNORE)
     indicators_df = indicators_df[filter_mask]
     indicators_df = annotate_indicators(indicators_df)
+
+    #add indicators to DB
+    insert_indicators(indicators_df.to_dict('records'))
 
     if internal_only:
         comparison_indicators = indicators_df
@@ -868,36 +874,36 @@ def fetch_content_results(title_query, content_query, combineOperator, language,
     # Convert results to CSV
     csv_data = convert_results_to_csv(results)
     # Save the query to the database
+    try:
+        query = Query(title=str(title_query), content=str(content_query), combine_operator=str(combineOperator), language=str(language), country=str(country))
+        db.session.add(query)
+        db.session.commit()
 
-    # db = get_db()
-    # cursor = db.cursor()
-    # cursor.execute('INSERT INTO content_queries (title_query, content_query, combine_operator, language, country) VALUES (?, ?, ?, ?, ?)',
-    #                 (title_query, content_query, combineOperator, language, country))
-    # db.commit()
-    # # Get the last inserted row ID
-    # cq_id = cursor.lastrowid
+        # Get the last inserted row ID
+        cq_id = query.id
 
-    # results_list = []
-    # for domain, data in results.items():
-    #     for link_data in data['links']:
-    #         res = [
-    #             cq_id,
-    #             domain,
-    #             str(data['count']),
-    #             link_data['title'],
-    #             link_data['link'],
-    #             str(link_data['count']),
-    #             ', '.join(link_data['engines'])
-    #         ]
-    #         results_list.append(res)
+        results_list = []
+        for result in results:
+            res = Result(
+                query_id=cq_id,
+                domain=result['domain'],
+                url=result['url'],
+                title=result['title'],
+                snippet=result['snippet'],
+                link_count=result['link_count'],
+                engines=str(result['engines']),
+                domain_count=result['domain_count'],
+                score=result['score']
 
-    # # Insert data into the database
-    # # Prepare your SQL insert statement including the additional column
-    # insert_sql = 'INSERT INTO content_queries_results (cq_id, Domain,	Occcurences,	Title,	Link,	Link_Occurences,	Engines) VALUES (?,?, ?, ?, ?, ?, ?)'
+            )
+            results_list.append(res)
+        
+        db.session.bulk_save_objects(results_list)
+        db.session.commit()
 
-    # # Execute the insert command
-    # cursor.executemany(insert_sql, results_list)
-    # db.commit()
+    except Exception as e:
+        app.logger.error(f"Error saving query to database: {e}")
+        print(f"Error saving query to database: {e}")
 
     return results, csv_data
 

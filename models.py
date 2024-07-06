@@ -13,8 +13,8 @@ class Query(db.Model):
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
     # Input by Query Fields:
-    title        = db.Column(db.String(100), nullable=False, unique=False)
-    content      = db.Column(db.String(100), nullable=False, unique=False)
+    title        = db.Column(db.String(300), nullable=True, unique=False)
+    content      = db.Column(db.String(300), nullable=True, unique=False)
     combine_operator = db.Column(db.String(100), nullable=True, unique=False)
     language     = db.Column(db.String(100), nullable=True, unique=False)
     country      = db.Column(db.String(100), nullable=True, unique=False)
@@ -29,13 +29,16 @@ class Result(db.Model):
     updated      = db.Column(db.DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
 
     # Input by Query Fields:
-    domain       = db.Column(db.String(100), nullable=False, unique=False)
-    occurrences  = db.Column(db.Integer(), nullable=False, unique=False)
-    title        = db.Column(db.String(100), nullable=True, unique=False)
-    link         = db.Column(db.String(100), nullable=True, unique=False)
-    link_occurrences      = db.Column(db.Integer(), nullable=True, unique=False)
-    engines      = db.Column(db.String(100), nullable=True, unique=False)
-    cq_id        = db.Column(db.String(100), nullable=True, unique=False)
+    domain       = db.Column(db.String(255), nullable=True, unique=False)
+    url          = db.Column(db.String(255), nullable=True, unique=False)
+    title        = db.Column(db.String(255), nullable=True, unique=False)
+    snippet      = db.Column(db.Text, nullable=True, unique=False)
+    engine       = db.Column(db.String(255), nullable=True, unique=False)
+    link_count   = db.Column(db.Integer, nullable=True, unique=False)
+    domain_count = db.Column(db.Integer, nullable=True, unique=False)
+    engines      = db.Column(db.String(255), nullable=True, unique=False)
+    score        = db.Column(db.Float, nullable=True, unique=False)
+    query_id     = db.Column(db.Integer, db.ForeignKey('content_queries.id'), nullable=False)
 
 
 class RegistrationKey(db.Model):
@@ -53,8 +56,9 @@ class SiteIndicator(db.Model):
 
     # Input by Query Fields:
     indicator_type        = db.Column(db.String(100), nullable=False, unique=False)
-    indicator_content     = db.Column(db.String(100), nullable=False, unique=False)
+    indicator_content     = db.Column(db.Text, nullable=True, unique=False)
     domain        = db.Column(db.String(100), nullable=False, unique=False)
+    indicator_annotation  = db.Column(db.String(100), nullable=True, unique=False)
 
 class SiteBase(db.Model):
     __tablename__ = 'sites_base'

@@ -180,11 +180,7 @@ def parse_sitemaps(url) -> list[Indicator]:
     tree = sitemap_tree_for_homepage(url)
     logging.info(tree)
     entries = set(page.url for page in tree.all_pages())
-<<<<<<< HEAD
-    return [Indicator("3-sitemap_entries", entries)]
-=======
     return [Indicator("sitemap_entries", entries)]
->>>>>>> e364e64 (strip indicator tier from name and make a new column)
 
 @return_empty_if_fails
 def parse_dom_tree(soup) -> list[Indicator]:
@@ -226,13 +222,8 @@ def parse_meta_tags(soup) -> list[Indicator]:
         name = meta_tag.get("name")
         prop = meta_tag.get("property")
         content = meta_tag.get("content")
-<<<<<<< HEAD
-        if name and ("verif" in name.lower() or "valid" in name.lower()):
-            tag_indicators.append(Indicator("1-verification_id", name + "|" + content))
-=======
         if name and "verif" in name.lower():
             tag_indicators.append(Indicator("verification_id", name + "|" + content))
->>>>>>> e364e64 (strip indicator tier from name and make a new column)
         elif name and name in ["twitter:site", "fb:pages"]:
             tag_indicators.append(Indicator("meta_social", name + "|" + content))
         elif (name or prop) and content:
@@ -576,20 +567,10 @@ def add_associated_domains_from_cert(url) -> list[Indicator]:
         return []
 
 @return_empty_if_fails
-<<<<<<< HEAD
-def parse_id_patterns(response, soup, use_plaintext,  id_patterns: dict[str,str]) -> list[Indicator]:
-    tag_indicators = []
-    for id_type, pattern in id_patterns.items():
-        if use_plaintext:
-            id_indicators = find_with_regex(regex=pattern, text=soup.get_text(separator=' ', strip=True), indicator_type=id_type)
-        else: 
-            id_indicators = find_with_regex(regex=pattern, text=response.text, indicator_type=id_type)
-=======
 def parse_id_patterns(response, id_patterns: dict[str,dict[str, str | int]]) -> list[Indicator]:
     tag_indicators = []
     for id_type, pattern in id_patterns.items():
         id_indicators = find_with_regex(regex=pattern['pattern'], text=response.text, indicator_type=id_type)
->>>>>>> e364e64 (strip indicator tier from name and make a new column)
         tag_indicators.extend(id_indicators)
     return tag_indicators
 
@@ -767,25 +748,14 @@ def detect_and_parse_feed_content(url) -> list[Indicator]:
         feed = feedparser.parse(url)
         for entry in feed.entries:
             feed_indicators.append(
-<<<<<<< HEAD
-                Indicator("3-content-title", entry.title)
-=======
                 Indicator("content-title", entry.title)
->>>>>>> e364e64 (strip indicator tier from name and make a new column)
             )
             feed_indicators.append(Indicator("content-link", entry.link))
             feed_indicators.append(
-<<<<<<< HEAD
-                Indicator("3-content-summary", entry.summary)
-            )
-            feed_indicators.append(
-                Indicator("3-content-published", entry.published)
-=======
                 Indicator("content-summary", entry.summary)
             )
             feed_indicators.append(
                 Indicator("content-published", entry.published)
->>>>>>> e364e64 (strip indicator tier from name and make a new column)
             )
 
     return feed_indicators
@@ -811,11 +781,7 @@ def get_outbound_domains(url, soup) -> list[Indicator]:
             link_domain = f"{td}.{tsu}"
             if link_domain != f"{od}.{osu}":
                 outbound_domains.add(link_domain)
-<<<<<<< HEAD
-    return [Indicator("3-outbound-domain", outbound_domains) ]
-=======
     return [Indicator("outbound-domain", outbound_domains) ]
->>>>>>> e364e64 (strip indicator tier from name and make a new column)
 
 # parses <domain>.ads.txt file for associated ad networks, exchanges, and other ad-related entities
 def parse_ads_txt(url, soup):

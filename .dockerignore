@@ -1,0 +1,14 @@
+*
+!requirements.txt
+!modules
+!svelte
+!templates
+!app.py
+!config.py
+!init_app.py
+!models.py
+!database.db
+!schema.sql
+!.env
+!sites_of_concern.csv
+!indicators_output.csv

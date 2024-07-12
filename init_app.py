@@ -7,7 +7,6 @@ from flask_migrate import Migrate
 from config import config
 
 APP_SECRET_KEY = os.getenv('APP_SECRET_KEY', '')
-SQLLITE_DB_PATH = os.getenv('SQLLITE_DB_PATH', '')
 
 db = SQLAlchemy()
 migrate = Migrate()

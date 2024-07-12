@@ -5,3 +5,18 @@ services:
     ports:
       - "4000:4000"
     env_file: ".env"
+    depends_on:
+      - flask_db
+  flask_db:
+    container_name: flask_db
+    image: postgres:12
+    ports:
+      - "54320:5432"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata: {}

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Information Laundromat - About</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+
+<body class="bg-dark-gray main-page">
+    <div class="ml-5 mr-5 text-light-gray ">
+        <div class="py-5">
+            <div class="row top-nav">
+                <div class="col-md-9">
+                    <div class=" mb-4">
+                        <h2 class="lead">The Information Laundromat</h2>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="/">Search</a>
+                        </h2>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="{{ url_for('about') }}"><strong>About</strong></a>
+                        </h2>
+                    </div>
+                </div>
+                <div class="col-md-1">
+                    <div class=" mb-4 text-right">
+                        <h2 class="lead">
+                            <a href="{{ url_for('indicators_gui') }}">Indicators</a>
+                        </h2>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="container mt-1">
+        <div class="row about-page">
+            <div class="col">
+                <h1 id="about">About the Dashboard</h1>
+                <p>Thi dashboard that visualizes connections between state-sponsored content and its dissemination. Users can explore top matches by source and search engine, gaining a clear view of how disinformation spreads across the internet. 
+                    Users can adjust search parameters such as publication dates, the number of matches, and similarity scores, enabling both detailed explorations and broader overviews of laundering operations.
+                     Each match is meticulously documented with titles, sources, and match scores, providing users with the evidence needed to understand and expose information laundering tactics.</p>
+
+                <iframe title="IL - Summary" width="1150" height="1500" src="https://app.powerbi.com/view?r=eyJrIjoiODYwNWUzNWItMDM2YS00ZjNkLWEwNWEtMWExYWNlMTgyZjEyIiwidCI6IjlmOWE3MTVhLTFiOWItNGRhYy1hZDNhLTA2NzFiY2UyMWNjYiIsImMiOjJ9" frameborder="0" allowFullScreen="true"></iframe>
+            
+                <h2>Important Warnings for Interpreting Results</h2>
+
+                <h3>1. Context Matters</h3>
+                <p><strong>Limitations of Automated Analysis:</strong> While The Information Laundromat uses sophisticated algorithms to identify content similarities and connections, it cannot fully account for the context or intent behind the dissemination of information. Users should consider the broader context in which content is shared and be cautious in drawing conclusions based solely on automated matches.</p>
+                
+                <h3>2. False Positives and False Negatives</h3>
+                <p><strong>Potential for Errors:</strong> The tool may produce false positives, where content appears to be laundered but is not, or false negatives, where laundered content is missed. Although we apply stringent filtering to minimize these occurrences, users should critically assess the results and, where possible, corroborate findings with additional sources.</p>
+                
+                <h3>3. Differentiating Intent</h3>
+                <p><strong>No Assumption of Malice:</strong> The presence of content from state-sponsored media on a given website does not necessarily imply coordination or intent to deceive. Some websites may unknowingly republish content or do so for reasons unrelated to disinformation. Users should avoid assuming malintent without further evidence.</p>
+                
+                <h3>4. Attribution Challenges</h3>
+                <p><strong>Difficulty in Proving Coordination:</strong> Identifying that a website has republished state-sponsored content is not the same as proving that there is a deliberate campaign to launder information. Attribution of intent or coordination requires more in-depth investigation and should not be inferred solely from the data provided by The Information Laundromat.</p>
+                
+                <h3>5. Evolving Tactics</h3>
+                <p><strong>Adaptability of Adversaries:</strong> State-sponsored actors and other entities involved in information laundering are continuously evolving their tactics. The information and connections identified by The Information Laundromat reflect a snapshot in time and may not capture the full scope of ongoing disinformation campaigns.</p>
+                
+                <h3>6. Regional and Cultural Sensitivities</h3>
+                <p><strong>Varying Interpretations:</strong> The significance and impact of laundered content may vary depending on regional and cultural contexts. Users should be mindful of these differences when interpreting results, especially when analyzing content that crosses linguistic or national boundaries.</p>
+                
+                <h3>7. Limitations of Search Engines</h3>
+                <p><strong>Search Engine Variability:</strong> The tool relies on results from various search engines, which may differ in their indexing, ranking, and censorship practices. This variability can affect the results and should be taken into account when interpreting the data.</p>
+                
+                <h3>8. Use of the Tool as a Starting Point</h3>
+                <p><strong>Not a Conclusive Source:</strong> The Information Laundromat is intended as a research aid and not as a definitive source of truth. It is best used as a starting point for further investigation rather than a final determination of the origins and spread of content.</p>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.6/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+</body>
+
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(128, 128, 128, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        top: 25%;
+        text-align: center;
+    }
+
+    table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    td {
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+    .highlight-gdelt {
+        background-color: lightgreen;
+    }
+
+    /* Style the tab */
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+    }
+
+    /* Style the buttons inside the tab */
+    .tab button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        transition: 0.3s;
+        font-size: 17px;
+    }
+
+    /* Change background color of buttons on hover */
+    .tab button:hover {
+        background-color: #ddd;
+    }
+
+    /* Create an active/current tablink class */
+    .tab button.active {
+        background-color: #ccc;
+    }
+
+    .card {
+        color: #333;
+    }
+
+    .bg-dark-gray {
+        background-color: #333;
+    }
+
+    .text-light-gray {
+        color: #aaa;
+    }
+
+    .card-text {
+        color: #333;
+    }
+
+    .tab-active,
+    .tab-inactive {
+        padding: 0.75rem 1.25rem;
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .tab-active {
+        background-color: #fff;
+        /* Active tab with default background */
+        color: #333;
+        /* Text color for active tab */
+    }
+
+    .tab-inactive {
+        background-color: #555;
+        /* Inactive tab with darker background */
+        color: #fff;
+        /* Text color for inactive tab */
+    }
+
+    .nav-tabs .nav-item.show .nav-link,
+    .nav-tabs .nav-link.active {
+        color: #495057;
+        background-color: #fff;
+        border-color: #dee2e6 #dee2e6 #fff;
+    }
+
+    .nav-link {
+        background-color: #555;
+        color: #fff;
+        border: none;
+    }
+
+    .nav-link:hover {
+        background-color: #555;
+        color: #fff;
+        border: none;
+    }
+
+    .nav-tabs {
+        border-bottom: none;
+    }
+
+    .info-dot {
+        display: inline-block;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    /* Custom styles for the popover */
+    .popover {
+        max-width: 100%;
+        /* Max width of the popover */
+    }
+
+    /* Larger font size for the popover content */
+    .popover-body {
+        font-size: 1rem;
+        /* Adjust font size as needed */
+    }
+
+    /* Ensure info icon is aligned with the input */
+    .input-group-text {
+        display: flex;
+        align-items: center;
+    }
+
+    /* Style for info icon */
+    .fas.fa-info-circle {
+        cursor: pointer;
+        /* Change cursor to indicate it's clickable */
+    }
+
+    .caret {
+        display: none;
+    }
+
+    .btn-group .multiselect {
+        border: 1px solid #ced4da;
+    }
+
+    .card-body-400 {
+        min-height: 400px;
+        overflow-y: auto;
+    }
+
+    table a {
+        color: #45648f;
+    }
+
+    table a:hover {
+        color: #45648f;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .background {
+        position: absolute;
+        display: block;
+        top: 0;
+        left: 0;
+        z-index: -1;
+        opacity: 30%;
+    }
+
+    #dynamic-content span {
+        display: inline-block;
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+        /* Smooth transition for the opacity change */
+    }
+
+    .top-nav a {
+        color: #fff;
+    }
+
+    .top-nav a:hover {
+        color: lightgray;
+    }
+
+    .about-page {
+        color: lightgray;
+    }
+
+    .about-page a {
+        color: lightblue;
+    }
+
+    .about-page a:hover {
+        color: lightgray;
+    }
+
+    .main-page {
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+</style>
+
+</html>

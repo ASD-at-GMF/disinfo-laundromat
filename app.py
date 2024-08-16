@@ -535,7 +535,7 @@ def upload_file(request):
             elif combineOperator == 'True' or combineOperator == 'true':
                 combineOperator = 'AND'
             try:
-                if title_query is not None or content_query is not None :
+                if title_query != '' and content_query != '':
 
                     title_query = row.get("title")
                     content_query = row.get("content")
@@ -690,6 +690,12 @@ def indicators_gui():
 def about():
     data, unique_types, selected_type = indicators(request)
     return render_template('about.html', data=data, unique_types=unique_types, selected_type=selected_type, indicator_metadata=INDICATOR_METADATA)
+
+@app.route('/dashboard')
+@clean_inputs
+def dashboard():
+    return render_template('dashboard.html')
+
 
 @app.route('/domain_labels')
 @clean_inputs
@@ -861,7 +867,6 @@ def fetch_gdelt_results(title_query, content_query, combineOperator, language, c
         print(f"Error during request: {e}")
         return None
 
-# Trunk content recievind
 def fetch_content_results(title_query, content_query, combineOperator, language, country, engines=['google', 'google_news', 'bing', 'bing_news', 'duckduckgo', 'yahoo', 'yandex', 'gdelt', 'copyscape']):
     
     title_query = truncate_text(title_query)
@@ -1065,6 +1070,11 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
         country_yahoo = 'us'
     if country_language not in COUNTRY_LANGUAGE_DUCKDUCKGO:
         country_language = 'wt-wt'
+    if len(language_country) > 5: # trim down to 5 characters by lopping off the front 3, prevents errors like zh-zh-cn
+        language_country = language_country[:-3]
+    if len(country_language) > 5:
+        country_language = country_language[3:]
+
 
     paramsList = {
         "google": {
@@ -1170,7 +1180,7 @@ def convert_results_to_csv(results):
             data['domain'],
             str(data['domain_count']),
             data['title'],
-            data['snippet'],
+            data['snippet'] if data['snippet'] is not None else '',
             data['url'],
             str(data['link_count']),
             ', '.join(data['engines']),

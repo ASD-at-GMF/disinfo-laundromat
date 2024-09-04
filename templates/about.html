@@ -12,34 +12,46 @@
 <body class="bg-dark-gray main-page">
     <div class="ml-5 mr-5 text-light-gray ">
         <div class="py-5">
-            <div class="row top-nav">
-                <div class="col-md-9">
-                    <div class=" mb-4">
-                        <h2 class="lead">The Information Laundromat</h2>
-                    </div>
-                </div>
-                <div class="col-md-1">
-                    <div class=" mb-4 text-right">
-                        <h2 class="lead">
-                            <a href="/">Search</a>
-                        </h2>
-                    </div>
-                </div>
-                <div class="col-md-1">
-                    <div class=" mb-4 text-right">
-                        <h2 class="lead">
-                            <a href="{{ url_for('about') }}"><strong>About</strong></a>
-                        </h2>
-                    </div>
-                </div>
-                <div class="col-md-1">
-                    <div class=" mb-4 text-right">
-                        <h2 class="lead">
-                            <a href="{{ url_for('indicators_gui') }}">Indicators</a>
-                        </h2>
-                    </div>
-                </div>
+            <div class="row top-nav mb-4">
+                <div class="col-md-8">
+                    <h2 class="lead"> <img
+                            src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/04/il_logo_nobg.png"
+                            class="img-fluid" alt="logo" style="max-width: 50px;">The Information Laundromat
+                    </h2>
 
+                </div>
+                <div class="col-md-4 mt-3">
+                    <div class="row">
+                        <div class="col-sm">
+                            <div class="text-left">
+                                <h2 class="lead">
+                                    <a href="/">Search</strong></a>
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="col-sm">
+                            <div class="text-left">
+                                <h2 class="lead">
+                                    <a href="{{ url_for('about') }}"><strong>About</strong></a>
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="col-sm">
+                            <div class="text-left">
+                                <h2 class="lead">
+                                    <a href="{{ url_for('indicators_gui') }}">Indicators</a>
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="col-sm">
+                            <div class=" mb-4 text-right">
+                                <h2 class="lead">
+                                    <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

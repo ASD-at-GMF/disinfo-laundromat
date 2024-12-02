@@ -47,8 +47,8 @@ from init_app import db, init_app
 from models import RegistrationKey, SiteBase, SiteIndicator, User, Query, Result
 from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
 # Import all your functions here
-from modules.crawler import crawl_one_or_more_urls, annotate_indicators
-from modules.matcher import find_matches
+from modules.crawl import crawl_one_or_more_urls, annotate_indicators
+from modules.match import find_matches
 from modules.email_utils import send_results_email
 
 app = init_app(os.getenv("CONFIG_MODE"))

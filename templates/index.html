@@ -185,6 +185,29 @@
                     },
                     order: [[4, 'desc']]
                 });
+            
+            $('#images_table').DataTable(
+            {
+                responsive: true,
+                pageLength: 50,
+                autoWidth: false,
+                columnDefs: [
+                    { targets: 0, width: "25%" },
+                    { targets: 1, width: "15%" },
+                    { targets: 2, width: "30%" },
+                    { targets: 3, width: "20%" },       
+                    { targets: 4, width: "7.5%" },
+                    { targets: 5, width: "2.5%", orderable: false, searchable: false}
+                    
+
+                ],
+                layout: {
+                    topStart: {
+                        buttons: ['pageLength', 'copy', 'csv', 'excel']
+                    },
+                },
+                order: [[4, 'desc']]
+            });
             var indicatorsTable = $('#indicators_table').DataTable(
                 {
                     responsive: true,
@@ -497,14 +520,19 @@
                         <div class="card">
                             <div class="card-header p-0 text-center">
                                 <ul class="nav nav-tabs" id="myTab" role="tablist">
-                                    <li class="nav-item col-6 p-0">
+                                    <li class="nav-item col-xs-12 col-md-4 p-0">
                                         <a class="nav-link active" data-toggle="tab" href="#contentTab">
                                             <h4>Content Similarity</h4>
                                         </a>
                                     </li>
-                                    <li class="nav-item col-6 p-0">
+                                    <li class="nav-item col-xs-12 col-md-4 p-0">
                                         <a class="nav-link" data-toggle="tab" href="#metadataTab">
                                             <h4>Metadata Similarity</h4>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item col-xs-12 col-md-4 p-0">
+                                        <a class="nav-link" data-toggle="tab" href="#imageTab">
+                                            <h4>Image Similarity</h4>
                                         </a>
                                     </li>
                                 </ul>
@@ -801,12 +829,121 @@
                                     </div>
                                     {% endif %}
                                 </div>
+                                <div id="imageTab" class="container tab-pane fade d-none">
+                                    <form method="POST" action="/image-search" id="image-search-form" class="tabcontent-fingerprint">
+                                        <input type="hidden" name="recaptcha_response" id="recaptchaResponse2">
+
+                                        <div class="row mt-1">
+                                            <div class="col-sm">
+                                                <p class="card-text">
+                                                    <div class="alert alert-warning" role="alert">
+                                                        This function is experimental and may not work as expected or even fail. If a URL fails, try uploading an image to another site and using that URL instead. 
+                                                      </div>
+                                                    Enter the URL of an image to search for similar images across the web. 
+                                                    This function uses a reverse image search engine to find similar images. 
+                                                    The results may include images that are not identical but share similar features or content.
+                                                </p>
+                                            </div>
+
+                                        </div>
+                                        <div class="row mt-3 ">
+                                            <div id="urlWarning" class="alert alert-warning" role="alert"
+                                                style="display: none;">
+                                                <!-- Warning message will be inserted here -->
+                                            </div>
+                                        </div>
+                                        <div class="row mt-1">
+                                            <div class="col-sm input-group">
+                                                <input type="text" class="form-control" aria-describedby="basic-addon6"
+                                                    placeholder="Enter a link to an image" name="image_url" id="image_url"
+                                                    required>
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text" id="basic-addon6">
+                                                        <i class="fas fa-info-circle" data-trigger="hover" data-toggle="popover"
+                                                            data-content="Enter the full url of an image, e.g. https://tech.cnn.com/picture.jpg"></i>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-sm">
+                                            </div>
+                                            <div class="col-sm">
+                                            </div>
+                                            <div class="col-sm">
+                                            </div>
+                                            <div class="col-sm">
+                                                <button class="btn btn-secondary btn-block"             
+                                                    id="imageSearchButton">Search</button>
+                                            </div>
+                                        </div>
+
+                                    </form>
+                                    <hr class="my-4">
+                                    {% if current_user.is_authenticated %}
+                                    <form method="POST" action="/batch-search-images" id="batch-search-images"
+                                        enctype="multipart/form-data">
+                                        <div class="row mt-3  ml-1">
+                                            <h5 class="card-title">Batch Image Search</h5>
+                                        </div>
+                                        <div class="row mt-3  ml-1">
+                                            Requires only one column: url. Must be a full url, e.g.
+                                            https://tech.cnn.com/image.jpg?params=areokay<a
+                                                href="{{ url_for('download_domain_metadata_example') }}" download>
+                                                Download
+                                                the template</a>.
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6  input-group">
+                                                <div class="form-check form-check-inline">
+                                                    <input type="file" class="custom-file-input" id="image-file"
+                                                        name="image-file">
+                                                    <label class="custom-file-label" for="imageCSV">Image
+                                                        CSV</label>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-3">
+                                            <div class="col-md-6 input-group">
+                                                <input type="email" class="form-control" id="email" name="email"
+                                                    aria-describedby="emailHelp"
+                                                    placeholder="Email, e.g name@example.com" required>
+
+                                            </div>
+                                            <div class="col-md-3">
+
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <button class="btn btn-secondary btn-block">Search</button>
+                                            </div>
+
+                                        </div>
+                                        <div id="file-download-warning" class="alert alert-warning mt-3" role="alert"
+                                            style="display: none;">
+                                            <strong>Warning!</strong> Downloading the results of a batch search may take
+                                            a
+                                            long
+                                            time and may not be successful for large datasets. The results will be
+                                            emailed
+                                            to
+                                            the provided email address.
+                                        </div>
+                                    </form>
+                                    {% else %}
+                                    <div>
+                                        <p>Please <a href="{{ url_for('login_gui') }}">log in or register</a> to run
+                                            batch searches. Contact us at info [at] securingdemocracy.org to obtain a
+                                            registration code.</p>
+                                    </div>
+                                    {% endif %}
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>  
 
-                <div class="row">
+                <div class="row ml-2 mr-2">
                     <!-- 3 evenly spaced cards with usage scenarios written in them -->
                     <div class="col-md-4">
                         <div class="card">
@@ -944,6 +1081,7 @@
                 <div class="alert alert-warning w-100" role="alert">
                     You searched for:
                     {% if request.form['url'] is defined %}
+
                     <strong>{{ request.form['url'] }}</strong>
                     <!-- share this search button --> 
                     
@@ -952,6 +1090,11 @@
                     {% if request.form['contentToSearch'] is defined %}
                     <strong>{{ request.form['contentToSearch'] }}</strong>
                     <a href="https://informationlaundromat.com/content-search?contentToSearch={{request.form['contentToSearch']}}" target="_blank" class="btn btn-secondary btn-sm float-right"> Share this search <i class="fas fa-share-alt"></i></a>
+
+                    {% endif %}
+                    {% if request.form['image_url'] is defined %}
+                    <strong>{{ request.form['image_url'] }}</strong>
+                    <a href="https://informationlaundromat.com/image-search?imageToSearch={{request.form['image_url']}}" target="_blank" class="btn btn-secondary btn-sm float-right"> Share this search <i class="fas fa-share-alt"></i></a>
 
                     {% endif %}
                 </div>
@@ -1023,6 +1166,81 @@
                                             aria-valuenow="{{ link_data['score'] }}" aria-valuemin="0"
                                             aria-valuemax="100">
                                             {{ link_data['score'] }}%</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="/url-search?url={{ link_data['domain'] }}" target="_blank"><i class="fas fa-soap"></i></a>
+                                    
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                {% if image_results %}
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h2>Results with similar images</h2>
+                    </div>
+
+
+                    <div class="col-md-4 ">
+                            <button class="btn btn-primary mr-3 float-right" type="button" data-toggle="collapse"
+                                data-target="#collapsibleTable" aria-expanded="false" aria-controls="collapsibleTable">
+                                Show/Hide Table
+                            </button>
+                        
+                    </div>
+                </div>
+                <div class="row ml-3 mb-3">
+                    <p>While the results show near-match image matches from across the web, this does necessarily not indicate
+                        a relationship or deliberate plagiarism between entities, as content may be licensed or quoted</p>
+                </div>
+
+                <div class="collapse show" id="collapsibleTable">
+
+                    <table id="images_table" class="table table-hover table-striped" style="width: 100%;">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Image</th>
+                                <th>Domain</th>
+                                <th>Title</th>
+                                <th>Hash</th>
+                                <th>Match %</th>
+                                <th></th>
+
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for link_data in image_results %}
+                            <tr class="table-light">
+                                <td><img src="{{ link_data['image_url'] }}"  width="100%" >
+                                </td>
+                                <td ><a href="{{ link_data['source'] }}" target="_blank">{{ link_data['domain'] }}</a> 
+                                    {% if "EuVsDisinfo" in link_data['source'] %}
+                                    <i class="fas fa-exclamation-triangle text-warning" title="EUvsDisinfo Domain"></i>
+                                    {% elif "statemedia" in link_data['source'] %}
+                                    <i class="fas fa-globe text-primary" title="State Media Domain"></i>
+                                    {% elif "Pink Slime" in link_data['source'] %}
+                                    <i class="fas fa-tint text-danger" title="Pink Slime Domain"></i>
+                                    {% elif "Newsguard AI" in link_data['source'] %}
+                                    <i class="fas fa-brain text-success" title="Newsguard AI Domain"></i>
+                                    {% elif link_data['source'] %}
+                                    <i class="fas fa-bell" title="{{ link_data['source'] }}"></i>
+                                    {% endif %}
+                                </td>
+
+                                <td><a href="{{ link_data['url'] }}" target="_blank">{{ link_data['title'] }}</a>
+                                </td>
+                                <td>{{ link_data['hash'] }}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar"
+                                            style="width: {{ link_data['similarity'] }}%;"
+                                            aria-valuenow="{{ link_data['similarity'] }}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{ link_data['similarity'] }}%</div>
                                     </div>
                                 </td>
                                 <td>
@@ -1280,8 +1498,8 @@
 
                         <div class="row">
                             <a href="https://gulbenkian.pt/emifund/" rel="nofollow">
-                                <img src="https://camo.githubusercontent.com/4644af047750ba3f45a2f3efcf9f746857215547882628e6e2a34ca806cc72ac/68747470733a2f2f7365637572696e6764656d6f63726163792e676d6675732e6f72672f77702d636f6e74656e742f75706c6f6164732f323032342f30322f454d49465f486f72697a6f6e74616c5f6c6f676f5f426c61636b2e706e67"
-                                    alt="MJRC Logo" height="256"
+                                <img src="https://securingdemocracy.gmfus.org/wp-content/uploads/2025/04/EMIF_Horizontal_logo_Black-1024x398-1.png"
+                                    alt="EMIF Logo" height="256"
                                     data-canonical-src="https://securingdemocracy.gmfus.org/wp-content/uploads/2024/02/EMIF_Horizontal_logo_Black.png"
                                     style="width: 100%;height:auto">
                             </a>

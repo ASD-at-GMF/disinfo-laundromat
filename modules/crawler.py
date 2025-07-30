@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Callable
 from urllib.parse import urlsplit, urlparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import blockcypher
+# import blockcypher
 import feedparser
 import imagehash
 import pandas as pd
@@ -131,31 +131,34 @@ def add_ip_address(domain_name) -> list[Indicator]:
 @return_empty_if_fails
 def add_who_is(url) -> list[Indicator]:
     whois_indicators = []
-    result = whois.whois(url)
-    if result.text != "Socket not responding: [Errno 11001] getaddrinfo failed":
-        whois_indicators.append(Indicator("3-whois-registrar", result.registrar))
-        whois_indicators.append(Indicator("3-whois_server", result.whois_server))
-        whois_indicators.append(Indicator("3-whois_creation_date", result.creation_date))
-        if (
-            "name" in result
-            and result.name is not None
-            and isinstance(result.name, str)
-        ):
+    try:
+        result = whois.whois(url)
+        if result.text != "Socket not responding: [Errno 11001] getaddrinfo failed":
+            whois_indicators.append(Indicator("3-whois-registrar", result.registrar))
+            whois_indicators.append(Indicator("3-whois_server", result.whois_server))
+            whois_indicators.append(Indicator("3-whois_creation_date", result.creation_date))
             if (
-                "priva" not in result.name.lower()
-                and "proxy" not in result.name.lower()
-                and "guard" not in result.name.lower()
-                and "protect" not in result.name.lower()
-                and "mask" not in result.name.lower()
-                and "secur" not in result.name.lower()
+                "name" in result
+                and result.name is not None
+                and isinstance(result.name, str)
             ):
-                whois_indicators.append(Indicator("1-whois_emails", result.emails))
-                whois_indicators.append(Indicator("1-whois_name", result.name))
-                whois_indicators.append(Indicator("1-whois_org", result.org))
-                whois_indicators.append(Indicator("1-whois_address", result.address))
-                whois_indicators.append(
-                    Indicator("2-whois_citystatecountry", f"{result.city}, {result.state}, {result.country}")
-                )
+                if (
+                    "priva" not in result.name.lower()
+                    and "proxy" not in result.name.lower()
+                    and "guard" not in result.name.lower()
+                    and "protect" not in result.name.lower()
+                    and "mask" not in result.name.lower()
+                    and "secur" not in result.name.lower()
+                ):
+                    whois_indicators.append(Indicator("1-whois_emails", result.emails))
+                    whois_indicators.append(Indicator("1-whois_name", result.name))
+                    whois_indicators.append(Indicator("1-whois_org", result.org))
+                    whois_indicators.append(Indicator("1-whois_address", result.address))
+                    whois_indicators.append(
+                        Indicator("2-whois_citystatecountry", f"{result.city}, {result.state}, {result.country}")
+                    )
+    except Exception as e:
+        logging.error(e)
 
     return whois_indicators
 
@@ -529,16 +532,16 @@ def find_wallets(text) -> list[Indicator]:
 
 @return_empty_if_fails
 def find_wallet_transactions(wallet_type, wallet) -> list[Indicator]:
-    tx_data = blockcypher.get_address_full(wallet, coin_symbol=wallet_type)
+    # tx_data = blockcypher.get_address_full(wallet, coin_symbol=wallet_type)
 
-    # Check if transaction data exists for the address
-    if tx_data:
-        # Extract the addresses involved in transactions with the given address
-        addresses = set()
-        for input in tx_data["txs"]:
-            for address in input["addresses"]:
-                addresses.add(address)
-        return [Indicator("2-crypto-transacation", address) for address in addresses]
+    # # Check if transaction data exists for the address
+    # if tx_data:
+    #     # Extract the addresses involved in transactions with the given address
+    #     addresses = set()
+    #     for input in tx_data["txs"]:
+    #         for address in input["addresses"]:
+    #             addresses.add(address)
+    #     return [Indicator("2-crypto-transacation", address) for address in addresses]
     return []
 
 

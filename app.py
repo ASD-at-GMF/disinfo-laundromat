@@ -29,6 +29,8 @@ import os
 import bleach
 import logging
 from sqlalchemy import insert
+from PIL import Image
+import imagehash
 
 # Paramaterizable Variables
 SERP_API_KEY = os.getenv('SERP_API_KEY')
@@ -132,6 +134,15 @@ def clean_inputs(view_func):
 
     return decorated_function
 
+# Function to generate perceptual hash
+def generate_image_hash(url, hash_size=16):
+    try:
+        resp = requests.get(url, timeout=5)
+        img = Image.open(BytesIO(resp.content))
+        return imagehash.phash(img, hash_size=hash_size)
+    except Exception as e:
+        print(f"Error hashing {url!r}: {e}")
+        return None
 #### ROUTES ####
 
 
@@ -255,16 +266,148 @@ def verify_captcha(request):
 @app.route('/url-search', methods=['GET','POST'])
 @clean_inputs
 def url_search():
-    try:
-        if request.method == 'POST':
-            #verify captcha
-            if not verify_captcha(request):
-                return render_template('index.html', error_message="Silent captcha verification failed. Try again or contact info [at] securingdemocracy.org. Please do not use automated tools to interact with this form.", engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
-        indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
-        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
-    except Exception as e:
-        return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
+        try:
+            if request.method == 'POST':
+                #verify captcha
+                if not verify_captcha(request):
+                    return render_template('index.html', error_message="Silent captcha verification failed. Try again or contact info [at] securingdemocracy.org. Please do not use automated tools to interact with this form.", engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+            indicators_df, matches_df, indicator_summary, matches_summary = fingerprint(request)
+            return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, indicators_df=indicators_df.to_dict('records'), matches_df=matches_df.to_dict('records'), indicator_summary = indicator_summary, matches_summary = matches_summary)
+        except Exception as e:
+            return render_template('error.html', errorx=e, errortrace=traceback.format_exc())
+        
+def normalize_image_results(source_hash, image_results, source):
 
+    """
+    Normalize the image results from different sources to a common format.
+    """
+    transformed = []
+    for item in image_results:
+        if ("image" not in item and "thumbnail" not in item):
+            print(f"image not found in item: {item}")
+            continue
+        
+        parsed_url = urlparse(item['link'])
+        domain = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+        if source == "google_lens_exact_matches":
+            transformed.append({
+                "title": item["title"],
+                "source": item["source"],
+                "domain": domain,
+                "url": item["link"],
+                "image_url": item["image"] if "image" in item else item["thumbnail"],
+                "hash": "Google defined as an 'exact match', which may have errors, manual verification is advised",     # hex‑string for logging
+                "distance":   0,             # lower→better
+                "similarity": 1, # 
+                "search_engine": source
+            })
+        else:    
+            target_hash = generate_image_hash(item["image"] if "image" in item else item["thumbnail"])
+            if target_hash is None:
+                distance = 99999999999
+                similarity = 0.0
+                target_hash = "A hash could not be generated, but may be a match, manual verification is advised"
+            else:
+                # Calculate the Hamming distance between the source and target hashes
+                # Hamming distance: number of differing bits
+                distance = source_hash - target_hash
+                # Total bits in the hash (hash_size²); default is 8×8=64
+                total_bits = target_hash.hash.size
+                # Normalize to [0,1]: 1=intact match, 0=completely different
+                similarity = (total_bits - distance) / total_bits
+
+            transformed.append({
+                "title": item["title"],
+                "source": item["source"],
+                "domain": domain,
+                "url": item["link"],
+                "image_url": item["image"] if "image" in item else item["thumbnail"],
+                "hash":       str(target_hash),     # hex‑string for logging
+                "distance":   distance,             # lower→better
+                "similarity": round(similarity*100, 1), # higher→better
+                "search_engine": source,
+            })
+    return transformed
+
+def fetch_image_results(source_url, source_hash, source="google_lens"):
+    """
+    Fetch results from the SerpAPI Google Lens endpoint using the given image URL.
+    """
+    base_url = "https://serpapi.com/search.json"
+    params = {
+        "engine": source,
+        "url": source_url,
+        "api_key": SERP_API_KEY
+    }
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        img_results = response.json()
+        if source == "google_lens":
+            if "error" in img_results:
+                app.logger.error("Error fetching Google images results: %s", img_results["error"])
+                return None
+            if "serpapi_exact_matches_link" in img_results:
+                # If the response contains a link to exact matches, fetch them
+                exact_matches_url = img_results["serpapi_exact_matches_link"]
+                exact_matches_response = requests.get(exact_matches_url + "&api_key=" + SERP_API_KEY)
+                exact_matches_response.raise_for_status()
+                img_results_em = exact_matches_response.json()
+                if "exact_matches" in img_results_em:
+                    # Normalize the results to a common format
+                    app.logger.info("Found exact matches for image search")
+                    # Use the normalize_image_results function to transform the results
+                    return normalize_image_results(source_hash, img_results_em.get('exact_matches', []), source="google_lens_exact_matches")
+            if "visual_matches" in img_results:
+                # Normalize the results to a common format
+                return normalize_image_results(source_hash, img_results.get('visual_matches', []), source="google_lens")
+        elif source == "yandex_images":
+            if "error" in img_results:
+                app.logger.error("Error fetching Yandex Images results: %s", img_results["error"])
+                return None
+            # Normalize the results to a common format
+            img_results = normalize_image_results(source_hash, img_results.get('image_results', []), source="yandex_images")
+            return img_results
+        return None
+    except requests.RequestException as e:
+        app.logger.error("Error fetching Google Lens results: %s", e)
+        return None
+
+def hash_and_search_image(source_url):
+    """
+    Hash the source image and search for similar images using Google Lens and Yandex Images.
+    """
+    source_hash = generate_image_hash(source_url)
+    if source_hash is None:
+        raise RuntimeError("Failed to hash source image")
+
+    # Perform image search logic here
+    transformed = []
+    images_google_lens = fetch_image_results(source_url, source_hash, source="google_lens")
+    if images_google_lens is not None:
+        transformed.extend(images_google_lens)
+
+    images_yandex = fetch_image_results(source_url, source_hash, source="yandex_images")
+    if images_yandex is not None:
+        transformed.extend(images_yandex)
+        
+    transformed.sort(key=lambda x: x["similarity"], reverse=True)
+
+    return transformed
+
+@app.route('/image-search', methods=['GET','POST'])
+@clean_inputs
+def image_search():
+    if request.method == 'POST':
+        #verify captcha
+        source_url = request.form['image_url']
+        image_results = hash_and_search_image(source_url)
+        return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA, image_results=image_results)
+    return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
+
+def ad_search():
+    return render_template('index.html', engines=ENGINES, countries=COUNTRIES, languages=LANGUAGES, indicator_metadata=INDICATOR_METADATA)
 
 @app.route('/api/fingerprint', methods=['POST'])
 #@login_required
@@ -492,6 +635,12 @@ def parse_batch_search_content():
     if request.files['file'].filename != '':
         return upload_file(request)
 
+@app.route('/batch-search-images', methods=['POST'])
+@clean_inputs
+def parse_batch_search_images():
+    if request.files['image-file'].filename != '':
+        return image_file(request)
+
 @app.route('/content-csv', methods=['POST'])
 @clean_inputs
 def upload_file_gui():
@@ -535,7 +684,7 @@ def upload_file(request):
             elif combineOperator == 'True' or combineOperator == 'true':
                 combineOperator = 'AND'
             try:
-                if title_query != '' and content_query != '':
+                if title_query != '' or content_query != '':
 
                     title_query = row.get("title")
                     content_query = row.get("content")
@@ -597,7 +746,7 @@ def upload_file(request):
         results_df.to_csv(output_stream, index=False)
         output_stream.seek(0) 
         try:
-            send_results_email(email_recipient, "Disinfo Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_content_results.csv')
+            send_results_email(email_recipient, "Info Laundromat Results", "Please find the results from the Disinfo Laundromat analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_content_results.csv')
         except Exception as e:
             app.logger.error(f"Error sending email: {e}")
             print(f"Error sending email: {e}, continuing...")
@@ -666,7 +815,45 @@ def fingerprint_file(request):
             download_name='indicators_and_matches.zip'
         )
     
+def image_file(request):
+    file = request.files['image-file']
+    email_recipient = request.form.get('email')
+        
+    if file:    
+        df_urls = pd.read_csv(StringIO(file.read().decode('utf-8')))
+        urls = df_urls['url'].tolist()  # Assuming 'Urls' is the column name
+        
+        image_results = []
+        for url in urls:
+            try:
+                image_results.extend(hash_and_search_image(url))
 
+            except Exception as e:
+                app.logger.error(f"Error processing {url}: {e}")
+                print(f"Error processing {url}: {e}, continuing...")
+
+        # Save the results to a CSV or process them as needed
+        # For example, you can save them to a DataFrame and then to a CSV file
+        image_results_df = pd.DataFrame(image_results)
+        # Save dataframes as csv in memory
+        output_stream = StringIO()
+        image_results_df.to_csv(output_stream, index=False)
+
+        output_stream.seek(0) 
+        try:
+            send_results_email(email_recipient, "Info Laundromat Results", "Please find the results from the Info Laundromat image analysis attached. ", io.BytesIO(output_stream.getvalue().encode()), 'laundromat_image_results.csv')
+        except Exception as e:
+            app.logger.error(f"Error sending email: {e}")
+            print(f"Error sending email: {e}, continuing...")
+        finally:
+            bytes_stream = io.BytesIO(output_stream.getvalue().encode())
+            #print("Finally Content Results")
+            return send_file(
+            bytes_stream,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='laundromat_images_results.csv'
+        )
 
 @app.route('/download_csv', methods=['POST'])
 @app.route('/api/download_csv', methods=['POST'])
@@ -871,7 +1058,7 @@ def fetch_content_results(title_query, content_query, combineOperator, language,
     
     title_query = truncate_text(title_query)
     content_query = truncate_text(content_query)
-
+    print("Searching:", title_query)
     # Parameters for SERPAPI Google integration
     results = fetch_serp_results(
         title_query, content_query, combineOperator, language, country, engines=engines)

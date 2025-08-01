@@ -47,10 +47,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'
+      name: 'Production'            # Must exactly match the federated-identity subject part
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
+      id-token: write               # Enables OIDC token issuance
+      contents: read
 
     steps:
       - name: Download artifact from build job
@@ -61,18 +62,18 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-      
-      - name: Login to Azure
+      - name: Azure Login via Workload Identity Federation
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_9AF02F0740F34C43878105809211FC98 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8B4F53DBBFA24DAB91D661B0FBC1390F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5FC98B5D5DA84776AB2F9188F23988D6 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         id: deploy-to-webapp
         with:
           app-name: 'laundromat-server'
-          slot-name: 'Production'
+          # Omit slot-name to target the production slot (default)
+          package: release.zip
           

@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'            # Must exactly match the federated-identity subject part
+      name: 'production'            # Must exactly match the federated-identity subject part
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write               # Enables OIDC token issuance

@@ -47,7 +47,7 @@ CAPTCHA_SECRET = os.getenv('CAPTCHA_SECRET', '')
 
 from init_app import db, init_app
 from models import RegistrationKey, SiteBase, SiteIndicator, User, Query, Result
-from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE
+from modules.reference import DEFAULTS, ENGINES, LANGUAGES, COUNTRIES, LANGUAGES_YANDEX, LANGUAGES_YAHOO, COUNTRIES_YAHOO, COUNTRY_LANGUAGE_DUCKDUCKGO, DOMAINS_GOOGLE, INDICATOR_METADATA, MATCH_VALUES_TO_IGNORE, BING_MARKETS
 # Import all your functions here
 from modules.crawler import crawl_one_or_more_urls, annotate_indicators
 from modules.matcher import find_matches
@@ -299,9 +299,22 @@ def normalize_image_results(source_hash, image_results, source):
                 "image_url": item["image"] if "image" in item else item["thumbnail"],
                 "hash": "Google defined as an 'exact match', which may have errors, manual verification is advised",     # hex‑string for logging
                 "distance":   0,             # lower→better
-                "similarity": 1, # 
+                "similarity": 100, # 
                 "search_engine": source
             })
+        elif source == "yandex_images":
+            transformed.append({
+                "title": item["title"],
+                "source": item["source"],
+                "domain": domain,
+                "url": item["link"],
+                "image_url": item["original_image"]["link"] if "original_image" in item else item["thumbnail"]["link"],
+                "hash": "Yandex defined as a 'similar image', which may have errors, manual verification is advised",     # hex‑string for logging
+                "distance":   0,             # lower→better
+                "similarity": 100, # 
+                "search_engine": source
+            })
+            
         else:    
             target_hash = generate_image_hash(item["image"] if "image" in item else item["thumbnail"])
             if target_hash is None:
@@ -1261,12 +1274,13 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
         language_country = language_country[:-3]
     if len(country_language) > 5:
         country_language = country_language[3:]
+    
 
 
     paramsList = {
         "google": {
             "engine": "google",
-            "location": location,
+            #"location": location,
             "hl": language,
             "gl": country,
             "google_domain": google_domain,
@@ -1275,7 +1289,7 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
         }, 
         "google_news":{
             "engine": "google",
-            "location": location,
+            #"location": location,
             "hl": language,
             "gl": country,
             "google_domain": google_domain,
@@ -1285,15 +1299,15 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
         }, 
         "bing":{
             "engine": "bing",
-            "location": location,
-            "mkt": language_country,
+            #"location": location,
+
             "count": 40,
             "api_key":  SERP_API_KEY
         }, 
         "bing_news":{
             "engine": "bing_news",
             "mkt": language_country,
-            "location": location,
+            #"location": location,
             "count": 40,
             "api_key":  SERP_API_KEY
         }, 
@@ -1350,6 +1364,10 @@ def customize_params_by_platform(title_query, content_query, combineOperator, la
                 paramsList[key]['text'] = base_query
             if platform == 'yahoo':
                 paramsList[key]['p'] = base_query
+        if platform == 'bing':
+            if language_country in BING_MARKETS:
+                paramsList[key]['mkt'] = language_country
+
 
     return paramsList
 

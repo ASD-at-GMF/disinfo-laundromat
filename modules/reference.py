@@ -818,6 +818,47 @@ DOMAINS_GOOGLE = {'Andorra': 'google.ad',
 'Vietnam': 'google.com.vn'
 }
 
+BING_MARKETS = [
+  'es-ar',
+  'en-au',
+  'de-at',
+  'nl-be',
+  'fr-be',
+  'pt-br',
+  'en-ca',
+  'fr-ca',
+  'es-cl',
+  'da-dk',
+  'fi-fi',
+  'fr-fr',
+  'de-de',
+  'zh-hk',
+  'en-in',
+  'en-id',
+  'it-it',
+  'ja-jp',
+  'ko-kr',
+  'en-my',
+  'es-mx',
+  'nl-nl',
+  'en-nz',
+  'no-no',
+  'zh-cn',
+  'pl-pl',
+  'en-ph',
+  'ru-ru',
+  'en-za',
+  'es-es',
+  'sv-se',
+  'fr-ch',
+  'de-ch',
+  'zh-tw',
+  'tr-tr',
+  'en-gb',
+  'en-us',
+  'es-us'
+]
+
 INDICATOR_METADATA = {
   "1-cert-domain": {
     "name": "Domain Certificate",
@@ -1144,8 +1185,6 @@ INDICATOR_METADATA = {
     "description": "A link to a Gab profile or post found on a webpage.",
     "interpretation": "Links to Gab profiles or posts can indicate social media engagement or content sharing strategies. Shared Gab links might suggest common social media strategies or affiliations. However, links to alternative social media platforms are widely used and may not be uniquely significant."
     }
-
-
 }
 
 MATCH_VALUES_TO_IGNORE = [
